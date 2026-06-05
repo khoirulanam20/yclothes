@@ -1,0 +1,1 @@
+const e={pending:"Menunggu",confirmed:"Dikonfirmasi",processed:"Diproses",shipped:"Dikirim",delivered:"Diterima",cancelled:"Batal"},a={pending:"Menunggu",paid:"Lunas",failed:"Gagal",expired:"Kedaluwarsa"};export{e as o,a as p};

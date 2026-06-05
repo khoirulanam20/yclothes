@@ -83,6 +83,21 @@ class SettingSeeder extends Seeder
         );
 
         Setting::firstOrCreate(
+            ['key' => 'promo_bar_text'],
+            ['value' => 'Free Ongkir Pembelian > Rp 200rb'],
+        );
+
+        Setting::firstOrCreate(
+            ['key' => 'tax_included'],
+            ['value' => '0'],
+        );
+
+        Setting::firstOrCreate(
+            ['key' => 'low_stock_threshold'],
+            ['value' => '5'],
+        );
+
+        Setting::firstOrCreate(
             ['key' => 'banner_button'],
             ['value' => 'Belanja Sekarang'],
         );

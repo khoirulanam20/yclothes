@@ -70,14 +70,18 @@ class AdminTest extends TestCase
         Storage::fake('public');
         $category = Category::first();
 
+        $family = \App\Models\AttributeFamily::where('name', 'Fashion Default')->first();
+
         $response = $this->actingAs($this->admin)->post('/admin/products', [
             'category_id' => $category->id,
+            'attribute_family_id' => $family?->id,
             'name' => 'Produk Test',
             'price' => 100000,
             'description' => 'Deskripsi test',
             'image' => UploadedFile::fake()->image('produk.jpg'),
-            'sizes' => 'S,M,L',
-            'colors' => '#FFFFFF,#000000',
+            'attributes' => [
+                'size' => ['S', 'M', 'L'],
+            ],
             'is_featured' => '1',
         ]);
 

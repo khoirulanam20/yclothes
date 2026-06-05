@@ -4,19 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ShippingCost;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ShippingCostController extends Controller
 {
     public function index()
     {
         $costs = ShippingCost::latest()->get();
-        return view('admin.shipping-costs.index', compact('costs'));
+
+        return Inertia::render('Admin/ShippingCosts/Index', [
+            'costs' => ModelSerializer::collection($costs, [ModelSerializer::class, 'shippingCostRecord']),
+        ]);
     }
 
     public function create()
     {
-        return view('admin.shipping-costs.form', ['cost' => new ShippingCost]);
+        return Inertia::render('Admin/ShippingCosts/Form');
     }
 
     public function store(Request $request)
@@ -36,7 +41,9 @@ class ShippingCostController extends Controller
 
     public function edit(ShippingCost $shippingCost)
     {
-        return view('admin.shipping-costs.form', ['cost' => $shippingCost]);
+        return Inertia::render('Admin/ShippingCosts/Form', [
+            'cost' => ModelSerializer::shippingCostRecord($shippingCost),
+        ]);
     }
 
     public function update(Request $request, ShippingCost $shippingCost)
@@ -57,6 +64,7 @@ class ShippingCostController extends Controller
     public function destroy(ShippingCost $shippingCost)
     {
         $shippingCost->delete();
+
         return redirect()->route('admin.shipping-costs.index')->with('success', 'Ongkir berhasil dihapus');
     }
 }

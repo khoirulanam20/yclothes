@@ -12,7 +12,7 @@ class EnsureUserIsAdmin
     {
         $user = $request->user();
 
-        if (! $user || ! $user->is_admin) {
+        if (! $user || (! $user->is_admin && ! $user->admin_role_id)) {
             abort(403);
         }
 

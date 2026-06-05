@@ -49,9 +49,11 @@ class OrderTest extends TestCase
             ->assertForbidden();
 
         $this->get(order_public_url('order.success', $order))
-            ->assertStatus(200)
-            ->assertSee($order->order_number)
-            ->assertSee('Instruksi Pembayaran');
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Order/Success')
+                ->where('order.orderNumber', $order->order_number)
+            );
     }
 
     public function test_order_track_page(): void

@@ -4,29 +4,44 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\InventoryService;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class OrderController extends Controller
 {
+    public function __construct(private InventoryService $inventoryService) {}
+
     public function index()
     {
         $orders = Order::withCount('items')->latest()->paginate(20);
-        return view('admin.orders.index', compact('orders'));
+
+        return Inertia::render('Admin/Orders/Index', [
+            'orders' => ModelSerializer::paginated($orders, [ModelSerializer::class, 'orderSummary']),
+        ]);
     }
 
     public function show(Order $order)
     {
         $order->load('items.product');
-        return view('admin.orders.show', compact('order'));
+
+        return Inertia::render('Admin/Orders/Show', [
+            'order' => ModelSerializer::order($order, true),
+        ]);
     }
 
     public function payment(Request $request, Order $order)
     {
-        $order->update([
-            'payment_status' => 'paid',
-            'paid_at' => now(),
-            'order_status' => 'confirmed',
-        ]);
+        if ($order->payment_status !== 'paid') {
+            $order->update([
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+                'order_status' => 'confirmed',
+            ]);
+
+            $this->inventoryService->decrementOnPaid($order->fresh());
+        }
 
         return redirect()->route('admin.orders.show', $order)->with('success', 'Pembayaran dikonfirmasi');
     }

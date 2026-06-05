@@ -24,10 +24,13 @@ class CheckoutTest extends TestCase
         $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
 
         $response = $this->get('/checkout');
-        $response->assertStatus(200);
-        $response->assertSee('Data Diri');
-        $response->assertSee('Pengiriman');
-        $response->assertSee('Metode Pembayaran');
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Guest/Checkout/Index')
+            ->has('items', 1)
+            ->has('cities')
+            ->has('banks')
+        );
     }
 
     public function test_checkout_redirects_when_cart_empty(): void

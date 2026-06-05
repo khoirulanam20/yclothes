@@ -4,19 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentBank;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PaymentBankController extends Controller
 {
     public function index()
     {
         $banks = PaymentBank::latest()->get();
-        return view('admin.payment-banks.index', compact('banks'));
+
+        return Inertia::render('Admin/PaymentBanks/Index', [
+            'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
+        ]);
     }
 
     public function create()
     {
-        return view('admin.payment-banks.form', ['bank' => new PaymentBank]);
+        return Inertia::render('Admin/PaymentBanks/Form');
     }
 
     public function store(Request $request)
@@ -36,7 +41,9 @@ class PaymentBankController extends Controller
 
     public function edit(PaymentBank $paymentBank)
     {
-        return view('admin.payment-banks.form', ['bank' => $paymentBank]);
+        return Inertia::render('Admin/PaymentBanks/Form', [
+            'bank' => ModelSerializer::paymentBank($paymentBank),
+        ]);
     }
 
     public function update(Request $request, PaymentBank $paymentBank)
@@ -57,6 +64,7 @@ class PaymentBankController extends Controller
     public function destroy(PaymentBank $paymentBank)
     {
         $paymentBank->delete();
+
         return redirect()->route('admin.payment-banks.index')->with('success', 'Rekening berhasil dihapus');
     }
 }

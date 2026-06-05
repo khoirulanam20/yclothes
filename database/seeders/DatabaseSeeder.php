@@ -11,10 +11,16 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategorySeeder::class,
             ProductSeeder::class,
+            AttributeSeeder::class,
             AdminUserSeeder::class,
             SettingSeeder::class,
             PaymentBankSeeder::class,
             ShippingCostSeeder::class,
+            WarehouseSeeder::class,
+            TaxRateSeeder::class,
+            CmsPageSeeder::class,
+            NavigationItemSeeder::class,
+            AdminRoleSeeder::class,
         ]);
     }
 }

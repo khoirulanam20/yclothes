@@ -6,56 +6,67 @@ use App\Models\Order;
 use App\Models\PaymentBank;
 use App\Models\Product;
 use App\Models\ShippingCost;
+use App\Services\CartPricingService;
+use App\Services\CartService;
+use App\Services\InventoryService;
 use App\Services\MidtransService;
 use App\Services\OrderPaymentService;
+use App\Services\PromotionEngine;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
+    public function __construct(
+        private CartService $cartService,
+        private CartPricingService $cartPricing,
+        private InventoryService $inventoryService,
+        private PromotionEngine $promotionEngine,
+    ) {}
+
     public function index()
     {
-        $cart = session()->get('cart', []);
+        $cart = $this->cartService->get();
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
 
-        $items = [];
-        $total = 0;
-        $totalWeight = 0;
+        $pricing = $this->cartPricing->build();
+        $items = $pricing['items'];
+        $total = $pricing['subtotal'];
+        $totalWeight = $pricing['total_weight'];
+        $totalQty = $pricing['total_qty'];
 
-        foreach ($cart as $key => $item) {
-            $product = Product::find($item['id']);
-            if (! $product) {
-                continue;
-            }
-            $items[] = [
-                'key' => $key,
-                'product' => $product,
-                'size' => $item['size'] ?? null,
-                'color' => $item['color'] ?? null,
-                'qty' => $item['qty'],
-                'subtotal' => $product->final_price * $item['qty'],
-            ];
-            $total += $product->final_price * $item['qty'];
-            $totalWeight += ($product->weight ?? 0) * $item['qty'];
-        }
-
-        $cities = ShippingCost::where('is_active', true)->orderBy('city_name')->get()->map(function ($city) use ($totalWeight) {
-            $city->calculated_cost = $city->cost;
-            if ($city->cost_per_kg && $totalWeight > 0) {
-                $totalKg = max(1, ceil($totalWeight / 1000));
-                $city->calculated_cost = $city->cost + ($totalKg - 1) * $city->cost_per_kg;
-            }
+        $cities = ShippingCost::where('is_active', true)->orderBy('city_name')->get()->map(function ($city) use ($totalWeight, $pricing) {
+            $city->calculated_cost = app(CartPricingService::class)
+                ->calculateShipping($city, $totalWeight, $pricing['free_shipping']);
 
             return $city;
         });
         $banks = PaymentBank::where('is_active', true)->get();
         $midtransActive = MidtransService::isActive();
 
-        $totalQty = array_sum(array_column($cart, 'qty'));
+        $customer = Auth::guard('customer')->user();
+        $addresses = $customer
+            ? $customer->addresses()->get()->map(fn ($a) => ModelSerializer::customerAddressCheckout($a))->values()->all()
+            : [];
 
-        return view('checkout.index', compact('items', 'total', 'totalWeight', 'totalQty', 'cities', 'banks', 'midtransActive'));
+        return Inertia::render('Guest/Checkout/Index', [
+            'items' => array_map(fn ($row) => [
+                'productName' => $row['product_name'] ?? $row['product']->name,
+                'qty' => $row['qty'],
+                'subtotal' => $row['subtotal'],
+            ], $pricing['items']),
+            'pricing' => ModelSerializer::cartPricing($pricing),
+            'cities' => $cities->map(fn ($city) => ModelSerializer::shippingCity($city, $city->calculated_cost))->values()->all(),
+            'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
+            'midtransActive' => $midtransActive,
+            'customer' => $customer ? ModelSerializer::customer($customer) : null,
+            'addresses' => $addresses,
+        ]);
     }
 
     public function shippingCost(Request $request)
@@ -70,12 +81,23 @@ class CheckoutController extends Controller
             return response()->json(['cost' => 0, 'error' => 'Kota tidak tersedia']);
         }
 
-        return response()->json(['cost' => $shipping->cost]);
+        $pricing = $this->cartPricing->build($shipping->city_name);
+        $totalWeight = $pricing['total_weight'];
+        $cost = $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping']);
+
+        return response()->json([
+            'cost' => $cost,
+            'tax_amount' => $pricing['tax_amount'],
+            'discount_amount' => $pricing['discount_amount'],
+            'subtotal' => $pricing['subtotal'],
+            'grand_total' => $this->cartPricing->grandTotal($pricing, $cost),
+            'free_shipping' => $pricing['free_shipping'],
+        ]);
     }
 
     public function process(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $cart = $this->cartService->get();
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
@@ -89,43 +111,54 @@ class CheckoutController extends Controller
             'shipping_address' => 'required|string|max:1000',
             'shipping_city' => 'required|exists:shipping_costs,id',
             'payment_method' => ['required', 'string', Rule::in($allowedPaymentMethods)],
+            'address_id' => 'nullable|integer|exists:customer_addresses,id',
         ]);
 
+        $customer = Auth::guard('customer')->user();
+        if ($request->filled('address_id') && $customer) {
+            $address = $customer->addresses()->findOrFail($request->input('address_id'));
+            $validated['customer_name'] = $address->recipient_name;
+            $validated['customer_phone'] = $address->phone;
+            $validated['shipping_address'] = $address->fullAddress();
+        }
+
         $shipping = ShippingCost::findOrFail($validated['shipping_city']);
+        $pricing = $this->cartPricing->build($shipping->city_name);
+
+        foreach ($pricing['line_items'] as $line) {
+            if (! $this->inventoryService->canOrder($line['product'], $line['variant'] ?? null, $line['qty'])) {
+                return back()->with('error', "Stok {$line['product']->name} tidak mencukupi.");
+            }
+        }
 
         $items = [];
         $totalPrice = 0;
-        $totalWeight = 0;
+        $totalWeight = $pricing['total_weight'];
 
-        foreach ($cart as $itemKey => $item) {
-            $product = Product::find($item['id']);
-            if (! $product) {
-                continue;
-            }
-            $subtotal = $product->final_price * $item['qty'];
+        foreach ($pricing['items'] as $row) {
+            $product = $row['product'];
+            $unitPrice = $row['unit_price'];
+            $subtotal = $row['subtotal'];
             $totalPrice += $subtotal;
-            $totalWeight += ($product->weight ?? 0) * $item['qty'];
             $items[] = [
                 'product_id' => $product->id,
-                'product_name' => $product->name,
-                'product_price' => $product->final_price,
-                'qty' => $item['qty'],
+                'product_variant_id' => $row['variant']?->id,
+                'sku' => $row['sku'],
+                'product_name' => $row['product_name'] ?? $product->name,
+                'product_price' => $unitPrice,
+                'qty' => $row['qty'],
                 'subtotal' => $subtotal,
-                'size' => $item['size'] ?? null,
-                'color' => $item['color'] ?? null,
+                'size' => $row['size'],
+                'color' => $row['color'],
             ];
         }
 
-        $shippingCost = $shipping->cost;
-        if ($shipping->cost_per_kg && $totalWeight > 0) {
-            $totalKg = max(1, ceil($totalWeight / 1000));
-            $shippingCost = $shipping->cost + ($totalKg - 1) * $shipping->cost_per_kg;
-        }
-
-        $grandTotal = $totalPrice + $shippingCost;
+        $shippingCost = $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping']);
+        $grandTotal = $this->cartPricing->grandTotal($pricing, $shippingCost);
 
         $orderData = [
             'order_number' => generate_order_number(),
+            'customer_id' => $customer?->id,
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
             'customer_email' => $validated['customer_email'],
@@ -133,6 +166,9 @@ class CheckoutController extends Controller
             'shipping_city' => $shipping->city_name,
             'shipping_cost' => $shippingCost,
             'total_price' => $totalPrice,
+            'tax_amount' => $pricing['tax_amount'],
+            'discount_amount' => $pricing['discount_amount'],
+            'coupon_code' => $pricing['coupon_code'],
             'grand_total' => $grandTotal,
             'payment_method' => $validated['payment_method'],
             'payment_status' => 'pending',
@@ -153,7 +189,9 @@ class CheckoutController extends Controller
         $order = Order::create($orderData);
         $order->items()->createMany($items);
 
-        session()->forget('cart');
+        $this->promotionEngine->recordCouponUsage($pricing['cart_rule'], $customer?->id);
+        session()->forget(CartService::COUPON_SESSION_KEY);
+        $this->cartService->clear();
         grant_order_access($order);
 
         if ($validated['payment_method'] === 'midtrans') {

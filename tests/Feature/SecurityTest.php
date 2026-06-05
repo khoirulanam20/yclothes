@@ -41,19 +41,34 @@ class SecurityTest extends TestCase
         $this->assertStringContainsString('Hello', $clean);
     }
 
-    public function test_admin_settings_sanitizes_about_content(): void
+    public function test_cms_page_sanitizes_script_on_save(): void
     {
         $admin = User::where('email', 'admin@yclothes.test')->first();
 
-        $this->actingAs($admin)->post('/admin/settings', [
-            'name' => 'Admin',
-            'email' => 'admin@yclothes.test',
-            'about_content' => '<p>About</p><script>alert(1)</script>',
-            'cara_belanja_content' => '<p>Cara</p>',
-        ])->assertRedirect('/admin/settings');
+        $layout = json_encode([
+            'root' => ['props' => ['showBreadcrumb' => true, 'pageTitle' => 'About']],
+            'content' => [
+                [
+                    'type' => 'RichText',
+                    'props' => [
+                        'id' => 'about-1',
+                        'html' => '<p>About</p><script>alert(1)</script>',
+                    ],
+                ],
+            ],
+        ]);
 
-        $saved = Setting::where('key', 'about_content')->value('value');
-        $this->assertStringNotContainsString('<script>', $saved);
+        $this->actingAs($admin)->post('/admin/cms-pages/builder', [
+            'title' => 'About',
+            'slug' => 'about-test',
+            'status' => 'published',
+            'layout_json' => $layout,
+        ])->assertRedirect();
+
+        $page = \App\Models\CmsPage::where('slug', 'about-test')->firstOrFail();
+        $html = $page->layout_json['content'][0]['props']['html'] ?? '';
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('About', $html);
     }
 
     public function test_security_headers_are_present(): void

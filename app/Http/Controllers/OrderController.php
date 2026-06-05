@@ -3,18 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class OrderController extends Controller
 {
     public function success(Order $order)
     {
-        return view('order.success', compact('order'));
+        return Inertia::render('Guest/Order/Success', [
+            'order' => ModelSerializer::order($order),
+        ]);
     }
 
     public function track()
     {
-        return view('order.track');
+        return Inertia::render('Guest/Order/Track');
     }
 
     public function search(Request $request)
@@ -41,6 +45,8 @@ class OrderController extends Controller
     {
         $order->load('items.product');
 
-        return view('order.show', compact('order'));
+        return Inertia::render('Guest/Order/Show', [
+            'order' => ModelSerializer::order($order, true),
+        ]);
     }
 }

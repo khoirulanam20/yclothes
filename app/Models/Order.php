@@ -8,11 +8,12 @@ use Illuminate\Support\Str;
 class Order extends Model
 {
     protected $fillable = [
-        'order_number', 'access_token', 'customer_name', 'customer_phone', 'customer_email',
-        'shipping_address', 'shipping_city', 'shipping_cost', 'total_price', 'grand_total',
+        'order_number', 'access_token', 'customer_id', 'customer_name', 'customer_phone', 'customer_email',
+        'shipping_address', 'shipping_city', 'shipping_cost', 'total_price',
+        'tax_amount', 'discount_amount', 'coupon_code', 'grand_total',
         'payment_method', 'payment_status', 'payment_due_at', 'paid_at',
         'bank_name', 'bank_account_number', 'bank_account_name',
-        'order_status', 'courier', 'courier_service', 'tracking_number', 'notes',
+        'order_status', 'inventory_decremented', 'courier', 'courier_service', 'tracking_number', 'notes',
     ];
 
     protected function casts(): array
@@ -20,15 +21,23 @@ class Order extends Model
         return [
             'shipping_cost' => 'integer',
             'total_price' => 'integer',
+            'tax_amount' => 'integer',
+            'discount_amount' => 'integer',
             'grand_total' => 'integer',
             'payment_due_at' => 'datetime',
             'paid_at' => 'datetime',
+            'inventory_decremented' => 'boolean',
         ];
     }
 
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     protected static function booted(): void

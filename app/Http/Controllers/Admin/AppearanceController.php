@@ -8,21 +8,22 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Inertia\Inertia;
 
 class AppearanceController extends Controller
 {
-    public function edit(): View
+    public function edit()
     {
         $keys = ['site_title', 'site_description', 'hero_title', 'hero_subtitle',
             'hero_image', 'banner_title', 'banner_text', 'banner_button',
             'banner_link', 'banner_image', 'cta_text', 'cta_link'];
-        $settings = [];
+        $props = [];
         foreach ($keys as $key) {
-            $settings[Str::camel($key)] = Setting::where('key', $key)->value('value');
+            $props[Str::camel($key)] = Setting::where('key', $key)->value('value');
         }
+        $props['heroImageUrl'] = storage_url(Setting::where('key', 'hero_image')->value('value'));
 
-        return view('admin.appearance', $settings);
+        return Inertia::render('Admin/Appearance', $props);
     }
 
     public function update(Request $request): RedirectResponse

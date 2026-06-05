@@ -41,3 +41,34 @@ if (! function_exists('order_public_url')) {
         ], $parameters));
     }
 }
+
+if (! function_exists('storage_url')) {
+    function storage_url(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://', '//'])) {
+            return $path;
+        }
+
+        return asset('storage/'.ltrim($path, '/'));
+    }
+}
+
+if (! function_exists('navigation')) {
+    function navigation(string $menu): \Illuminate\Support\Collection
+    {
+        if (! \App\Models\NavigationItem::exists()) {
+            return collect();
+        }
+
+        return \App\Models\NavigationItem::forMenu($menu)
+            ->active()
+            ->roots()
+            ->with(['children' => fn ($q) => $q->active()->orderBy('sort_order')])
+            ->orderBy('sort_order')
+            ->get();
+    }
+}

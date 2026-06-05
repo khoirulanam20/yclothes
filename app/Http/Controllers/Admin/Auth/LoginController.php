@@ -3,26 +3,35 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    public function showLoginForm(): View
+    public function showLoginForm()
     {
-        return view('admin.auth.login');
+        return Inertia::render('Admin/Auth/Login');
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request)
     {
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials + ['is_admin' => true], $request->boolean('remember'))) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::user();
+
+            if (! $user->canAccessAdmin()) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'Akun tidak memiliki akses admin.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
 
             return redirect()->intended(route('admin.dashboard'));
@@ -33,7 +42,7 @@ class LoginController extends Controller
         ])->onlyInput('email');
     }
 
-    public function logout(Request $request): RedirectResponse
+    public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();

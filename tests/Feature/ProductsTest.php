@@ -29,6 +29,22 @@ class ProductsTest extends TestCase
         $response->assertSee(Product::first()->name);
     }
 
+    public function test_products_index_filters_by_parent_category_includes_children(): void
+    {
+        $parent = Category::where('slug', 'pria')->first();
+        $child = Category::where('slug', 'pria-kemeja')->first();
+
+        if (! $parent || ! $child) {
+            $this->markTestSkipped('Hierarchy seed data not available.');
+        }
+
+        Product::where('category_id', $child->id)->first()?->update(['name' => 'Produk Kemeja Filter Test']);
+
+        $response = $this->get('/products?category='.$parent->slug);
+        $response->assertStatus(200);
+        $response->assertSee('Produk Kemeja Filter Test');
+    }
+
     public function test_products_index_filters_by_category(): void
     {
         $category = Category::first();

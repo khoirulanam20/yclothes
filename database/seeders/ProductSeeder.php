@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
@@ -15,7 +16,7 @@ class ProductSeeder extends Seeder
         $products = [
             // PRIA
             [
-                'category_id' => $categories['pria']->id,
+                'category_id' => $categories['pria-kemeja']->id,
                 'name' => 'Kemeja Oxford Premium',
                 'description' => 'Kemeja oxford berbahan katun premium. Nyaman dipakai sehari-hari dengan potongan slim fit yang elegan.',
                 'price' => 199000,
@@ -31,7 +32,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['pria']->id,
+                'category_id' => $categories['pria-jaket']->id,
                 'name' => 'Jaket Denim Classic',
                 'description' => 'Jaket denim klasik dengan desain timeless. Cocok untuk gaya kasual sehari-hari.',
                 'price' => 350000,
@@ -46,7 +47,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['pria']->id,
+                'category_id' => $categories['pria-kemeja']->id,
                 'name' => 'Kaos Putih Polos Premium',
                 'description' => 'Kaos putih polos dengan bahan cotton combed 30s. Lembut dan adem.',
                 'price' => 89000,
@@ -62,7 +63,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['pria']->id,
+                'category_id' => $categories['pria-celana']->id,
                 'name' => 'Celana Chino Slim Fit',
                 'description' => 'Celana chino slim fit cocok untuk gaya kasual maupun semi-formal.',
                 'price' => 179000,
@@ -79,7 +80,7 @@ class ProductSeeder extends Seeder
             ],
             // WANITA
             [
-                'category_id' => $categories['wanita']->id,
+                'category_id' => $categories['wanita-dress']->id,
                 'name' => 'Dress Elegan Midaxi',
                 'description' => 'Dress midaxi dengan potongan A-line. Cocok untuk acara formal maupun casual.',
                 'price' => 279000,
@@ -95,7 +96,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['wanita']->id,
+                'category_id' => $categories['wanita-blouse']->id,
                 'name' => 'Blouse Wanita Formal',
                 'description' => 'Blouse wanita dengan bahan sifon lembut. Cocok untuk ke kantor atau acara formal.',
                 'price' => 159000,
@@ -111,7 +112,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['wanita']->id,
+                'category_id' => $categories['wanita-rok']->id,
                 'name' => 'Rok Midi A-Line',
                 'description' => 'Rok midi A-line yang elegan. Nyaman dipakai untuk berbagai acara.',
                 'price' => 139000,
@@ -126,7 +127,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['wanita']->id,
+                'category_id' => $categories['wanita-blouse']->id,
                 'name' => 'Cardigan Rajut Premium',
                 'description' => 'Cardigan rajut dengan bahan lembut. Hangat dan stylish.',
                 'price' => 199000,
@@ -174,7 +175,7 @@ class ProductSeeder extends Seeder
             ],
             // SEPATU
             [
-                'category_id' => $categories['sepatu']->id,
+                'category_id' => $categories['sepatu-sneakers']->id,
                 'name' => 'Sneakers Casual White',
                 'description' => 'Sneakers putih klasik yang cocok dipadukan dengan outfit apa pun.',
                 'price' => 329000,
@@ -189,7 +190,7 @@ class ProductSeeder extends Seeder
                 ],
             ],
             [
-                'category_id' => $categories['sepatu']->id,
+                'category_id' => $categories['sepatu-formal']->id,
                 'name' => 'Sepatu Formal Kulit',
                 'description' => 'Sepatu formal berbahan kulit asli. Nyaman dipakai seharian.',
                 'price' => 499000,
@@ -272,7 +273,7 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $data) {
-            Product::create($data);
+            Product::updateOrCreate(['slug' => Str::slug($data['name'])], $data);
         }
     }
 }

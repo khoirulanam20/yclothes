@@ -1,11 +1,16 @@
 <?php
 
+use App\Http\Middleware\EnsureCustomerIsVerified;
+use App\Http\Middleware\EnsureHasPermission;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LogAdminActivity;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyOrderAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,15 +19,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo('/admin/login');
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('admin', 'admin/*')) {
+                return route('admin.login');
+            }
+
+            return route('customer.login');
+        });
         $middleware->validateCsrfTokens(except: [
             'midtrans/notification',
         ]);
         $middleware->web(append: [
+            HandleInertiaRequests::class,
             SecurityHeaders::class,
         ]);
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'permission' => EnsureHasPermission::class,
+            'admin.activity' => LogAdminActivity::class,
+            'customer.verified' => EnsureCustomerIsVerified::class,
             'order.access' => VerifyOrderAccess::class,
         ]);
     })

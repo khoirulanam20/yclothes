@@ -1,8 +1,8 @@
 # 👕 yClothes — Fashion E-commerce
 
-> Laravel 13 · Bootstrap 5 · Katalog Fashion Premium · Midtrans Payment · WhatsApp Checkout
+> Laravel 13 · Inertia.js · React · shadcn/ui · Katalog Fashion Premium · Midtrans · CMS Page Builder (Puck)
 
-Aplikasi toko online fashion dengan katalog produk, keranjang belanja, transaksi, manajemen ongkir, pembayaran Midtrans, dan checkout otomatis ke WhatsApp. **Fully responsive** — mobile, tablet, dan desktop.
+Aplikasi toko online fashion dengan storefront + admin panel berbasis **Inertia + React + shadcn/ui**, page builder Puck untuk halaman CMS, keranjang, checkout Midtrans/bank transfer, dan ACL staff.
 
 ---
 
@@ -18,8 +18,8 @@ Aplikasi toko online fashion dengan katalog produk, keranjang belanja, transaksi
 - **Midtrans payment** — popup pembayaran (kartu kredit, VA, Alfamart, GoPay, dll.)
 - **Bank Transfer** — checkout manual dengan konfirmasi via WhatsApp
 - **Lacak pesanan** — cari pesanan via nomor pesanan + email, lihat status & timeline
-- **Tentang Kami** — halaman statis dengan banner + konten (Trix editor) dari admin
-- **Cara Belanja** — panduan belanja yang bisa diedit dari admin
+- **Halaman CMS** — visual page builder (Puck) di admin, tampilan identik di guest & preview
+- **Blog & FAQ** — artikel blog + FAQ accordion
 - **Floating WhatsApp** — tombol WA fixed di semua halaman (kecuali checkout)
 
 ### 🔐 Admin Panel (`/admin`)
@@ -28,8 +28,9 @@ Aplikasi toko online fashion dengan katalog produk, keranjang belanja, transaksi
 - **Pesanan** — daftar, detail, update status, konfirmasi pembayaran
 - **Ongkos Kirim** — tarif per kota, weight-based (cost per kg)
 - **Payment Bank** — kelola rekening untuk transfer manual
-- **Halaman Tentang Kami** — upload banner + Trix editor konten
-- **Halaman Cara Belanja** — upload banner + Trix editor konten
+- **Halaman CMS** — metadata + Puck builder (`/admin/cms-pages/{id}/builder`)
+- **Blog, Slider, Navigasi, FAQ** — modul konten
+- **Staff & ACL** — roles, permissions, activity log
 - **Pengaturan Toko** — brand, logo, WA, warna gold & accent, sosial media, flash sale, lokasi toko
 - **Tampilan Toko** — SEO meta, hero section, CTA, banner promo
 
@@ -37,7 +38,7 @@ Aplikasi toko online fashion dengan katalog produk, keranjang belanja, transaksi
 - **Midtrans Snap** — popup pembayaran + webhook server-to-server via `overrideNotifUrl`
 - **Ongkir weight-based** — `base_cost + ceil(kg - 1) × cost_per_kg`
 - **Tampilan dinamis** — hero, banner, warna, SEO meta semua dari database
-- **No build tools** — Bootstrap statis di `public/bootstrap/`, tanpa Vite/Webpack/npm
+- **Vite + React** — `npm run dev` / `npm run build` untuk asset frontend
 - **Database driver** — session, cache, dan queue pakai database
 
 ---
@@ -56,11 +57,23 @@ php artisan migrate:fresh --seed
 # 3. Storage link (buat akses gambar produk)
 php artisan storage:link
 
-# 4. Jalankan
+# 4. Install & build frontend
+npm install
+npm run build
+
+# 5. Jalankan (dua terminal)
 php artisan serve
+npm run dev
 ```
 
-Akses di **`http://localhost:8000`**.
+Akses di **`http://localhost:8000`**. Untuk development, jalankan `npm run dev` agar HMR aktif.
+
+### Migrasi konten CMS ke Puck (opsional)
+
+```bash
+php artisan cms:migrate-to-puck
+php artisan cms:migrate-to-puck --dry-run
+```
 
 ### Reset Data
 
@@ -90,8 +103,8 @@ Webhook notifikasi dikirim otomatis via `Config::$overrideNotifUrl` — tidak pe
 
 | Item | Keterangan |
 |------|------------|
-| Frontend assets | Bootstrap CSS/JS statis di `public/bootstrap/` — langsung jalan |
-| Build tools | Tidak ada Vite/Webpack/npm — skip semua |
+| Frontend assets | `npm run build` → output di `public/build/` |
+| Build tools | Node.js + npm wajib untuk build production |
 | Session & cache | Pakai driver `database` — butuh tabel (migration sudah sediakan) |
 | Warna & tampilan | Diatur dari admin panel, simpan di DB |
 | Gambar produk | Upload via admin, simpan di `storage/app/public/` |
@@ -222,10 +235,11 @@ Semua halaman diuji di Chrome DevTools (320px–1440px).
 
 ## 🧪 Testing
 
-In-memory SQLite — tanpa database eksternal. **54 tests — semuanya passing.**
+In-memory SQLite — tanpa database eksternal. **109 tests — semuanya passing.**
 
 ```bash
 composer run test
+php artisan test
 ```
 
 **Cakupan test:**
@@ -252,32 +266,22 @@ composer run test
 ## 🏗️ Struktur Penting
 
 ```
-├── routes/web.php                                    # Semua routes
-├── resources/views/
-│   ├── layouts/app.blade.php                         # Frontend layout (header, navbar, footer, OG tags, variant modal)
-│   ├── layouts/admin/                                # Admin layout + partials
-│   ├── home/index.blade.php                          # Halaman depan (hero, flash sale, kategori, produk)
-│   ├── products/                                     # Katalog + detail + card partial
-│   ├── cart/index.blade.php                          # Keranjang AJAX
-│   ├── order/                                        # Success, detail, lacak, midtrans pay page
-│   ├── cara-belanja/                                  # Halaman cara belanja (Trix editor)
-│   └── admin/                                        # CRUD produk, kategori, ongkir, payment bank, appearance, settings
-├── public/
-│   ├── css/custom.css                                # Custom styling
-│   ├── js/cart.js                                    # Cart AJAX + variant modal
-│   └── js/countdown.js                               # Countdown flash sale
+├── routes/web.php
+├── resources/
+│   ├── views/app.blade.php              # Root Inertia (satu-satunya layout Blade utama)
+│   ├── views/order/midtrans.blade.php   # Halaman Snap Midtrans (non-Inertia)
+│   ├── js/
+│   │   ├── app.tsx                      # Entry Inertia + Sonner
+│   │   ├── Pages/Guest/*                # Storefront React
+│   │   ├── Pages/Admin/*                # Admin panel React
+│   │   ├── Layouts/                     # GuestLayout, AdminLayout, AccountLayout
+│   │   ├── cms/puckConfig.tsx           # Registry blok Puck
+│   │   └── cms/PageRenderer.tsx         # Render layout_json di guest
+│   └── css/app.css                      # Tailwind v4 + shadcn tokens
 ├── app/
-│   ├── Http/Controllers/
-│   │   ├── CheckoutController.php                    # Checkout + Midtrans payment finish
-│   │   ├── MidtransController.php                    # Webhook notification handler
-│   │   ├── OrderController.php                       # Order tracking, detail
-│   │   └── ...
-│   ├── Services/MidtransService.php                  # Snap token, verify payment, override notif URL
-│   └── helpers.php                                   # Helper setting()
-├── config/midtrans.php                               # Konfig Midtrans env wrapper
-├── storage/app/public/
-│   ├── products/                                     # Upload gambar produk
-│   └── categories/                                   # Upload gambar kategori
+│   ├── Http/Middleware/HandleInertiaRequests.php
+│   ├── Support/ModelSerializer.php      # Eloquent → props camelCase
+│   └── Console/Commands/MigrateCmsContentToPuck.php
 ```
 
 ---
@@ -335,14 +339,12 @@ Fitur keamanan yang sudah diterapkan:
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Laravel 13, PHP 8.3, MySQL
-- **Frontend:** Bootstrap 5, CSS Variables, Google Fonts (Playfair Display + DM Sans)
-- **Assets:** Bootstrap static files (`public/bootstrap/`) — **no Vite/npm**
-- **Cart:** Session-based
+- **Backend:** Laravel 13, PHP 8.3, MySQL, Inertia Laravel v3
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, `@measured/puck`
+- **Cart:** Session-based (POST handlers tetap server-side)
 - **Payment:** Midtrans Snap (popup) + Bank Transfer manual
-- **Shipping:** Weight-based (cost per kg per kota)
-- **Images:** Upload ke `storage/app/public/{products,categories}/` — akses via `$model->image_url`
-- **Session/Cache/Queue:** Database driver
+- **CMS:** `cms_pages.layout_json` + Puck builder
+- **Images:** `storage/app/public/` — akses via `storage_url()` / `image_url` accessor
 
 ---
 
