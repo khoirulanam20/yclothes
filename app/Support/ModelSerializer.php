@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Review;
 use App\Models\Slider;
+use App\Models\StockMovement;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
@@ -207,6 +208,7 @@ class ModelSerializer
 
         return [
             'id' => $review->id,
+            'orderItemId' => $review->order_item_id,
             'rating' => $review->rating,
             'comment' => $comment,
             'customerName' => $review->customer?->name ?? 'Anonim',
@@ -240,30 +242,47 @@ class ModelSerializer
             'customerPhone' => $order->customer_phone,
             'customerEmail' => $order->customer_email,
             'shippingAddress' => $order->shipping_address,
+            'provinceName' => $order->province_name,
+            'regencyName' => $order->regency_name,
+            'districtName' => $order->district_name,
+            'villageName' => $order->village_name,
+            'postalCode' => $order->postal_code,
+            'fullShippingAddress' => $order->fullShippingAddress(),
             'shippingCity' => $order->shipping_city,
             'shippingCost' => $order->shipping_cost,
+            'shippingMethod' => $order->shipping_method,
             'totalPrice' => $order->total_price,
             'taxAmount' => $order->tax_amount,
             'discountAmount' => $order->discount_amount,
+            'couponCode' => $order->coupon_code,
             'grandTotal' => $order->grand_total,
+            'uniquePaymentAmount' => $order->unique_payment_amount,
             'paymentMethod' => $order->payment_method,
             'paymentStatus' => $order->payment_status,
+            'paymentConfirmationStatus' => $order->payment_confirmation_status,
             'orderStatus' => $order->order_status,
+            'isReplacement' => (bool) $order->is_replacement,
+            'sourceReturnRequestId' => $order->source_return_request_id,
             'bankName' => $order->bank_name,
             'bankAccountNumber' => $order->bank_account_number,
             'bankAccountName' => $order->bank_account_name,
             'paymentDueAt' => $order->payment_due_at?->toIso8601String(),
             'paidAt' => $order->paid_at?->toIso8601String(),
+            'deliveredAt' => $order->delivered_at?->toIso8601String(),
+            'completedAt' => $order->completed_at?->toIso8601String(),
             'courier' => $order->courier,
             'courierService' => $order->courier_service,
             'trackingNumber' => $order->tracking_number,
             'notes' => $order->notes,
+            'refundStatus' => $order->refund_status,
+            'refundedAmount' => $order->refunded_amount,
             'createdAt' => $order->created_at?->toIso8601String(),
         ];
 
         if ($detailed && $order->relationLoaded('items')) {
             $data['items'] = $order->items->map(fn (OrderItem $item) => [
                 'id' => $item->id,
+                'productId' => $item->product_id,
                 'productName' => $item->product_name,
                 'qty' => $item->qty,
                 'unitPrice' => $item->product_price,
@@ -282,7 +301,9 @@ class ModelSerializer
         return [
             'id' => $city->id,
             'cityName' => $city->city_name,
-            'province' => $city->province,
+            'regencyCode' => $city->regency_code,
+            'regencyName' => $city->regency_name,
+            'province' => $city->province_name ?? $city->province ?? null,
             'calculatedCost' => $calculatedCost,
         ];
     }
@@ -303,6 +324,9 @@ class ModelSerializer
         return [
             'id' => $cost->id,
             'cityName' => $cost->city_name,
+            'regencyCode' => $cost->regency_code,
+            'regencyName' => $cost->regency_name,
+            'provinceName' => $cost->province_name,
             'cost' => $cost->cost,
             'costPerKg' => $cost->cost_per_kg,
             'isActive' => (bool) $cost->is_active,
@@ -327,8 +351,18 @@ class ModelSerializer
             'id' => $address->id,
             'label' => $address->label,
             'recipientName' => $address->recipient_name,
+            'phone' => $address->phone,
             'streetAddress' => $address->street_address,
-            'city' => $address->city,
+            'provinceCode' => $address->province_code,
+            'provinceName' => $address->province_name ?? $address->province,
+            'regencyCode' => $address->regency_code,
+            'regencyName' => $address->regency_name ?? $address->city,
+            'districtCode' => $address->district_code,
+            'districtName' => $address->district_name,
+            'villageCode' => $address->village_code,
+            'villageName' => $address->village_name,
+            'postalCode' => $address->postal_code,
+            'city' => $address->regency_name ?? $address->city,
         ];
     }
 
@@ -390,8 +424,162 @@ class ModelSerializer
             'grandTotal' => $order->grand_total,
             'orderStatus' => $order->order_status,
             'paymentStatus' => $order->payment_status,
+            'paymentConfirmationStatus' => $order->payment_confirmation_status,
             'createdAt' => $order->created_at?->toIso8601String(),
             'itemsCount' => $order->items_count ?? null,
+        ];
+    }
+
+    public static function orderStatusHistory($history): array
+    {
+        return [
+            'id' => $history->id,
+            'fromStatus' => $history->from_status,
+            'toStatus' => $history->to_status,
+            'note' => $history->note,
+            'createdAt' => $history->created_at?->toIso8601String(),
+        ];
+    }
+
+    public static function paymentConfirmation($confirmation): array
+    {
+        return [
+            'id' => $confirmation->id,
+            'amountClaimed' => $confirmation->amount_claimed,
+            'transferDate' => $confirmation->transfer_date?->format('Y-m-d'),
+            'senderName' => $confirmation->sender_name,
+            'proofImageUrl' => $confirmation->proof_image ? storage_url($confirmation->proof_image) : null,
+            'status' => $confirmation->status,
+            'adminNote' => $confirmation->admin_note,
+            'bank' => $confirmation->relationLoaded('paymentBank') && $confirmation->paymentBank
+                ? self::paymentBank($confirmation->paymentBank)
+                : null,
+            'createdAt' => $confirmation->created_at?->toIso8601String(),
+        ];
+    }
+
+    public static function adminNotification($notification): array
+    {
+        return [
+            'id' => $notification->id,
+            'type' => $notification->type,
+            'title' => $notification->title,
+            'body' => $notification->body,
+            'data' => $notification->data,
+            'readAt' => $notification->read_at?->toIso8601String(),
+            'createdAt' => $notification->created_at?->toIso8601String(),
+        ];
+    }
+
+    public static function returnRequestSummary($request): array
+    {
+        return [
+            'id' => $request->id,
+            'requestNumber' => $request->request_number,
+            'status' => $request->status,
+            'resolutionType' => $request->resolution_type,
+            'orderNumber' => $request->relationLoaded('order') ? $request->order?->order_number : null,
+            'createdAt' => $request->created_at?->toIso8601String(),
+        ];
+    }
+
+    public static function returnRequest($request): array
+    {
+        return [
+            'id' => $request->id,
+            'requestNumber' => $request->request_number,
+            'status' => $request->status,
+            'resolutionType' => $request->resolution_type,
+            'adminNote' => $request->admin_note,
+            'approvedAt' => $request->approved_at?->toIso8601String(),
+            'completedAt' => $request->completed_at?->toIso8601String(),
+            'order' => $request->relationLoaded('order') && $request->order
+                ? self::orderSummary($request->order)
+                : null,
+            'items' => $request->relationLoaded('items')
+                ? $request->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'qty' => $item->qty,
+                    'reason' => $item->reason,
+                    'description' => $item->description,
+                    'productName' => $item->orderItem?->product_name,
+                ])->values()->all()
+                : [],
+            'media' => $request->relationLoaded('media')
+                ? $request->media->map(fn ($m) => [
+                    'id' => $m->id,
+                    'url' => storage_url($m->path),
+                    'type' => $m->type,
+                ])->values()->all()
+                : [],
+            'shipment' => $request->relationLoaded('shipment') && $request->shipment
+                ? [
+                    'courier' => $request->shipment->courier,
+                    'trackingNumber' => $request->shipment->tracking_number,
+                    'shippedAt' => $request->shipment->shipped_at?->toIso8601String(),
+                    'receivedAt' => $request->shipment->received_at?->toIso8601String(),
+                ]
+                : null,
+            'replacementOrder' => $request->relationLoaded('replacementOrder') && $request->replacementOrder
+                ? [
+                    'id' => $request->replacementOrder->id,
+                    'orderNumber' => $request->replacementOrder->order_number,
+                    'orderStatus' => $request->replacementOrder->order_status,
+                    'courier' => $request->replacementOrder->courier,
+                    'courierService' => $request->replacementOrder->courier_service,
+                    'trackingNumber' => $request->replacementOrder->tracking_number,
+                ]
+                : null,
+            'createdAt' => $request->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, StockMovement>  $movements
+     * @return list<array<string, mixed>>
+     */
+    public static function stockMovements(Collection $movements): array
+    {
+        $orderIds = $movements
+            ->where('reference_type', Order::class)
+            ->pluck('reference_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $orderNumbers = $orderIds->isNotEmpty()
+            ? Order::whereIn('id', $orderIds)->pluck('order_number', 'id')
+            : collect();
+
+        return $movements
+            ->map(fn (StockMovement $movement) => self::stockMovement($movement, $orderNumbers))
+            ->values()
+            ->all();
+    }
+
+    public static function stockMovement(StockMovement $movement, ?Collection $orderNumbers = null): array
+    {
+        $orderNumber = null;
+        if ($movement->reference_type === Order::class && $movement->reference_id) {
+            $orderNumber = $orderNumbers?->get($movement->reference_id)
+                ?? Order::find($movement->reference_id)?->order_number;
+        }
+
+        return [
+            'id' => $movement->id,
+            'type' => $movement->type,
+            'quantity' => $movement->quantity,
+            'reason' => $movement->reason,
+            'referenceType' => $movement->reference_type,
+            'referenceId' => $movement->reference_id,
+            'orderNumber' => $orderNumber,
+            'createdAt' => $movement->created_at?->toIso8601String(),
+            'product' => $movement->relationLoaded('product') && $movement->product
+                ? ['name' => $movement->product->name]
+                : null,
+            'warehouse' => $movement->relationLoaded('warehouse') && $movement->warehouse
+                ? ['name' => $movement->warehouse->name]
+                : null,
         ];
     }
 }

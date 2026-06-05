@@ -13,7 +13,8 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'attribute_family_id', 'type', 'name', 'slug', 'description', 'price', 'sale_price',
         'image', 'images', 'sizes', 'colors', 'badge', 'weight',
-        'is_featured', 'track_stock', 'allow_backorder', 'views', 'rating_avg', 'review_count',
+        'is_featured', 'track_stock', 'allow_backorder', 'is_returnable', 'return_window_days', 'warranty_days',
+        'views', 'rating_avg', 'review_count',
     ];
 
     protected function casts(): array
@@ -24,6 +25,9 @@ class Product extends Model
             'is_featured' => 'boolean',
             'track_stock' => 'boolean',
             'allow_backorder' => 'boolean',
+            'is_returnable' => 'boolean',
+            'return_window_days' => 'integer',
+            'warranty_days' => 'integer',
             'price' => 'integer',
             'sale_price' => 'integer',
             'views' => 'integer',

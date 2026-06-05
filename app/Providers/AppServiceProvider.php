@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use App\Events\OrderStatusChanged;
+use App\Listeners\CompleteReturnOnReplacementOrderCompleted;
+use App\Listeners\SendOrderStatusEmail;
 use App\Models\Customer;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        Event::listen(OrderStatusChanged::class, SendOrderStatusEmail::class);
+        Event::listen(OrderStatusChanged::class, CompleteReturnOnReplacementOrderCompleted::class);
 
         VerifyEmail::createUrlUsing(function (object $notifiable) {
             if ($notifiable instanceof Customer) {

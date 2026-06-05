@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Services\InventoryService;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,19 +25,7 @@ class StockMovementController extends Controller
 
         return Inertia::render('Admin/StockMovements/Index', [
             'movements' => [
-                'data' => collect($movements->items())->map(fn ($m) => [
-                    'id' => $m->id,
-                    'type' => $m->type,
-                    'quantity' => $m->quantity,
-                    'reason' => $m->reason,
-                    'createdAt' => $m->created_at?->toIso8601String(),
-                    'product' => $m->relationLoaded('product') && $m->product
-                        ? ['name' => $m->product->name]
-                        : null,
-                    'warehouse' => $m->relationLoaded('warehouse') && $m->warehouse
-                        ? ['name' => $m->warehouse->name]
-                        : null,
-                ])->values()->all(),
+                'data' => ModelSerializer::stockMovements(collect($movements->items())),
                 'links' => $movements->linkCollection()->toArray(),
                 'meta' => [
                     'current_page' => $movements->currentPage(),

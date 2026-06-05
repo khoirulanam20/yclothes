@@ -25,6 +25,15 @@ if (! function_exists('generate_order_number')) {
     }
 }
 
+if (! function_exists('generate_unique_payment_amount')) {
+    function generate_unique_payment_amount(int $grandTotal, int $orderId): int
+    {
+        $suffix = str_pad((string) ($orderId % 1000), 3, '0', STR_PAD_LEFT);
+
+        return $grandTotal + (int) $suffix;
+    }
+}
+
 if (! function_exists('grant_order_access')) {
     function grant_order_access(\App\Models\Order $order): void
     {

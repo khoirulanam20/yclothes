@@ -18,21 +18,19 @@ class AddressBookTest extends TestCase
         $customer = Customer::factory()->create();
 
         $this->actingAs($customer, 'customer')
-            ->post('/account/addresses', [
+            ->post('/account/addresses', array_merge([
                 'label' => 'Rumah',
                 'recipient_name' => 'John',
                 'phone' => '08123456789',
                 'street_address' => 'Jl. Test 1',
-                'city' => 'Makassar',
-                'province' => 'Sulawesi Selatan',
                 'type' => 'both',
                 'is_default' => true,
-            ])
+            ], $this->checkoutWilayahFields()))
             ->assertRedirect(route('customer.addresses.index'));
 
         $this->assertDatabaseHas('customer_addresses', [
             'customer_id' => $customer->id,
-            'city' => 'Makassar',
+            'regency_name' => 'Temanggung',
             'is_default' => true,
         ]);
     }

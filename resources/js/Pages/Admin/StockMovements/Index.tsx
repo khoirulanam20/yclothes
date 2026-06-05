@@ -8,7 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 type Movement = {
     id: number; type: string; quantity: number; reason?: string | null; createdAt?: string;
+    orderNumber?: string | null;
     product?: { name: string } | null; warehouse?: { name: string } | null;
+};
+
+const typeLabels: Record<string, string> = {
+    in: 'Masuk',
+    out: 'Keluar',
+    transfer: 'Transfer',
+    adjustment: 'Penyesuaian',
 };
 
 type Props = { movements: Paginated<Movement> };
@@ -27,13 +35,16 @@ export default function Index({ movements }: Props) {
                 }
             />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Tipe</TableHead><TableHead>Produk</TableHead><TableHead>Gudang</TableHead><TableHead>Qty</TableHead><TableHead>Alasan</TableHead></TableRow></TableHeader>
+                <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Tipe</TableHead><TableHead>Produk</TableHead><TableHead>Gudang</TableHead><TableHead>Qty</TableHead><TableHead>Alasan</TableHead><TableHead>Referensi</TableHead></TableRow></TableHeader>
                     <TableBody>{movements.data.map((m) => (
                         <TableRow key={m.id}>
                             <TableCell className="text-sm">{m.createdAt ? new Date(m.createdAt).toLocaleString('id-ID') : '—'}</TableCell>
-                            <TableCell>{m.type}</TableCell><TableCell>{m.product?.name ?? '—'}</TableCell>
-                            <TableCell>{m.warehouse?.name ?? '—'}</TableCell><TableCell>{m.quantity}</TableCell>
+                            <TableCell>{typeLabels[m.type] ?? m.type}</TableCell>
+                            <TableCell>{m.product?.name ?? '—'}</TableCell>
+                            <TableCell>{m.warehouse?.name ?? '—'}</TableCell>
+                            <TableCell>{m.quantity}</TableCell>
                             <TableCell className="max-w-xs truncate">{m.reason ?? '—'}</TableCell>
+                            <TableCell>{m.orderNumber ? `#${m.orderNumber}` : '—'}</TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
             </CardContent></Card>

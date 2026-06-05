@@ -10,7 +10,7 @@ class Review extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'product_id', 'customer_id', 'order_id', 'rating', 'review', 'is_approved',
+        'product_id', 'customer_id', 'order_id', 'order_item_id', 'rating', 'review', 'is_approved',
     ];
 
     protected function casts(): array

@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'courier' => [
+        'enabled' => env('COURIER_API_ENABLED', false),
+        'provider' => env('COURIER_API_PROVIDER'),
+        'api_key' => env('COURIER_API_KEY'),
+    ],
+
+    'doku' => [
+        'enabled' => env('DOKU_ENABLED', false),
+        'client_id' => env('DOKU_CLIENT_ID'),
+        'secret_key' => env('DOKU_SECRET_KEY'),
+    ],
+
 ];

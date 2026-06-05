@@ -47,6 +47,12 @@ export const adminNavItems: AdminNavItem[] = [
         icon: ShoppingBag,
         permission: ['orders.view', 'orders.manage'],
     },
+    {
+        label: 'Retur',
+        href: '/admin/returns',
+        icon: ArrowLeftRight,
+        permission: 'orders.manage',
+    },
     { label: 'Produk', href: '/admin/products', icon: Package, permission: 'products.manage' },
     { label: 'Kategori', href: '/admin/categories', icon: FolderTree, permission: 'products.manage' },
     {

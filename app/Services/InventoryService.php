@@ -42,7 +42,7 @@ class InventoryService
         return 0;
     }
 
-    public function decrementOnPaid(Order $order): void
+    public function decrementForOrder(Order $order, string $reason = 'Pesanan selesai'): void
     {
         if ($order->inventory_decremented) {
             return;
@@ -72,6 +72,12 @@ class InventoryService
 
             $inventories = $query->orderByDesc('stock')->get();
 
+            if ($inventories->isEmpty()) {
+                $inventories = collect([
+                    $this->getOrCreateInventory($item->product, null, $variant?->id),
+                ]);
+            }
+
             foreach ($inventories as $inventory) {
                 if ($remaining <= 0) {
                     break;
@@ -80,16 +86,14 @@ class InventoryService
                 $deduct = min($inventory->stock, $remaining);
                 if ($deduct > 0) {
                     $inventory->decrement('stock', $deduct);
-                    StockMovement::create([
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $inventory->warehouse_id,
-                        'product_variant_id' => $variant?->id,
-                        'type' => 'out',
-                        'quantity' => $deduct,
-                        'reference_type' => Order::class,
-                        'reference_id' => $order->id,
-                        'reason' => 'Pesanan dibayar',
-                    ]);
+                    $this->recordOrderMovement(
+                        $order,
+                        $item->product_id,
+                        $inventory->warehouse_id,
+                        $variant?->id,
+                        $deduct,
+                        $reason,
+                    );
                 }
                 $remaining -= $deduct;
             }
@@ -97,10 +101,46 @@ class InventoryService
             if ($variant && $remaining > 0 && $variant->stock > 0) {
                 $deduct = min($variant->stock, $remaining);
                 $variant->decrement('stock', $deduct);
+                $defaultWarehouse = Warehouse::where('is_active', true)->orderBy('id')->first();
+                $this->recordOrderMovement(
+                    $order,
+                    $item->product_id,
+                    $defaultWarehouse?->id,
+                    $variant->id,
+                    $deduct,
+                    $reason,
+                );
             }
         }
 
         $order->update(['inventory_decremented' => true]);
+    }
+
+    /** @deprecated Use decrementForOrder() */
+    public function decrementOnPaid(Order $order): void
+    {
+        $this->decrementForOrder($order, 'Pesanan dibayar');
+    }
+
+    private function recordOrderMovement(
+        Order $order,
+        int $productId,
+        ?int $warehouseId,
+        ?int $variantId,
+        int $quantity,
+        string $reason,
+    ): void {
+        StockMovement::create([
+            'product_id' => $productId,
+            'warehouse_id' => $warehouseId,
+            'product_variant_id' => $variantId,
+            'type' => 'out',
+            'quantity' => $quantity,
+            'reference_type' => Order::class,
+            'reference_id' => $order->id,
+            'reason' => $reason,
+            'created_at' => now(),
+        ]);
     }
 
     /**

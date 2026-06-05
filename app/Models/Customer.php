@@ -51,6 +51,11 @@ class Customer extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Review::class);
     }
 
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
+    }
+
     public function defaultAddress(): ?CustomerAddress
     {
         return $this->addresses()->where('is_default', true)->first()

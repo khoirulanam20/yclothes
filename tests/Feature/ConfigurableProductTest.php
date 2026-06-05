@@ -73,14 +73,14 @@ class ConfigurableProductTest extends TestCase
         $shipping = \App\Models\ShippingCost::first();
         $bank = \App\Models\PaymentBank::first();
 
-        $this->post('/checkout/process', [
+        $this->post('/checkout/process', array_merge([
             'customer_name' => 'Test User',
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test',
             'shipping_city' => $shipping->id,
             'payment_method' => 'bank_'.$bank->id,
-        ]);
+        ], $this->checkoutWilayahFields()));
 
         $this->assertDatabaseHas('order_items', [
             'product_variant_id' => $variant->id,

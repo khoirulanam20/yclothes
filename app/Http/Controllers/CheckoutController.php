@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\PaymentBank;
+use App\Models\PaymentConfirmation;
 use App\Models\Product;
 use App\Models\ShippingCost;
 use App\Services\CartPricingService;
@@ -11,12 +12,16 @@ use App\Services\CartService;
 use App\Services\InventoryService;
 use App\Services\MidtransService;
 use App\Services\OrderPaymentService;
+use App\Services\OrderWorkflowService;
 use App\Services\PromotionEngine;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Mail\OrderCreatedMail;
 
 class CheckoutController extends Controller
 {
@@ -25,6 +30,7 @@ class CheckoutController extends Controller
         private CartPricingService $cartPricing,
         private InventoryService $inventoryService,
         private PromotionEngine $promotionEngine,
+        private OrderWorkflowService $orderWorkflow,
     ) {}
 
     public function index()
@@ -35,10 +41,7 @@ class CheckoutController extends Controller
         }
 
         $pricing = $this->cartPricing->build();
-        $items = $pricing['items'];
-        $total = $pricing['subtotal'];
         $totalWeight = $pricing['total_weight'];
-        $totalQty = $pricing['total_qty'];
 
         $cities = ShippingCost::where('is_active', true)->orderBy('city_name')->get()->map(function ($city) use ($totalWeight, $pricing) {
             $city->calculated_cost = app(CartPricingService::class)
@@ -104,22 +107,52 @@ class CheckoutController extends Controller
 
         $allowedPaymentMethods = $this->allowedPaymentMethods();
 
+        $customer = Auth::guard('customer')->user();
+
+        $addressRules = ['nullable', 'integer'];
+        if ($customer) {
+            $addressRules[] = Rule::exists('customer_addresses', 'id')->where('customer_id', $customer->id);
+        }
+
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:20',
             'customer_email' => 'required|email|max:255',
             'shipping_address' => 'required|string|max:1000',
+            'province_code' => 'required|string|max:10',
+            'province_name' => 'required|string|max:100',
+            'regency_code' => 'required|string|max:10',
+            'regency_name' => 'required|string|max:100',
+            'district_code' => 'required|string|max:10',
+            'district_name' => 'required|string|max:100',
+            'village_code' => 'nullable|string|max:20',
+            'village_name' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:10',
             'shipping_city' => 'required|exists:shipping_costs,id',
             'payment_method' => ['required', 'string', Rule::in($allowedPaymentMethods)],
-            'address_id' => 'nullable|integer|exists:customer_addresses,id',
+            'address_id' => $addressRules,
         ]);
 
-        $customer = Auth::guard('customer')->user();
         if ($request->filled('address_id') && $customer) {
-            $address = $customer->addresses()->findOrFail($request->input('address_id'));
+            $address = $customer->addresses()->find($request->integer('address_id'));
+
+            if (! $address) {
+                throw ValidationException::withMessages([
+                    'address_id' => 'Alamat tidak ditemukan.',
+                ]);
+            }
+
             $validated['customer_name'] = $address->recipient_name;
             $validated['customer_phone'] = $address->phone;
-            $validated['shipping_address'] = $address->fullAddress();
+
+            $shippingCostId = $validated['shipping_city'];
+
+            $snapshot = array_filter(
+                $address->toOrderSnapshot(),
+                fn ($value) => $value !== null && $value !== '',
+            );
+            $validated = array_merge($validated, $snapshot);
+            $validated['shipping_city'] = $shippingCostId;
         }
 
         $shipping = ShippingCost::findOrFail($validated['shipping_city']);
@@ -134,9 +167,13 @@ class CheckoutController extends Controller
         $items = [];
         $totalPrice = 0;
         $totalWeight = $pricing['total_weight'];
+        $hasPhysical = false;
 
         foreach ($pricing['items'] as $row) {
             $product = $row['product'];
+            if ($product->type?->value !== 'digital') {
+                $hasPhysical = true;
+            }
             $unitPrice = $row['unit_price'];
             $subtotal = $row['subtotal'];
             $totalPrice += $subtotal;
@@ -153,7 +190,9 @@ class CheckoutController extends Controller
             ];
         }
 
-        $shippingCost = $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping']);
+        $shippingCost = $hasPhysical
+            ? $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping'])
+            : 0;
         $grandTotal = $this->cartPricing->grandTotal($pricing, $shippingCost);
 
         $orderData = [
@@ -163,8 +202,18 @@ class CheckoutController extends Controller
             'customer_phone' => $validated['customer_phone'],
             'customer_email' => $validated['customer_email'],
             'shipping_address' => $validated['shipping_address'],
-            'shipping_city' => $shipping->city_name,
+            'province_code' => $validated['province_code'],
+            'province_name' => $validated['province_name'],
+            'regency_code' => $validated['regency_code'],
+            'regency_name' => $validated['regency_name'],
+            'district_code' => $validated['district_code'],
+            'district_name' => $validated['district_name'],
+            'village_code' => $validated['village_code'] ?? null,
+            'village_name' => $validated['village_name'] ?? null,
+            'postal_code' => $validated['postal_code'] ?? null,
+            'shipping_city' => $validated['regency_name'] ?? $shipping->city_name,
             'shipping_cost' => $shippingCost,
+            'shipping_method' => 'manual',
             'total_price' => $totalPrice,
             'tax_amount' => $pricing['tax_amount'],
             'discount_amount' => $pricing['discount_amount'],
@@ -172,6 +221,7 @@ class CheckoutController extends Controller
             'grand_total' => $grandTotal,
             'payment_method' => $validated['payment_method'],
             'payment_status' => 'pending',
+            'payment_confirmation_status' => 'none',
             'payment_due_at' => now()->addHours(24),
             'order_status' => 'pending',
         ];
@@ -188,6 +238,23 @@ class CheckoutController extends Controller
 
         $order = Order::create($orderData);
         $order->items()->createMany($items);
+
+        if ($order->payment_method === 'bank_transfer') {
+            $order->update([
+                'unique_payment_amount' => generate_unique_payment_amount($order->grand_total, $order->id),
+            ]);
+        }
+
+        $this->orderWorkflow->recordInitialStatus($order);
+        $this->orderWorkflow->notifyAdminNewOrder($order->fresh());
+
+        if ($order->customer_email) {
+            try {
+                Mail::to($order->customer_email)->queue(new OrderCreatedMail($order->fresh()));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         $this->promotionEngine->recordCouponUsage($pricing['cart_rule'], $customer?->id);
         session()->forget(CartService::COUPON_SESSION_KEY);

@@ -123,14 +123,14 @@ class CheckoutCustomerTest extends TestCase
         $bank = PaymentBank::first();
 
         $this->actingAs($customer, 'customer')
-            ->post('/checkout/process', [
+            ->post('/checkout/process', array_merge([
                 'customer_name' => $customer->name,
                 'customer_phone' => $customer->phone,
                 'customer_email' => $customer->email,
                 'shipping_address' => 'Jl. Test No. 1',
                 'shipping_city' => $shipping->id,
                 'payment_method' => 'bank_'.$bank->id,
-            ])
+            ], $this->checkoutWilayahFields()))
             ->assertRedirect();
 
         $this->assertDatabaseHas('orders', [
@@ -147,14 +147,14 @@ class CheckoutCustomerTest extends TestCase
         $shipping = ShippingCost::first();
         $bank = PaymentBank::first();
 
-        $this->post('/checkout/process', [
+        $this->post('/checkout/process', array_merge([
             'customer_name' => 'Guest User',
             'customer_phone' => '08123456789',
             'customer_email' => 'guest@example.com',
             'shipping_address' => 'Jl. Guest No. 1',
             'shipping_city' => $shipping->id,
             'payment_method' => 'bank_'.$bank->id,
-        ])->assertRedirect();
+        ], $this->checkoutWilayahFields()))->assertRedirect();
 
         $this->assertDatabaseHas('orders', [
             'customer_id' => null,

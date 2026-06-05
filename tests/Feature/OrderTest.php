@@ -27,14 +27,14 @@ class OrderTest extends TestCase
 
         $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
 
-        $this->post('/checkout/process', [
+        $this->post('/checkout/process', array_merge([
             'customer_name' => 'Test User',
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test No. 1',
             'shipping_city' => $shipping->id,
             'payment_method' => 'bank_'.$bank->id,
-        ]);
+        ], $this->checkoutWilayahFields()));
 
         return Order::first();
     }
@@ -53,6 +53,7 @@ class OrderTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Guest/Order/Success')
                 ->where('order.orderNumber', $order->order_number)
+                ->has('orderShowUrl')
             );
     }
 

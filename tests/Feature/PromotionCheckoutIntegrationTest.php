@@ -45,14 +45,14 @@ class PromotionCheckoutIntegrationTest extends TestCase
         $shipping = ShippingCost::first();
         $bank = PaymentBank::first();
 
-        $response = $this->post('/checkout/process', [
+        $response = $this->post('/checkout/process', array_merge([
             'customer_name' => 'Test User',
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test',
             'shipping_city' => $shipping->id,
             'payment_method' => 'bank_'.$bank->id,
-        ]);
+        ], $this->checkoutWilayahFields()));
 
         $response->assertRedirect();
 

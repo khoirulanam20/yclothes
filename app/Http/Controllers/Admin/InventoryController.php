@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\StockMovement;
 use App\Models\Warehouse;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -19,6 +21,11 @@ class InventoryController extends Controller
             ->latest()
             ->paginate(20);
 
+        $recentMovements = StockMovement::with(['product', 'warehouse'])
+            ->latest('created_at')
+            ->limit(20)
+            ->get();
+
         return Inertia::render('Admin/Inventories/Index', [
             'inventories' => [
                 'data' => collect($inventories->items())->map(fn ($inv) => $this->inventory($inv))->values()->all(),
@@ -30,6 +37,7 @@ class InventoryController extends Controller
                     'total' => $inventories->total(),
                 ],
             ],
+            'recentMovements' => ModelSerializer::stockMovements($recentMovements),
         ]);
     }
 

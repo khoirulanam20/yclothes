@@ -1,17 +1,18 @@
 import { Head, Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { CopyAmount } from '@/components/storefront/CopyAmount';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Button } from '@/components/ui/button';
 import { formatRupiah } from '@/lib/utils';
 
 type Order = {
-    orderNumber: string; grandTotal: number; paymentMethod: string;
+    orderNumber: string; grandTotal: number; uniquePaymentAmount?: number | null; paymentMethod: string;
     bankName?: string | null; bankAccountNumber?: string | null; bankAccountName?: string | null;
 };
-type Props = { order: Order };
+type Props = { order: Order; orderShowUrl: string };
 
-export default function Success({ order }: Props) {
+export default function Success({ order, orderShowUrl }: Props) {
     return (
         <GuestLayout>
             <Head title="Pesanan Berhasil" />
@@ -31,13 +32,19 @@ export default function Success({ order }: Props) {
                             <p>Silakan transfer ke:</p>
                             <p className="text-foreground">{order.bankName} — {order.bankAccountNumber}</p>
                             <p>a.n. {order.bankAccountName}</p>
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold pt-1">
+                                    Nominal unik: <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                            <p className="pt-2">Setelah transfer, konfirmasi pembayaran di halaman detail pesanan.</p>
                         </div>
                     )}
                 </SectionCard>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button asChild>
-                        <Link href={`/order/${order.orderNumber}`}>Lihat Detail</Link>
+                        <Link href={orderShowUrl}>Lihat Detail</Link>
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href="/products">Lanjut Belanja</Link>

@@ -26,6 +26,8 @@ use App\Http\Controllers\Admin\NavigationController as AdminNavigationController
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentBankController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Admin\ReturnRequestController as AdminReturnRequestController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShippingCostController;
@@ -40,6 +42,7 @@ use App\Http\Controllers\Customer\Auth\ResetPasswordController as CustomerResetP
 use App\Http\Controllers\Customer\Auth\VerifyEmailController as CustomerVerifyEmailController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
+use App\Http\Controllers\Customer\ReturnRequestController as CustomerReturnRequestController;
 use App\Http\Controllers\Customer\ReviewController as CustomerReviewController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use App\Http\Controllers\FaqController;
@@ -47,7 +50,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PaymentConfirmationController;
+use App\Http\Controllers\WilayahController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -60,6 +64,13 @@ Route::get('/page/{slug}', [PageController::class, 'show'])->name('pages.show');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
+
+Route::prefix('api/wilayah')->name('wilayah.')->group(function () {
+    Route::get('/provinces', [WilayahController::class, 'provinces'])->name('provinces');
+    Route::get('/regencies/{provinceCode}', [WilayahController::class, 'regencies'])->name('regencies');
+    Route::get('/districts/{regencyCode}', [WilayahController::class, 'districts'])->name('districts');
+    Route::get('/villages/{districtCode}', [WilayahController::class, 'villages'])->name('villages');
+});
 
 Route::prefix('account')->name('customer.')->group(function () {
     Route::middleware('guest:customer')->group(function () {
@@ -86,6 +97,14 @@ Route::prefix('account')->name('customer.')->group(function () {
         Route::put('/profile', [CustomerProfileController::class, 'update'])->name('profile.update');
         Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('orders.show');
+        Route::post('/orders/{order}/confirm-received', [CustomerOrderController::class, 'confirmReceived'])->name('orders.confirm-received');
+        Route::post('/orders/{order}/confirm-payment', [CustomerOrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
+        Route::post('/orders/{order}/reviews', [CustomerOrderController::class, 'storeReview'])->name('orders.reviews.store');
+        Route::get('/returns', [CustomerReturnRequestController::class, 'index'])->name('returns.index');
+        Route::get('/orders/{order}/returns/create', [CustomerReturnRequestController::class, 'create'])->name('returns.create');
+        Route::post('/orders/{order}/returns', [CustomerReturnRequestController::class, 'store'])->name('returns.store');
+        Route::get('/returns/{returnRequest}', [CustomerReturnRequestController::class, 'show'])->name('returns.show');
+        Route::post('/returns/{returnRequest}/shipment', [CustomerReturnRequestController::class, 'submitShipment'])->name('returns.shipment');
         Route::resource('addresses', CustomerAddressController::class)->except(['show']);
         Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
         Route::post('/wishlist/toggle', [CustomerWishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -112,6 +131,10 @@ Route::post('/order/track', [OrderController::class, 'search'])->name('order.sea
 Route::middleware(['order.access'])->group(function () {
     Route::get('/order/success/{order:order_number}', [OrderController::class, 'success'])->name('order.success');
     Route::get('/order/{order:order_number}', [OrderController::class, 'show'])->name('order.show');
+    Route::get('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'create'])->name('order.confirm-payment');
+    Route::post('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'store'])->name('order.confirm-payment.store');
+    Route::post('/order/{order:order_number}/confirm-received', [OrderController::class, 'confirmReceived'])->name('order.confirm-received');
+    Route::post('/order/{order:order_number}/reviews', [OrderController::class, 'storeReview'])->name('order.reviews.store');
     Route::post('/order/payment-finish/{order:order_number}', [CheckoutController::class, 'paymentFinish'])
         ->name('order.payment-finish')
         ->middleware('throttle:30,1');
@@ -148,6 +171,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:orders.manage')->group(function () {
             Route::post('/orders/{order}/payment', [AdminOrderController::class, 'payment'])->name('orders.payment');
             Route::post('/orders/{order}/status', [AdminOrderController::class, 'status'])->name('orders.status');
+            Route::post('/orders/{order}/ship', [AdminOrderController::class, 'ship'])->name('orders.ship');
+            Route::get('/orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
+            Route::post('/payment-confirmations/{paymentConfirmation}/approve', [AdminOrderController::class, 'approvePaymentConfirmation'])->name('payment-confirmations.approve');
+            Route::post('/payment-confirmations/{paymentConfirmation}/reject', [AdminOrderController::class, 'rejectPaymentConfirmation'])->name('payment-confirmations.reject');
+            Route::get('/returns', [AdminReturnRequestController::class, 'index'])->name('returns.index');
+            Route::get('/returns/policy', [AdminReturnRequestController::class, 'policy'])->name('returns.policy');
+            Route::post('/returns/policy', [AdminReturnRequestController::class, 'updatePolicy'])->name('returns.policy.update');
+            Route::get('/returns/{returnRequest}', [AdminReturnRequestController::class, 'show'])->name('returns.show');
+            Route::post('/returns/{returnRequest}/approve', [AdminReturnRequestController::class, 'approve'])->name('returns.approve');
+            Route::post('/returns/{returnRequest}/reject', [AdminReturnRequestController::class, 'reject'])->name('returns.reject');
+            Route::post('/returns/{returnRequest}/received', [AdminReturnRequestController::class, 'confirmReceived'])->name('returns.received');
+            Route::post('/returns/{returnRequest}/resolve', [AdminReturnRequestController::class, 'resolve'])->name('returns.resolve');
+            Route::post('/returns/{returnRequest}/ship-replacement', [AdminReturnRequestController::class, 'shipReplacement'])->name('returns.ship-replacement');
         });
 
         Route::middleware('permission:products.view,products.manage')->group(function () {

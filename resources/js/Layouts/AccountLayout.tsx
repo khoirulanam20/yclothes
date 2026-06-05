@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const links = [
     { href: '/account/profile', label: 'Profil' },
     { href: '/account/orders', label: 'Pesanan Saya' },
+    { href: '/account/returns', label: 'Retur' },
     { href: '/account/addresses', label: 'Alamat' },
     { href: '/account/wishlist', label: 'Wishlist' },
 ];

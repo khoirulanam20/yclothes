@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Faktur #{{ $order->order_number }}</title>
+    <style>
+        body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .total { font-weight: bold; font-size: 1.1rem; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <button class="no-print" onclick="window.print()">Cetak</button>
+    <h1>Faktur #{{ $order->order_number }}</h1>
+    <p><strong>Status:</strong> {{ strtoupper($order->payment_status) }}</p>
+    <p><strong>Pembeli:</strong> {{ $order->customer_name }} — {{ $order->customer_email }}</p>
+    <p><strong>Alamat:</strong> {{ $order->shipping_address }}</p>
+    <table>
+        <thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
+        <tbody>
+            @foreach($order->items as $item)
+            <tr>
+                <td>{{ $item->product_name }}</td>
+                <td>{{ $item->qty }}</td>
+                <td>Rp {{ number_format($item->product_price, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    <p class="total">Grand Total: Rp {{ number_format($order->grand_total, 0, ',', '.') }}</p>
+</body>
+</html>

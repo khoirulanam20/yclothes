@@ -105,14 +105,14 @@ class InventoryTest extends TestCase
         $shipping = \App\Models\ShippingCost::first();
         $bank = \App\Models\PaymentBank::first();
 
-        $response = $this->post('/checkout/process', [
+        $response = $this->post('/checkout/process', array_merge([
             'customer_name' => 'Test',
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test',
             'shipping_city' => $shipping->id,
             'payment_method' => 'bank_'.$bank->id,
-        ]);
+        ], $this->checkoutWilayahFields()));
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
