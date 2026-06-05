@@ -41,19 +41,32 @@ class ProductAttributeTest extends TestCase
         $family = AttributeFamily::where('name', 'Fashion Default')->first();
         $sizeAttr = Attribute::where('code', 'size')->first();
 
-        $this->actingAs($this->admin)->post('/admin/products', [
+        $family = AttributeFamily::where('name', 'Fashion Default')->first();
+        $sizeAttr = Attribute::where('code', 'size')->first();
+
+        $create = $this->actingAs($this->admin)->post('/admin/products', [
+            'type' => 'simple',
+            'attribute_family_id' => $family->id,
+            'sku' => 'EAV-TEST-001',
+            'name' => 'Produk EAV Test',
+        ]);
+        $product = Product::where('sku', 'EAV-TEST-001')->first();
+        $create->assertRedirect('/admin/products/'.$product->id.'/edit');
+
+        $this->actingAs($this->admin)->put('/admin/products/'.$product->id, [
             'category_id' => $category->id,
             'attribute_family_id' => $family->id,
+            'type' => 'simple',
+            'sku' => 'EAV-TEST-001',
             'name' => 'Produk EAV Test',
             'price' => 200000,
             'description' => 'Test',
+            'is_active' => true,
             'image' => UploadedFile::fake()->image('produk.jpg'),
             'attributes' => [
                 'size' => ['M', 'L'],
             ],
-        ])->assertRedirect('/admin/products');
-
-        $product = Product::where('name', 'Produk EAV Test')->first();
+        ])->assertRedirect('/admin/products/'.$product->id.'/edit');
         $this->assertNotNull($product);
         $this->assertEquals(['M', 'L'], $product->sizes);
 
@@ -67,6 +80,7 @@ class ProductAttributeTest extends TestCase
     {
         $sizeAttr = Attribute::where('code', 'size')->first();
         $product = Product::first();
+        $product->update(['is_active' => true]);
         ProductAttributeValue::updateOrCreate(
             ['product_id' => $product->id, 'attribute_id' => $sizeAttr->id],
             ['value' => json_encode(['M'])]
@@ -80,6 +94,7 @@ class ProductAttributeTest extends TestCase
     public function test_product_detail_shows_attribute_values(): void
     {
         $product = Product::first();
+        $product->update(['is_active' => true]);
 
         $this->get('/products/'.$product->slug)
             ->assertStatus(200)

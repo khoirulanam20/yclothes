@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
+use App\Support\InventoryFormOptions;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,16 +17,43 @@ use Inertia\Inertia;
 
 class InventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $inventories = Inventory::with(['product', 'variant', 'warehouse'])
-            ->latest()
-            ->paginate(20);
+        $search = trim((string) $request->input('search', ''));
+        $warehouseId = $request->input('warehouse_id');
 
-        $recentMovements = StockMovement::with(['product', 'warehouse'])
+        $query = Inventory::with(['product', 'variant', 'warehouse'])
+            ->whereHas('product')
+            ->where(function ($builder) {
+                $builder->whereNotNull('product_variant_id')
+                    ->orWhereHas('product', fn ($product) => $product->where('type', ProductType::Simple));
+            });
+
+        if ($warehouseId) {
+            $query->where('warehouse_id', $warehouseId);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $like = '%'.$search.'%';
+                $builder->whereHas('product', function ($product) use ($like) {
+                    $product->where('name', 'like', $like)
+                        ->orWhere('sku', 'like', $like);
+                })->orWhereHas('variant', function ($variant) use ($like) {
+                    $variant->where('sku', 'like', $like)
+                        ->orWhere('name', 'like', $like);
+                });
+            });
+        }
+
+        $inventories = $query->latest()->paginate(20)->withQueryString();
+
+        $recentMovements = StockMovement::with(['product', 'variant', 'warehouse'])
             ->latest('created_at')
             ->limit(20)
             ->get();
+
+        $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Admin/Inventories/Index', [
             'inventories' => [
@@ -38,16 +67,23 @@ class InventoryController extends Controller
                 ],
             ],
             'recentMovements' => ModelSerializer::stockMovements($recentMovements),
+            'warehouses' => $warehouses->map(fn ($warehouse) => [
+                'id' => $warehouse->id,
+                'name' => $warehouse->name,
+            ])->values()->all(),
+            'filters' => [
+                'search' => $search,
+                'warehouse_id' => $warehouseId ? (string) $warehouseId : '',
+            ],
         ]);
     }
 
     public function create()
     {
-        $products = Product::orderBy('name')->get();
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Admin/Inventories/Form', [
-            'products' => $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values()->all(),
+            'products' => InventoryFormOptions::products(),
             'warehouses' => $warehouses->map(fn ($w) => ['id' => $w->id, 'name' => $w->name])->values()->all(),
         ]);
     }
@@ -62,13 +98,12 @@ class InventoryController extends Controller
 
     public function edit(Inventory $inventory)
     {
-        $inventory->load(['product', 'warehouse']);
-        $products = Product::orderBy('name')->get();
+        $inventory->load(['product', 'variant', 'warehouse']);
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Admin/Inventories/Form', [
             'inventory' => $this->inventory($inventory),
-            'products' => $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values()->all(),
+            'products' => InventoryFormOptions::products(),
             'warehouses' => $warehouses->map(fn ($w) => ['id' => $w->id, 'name' => $w->name])->values()->all(),
         ]);
     }
@@ -90,6 +125,8 @@ class InventoryController extends Controller
 
     private function inventory(Inventory $inventory): array
     {
+        $variant = $inventory->relationLoaded('variant') ? $inventory->variant : null;
+
         return [
             'id' => $inventory->id,
             'stock' => $inventory->stock,
@@ -98,12 +135,40 @@ class InventoryController extends Controller
             'warehouseId' => $inventory->warehouse_id,
             'productVariantId' => $inventory->product_variant_id,
             'product' => $inventory->relationLoaded('product') && $inventory->product
-                ? ['name' => $inventory->product->name]
+                ? [
+                    'name' => $inventory->product->name,
+                    'sku' => $inventory->product->sku,
+                    'type' => $inventory->product->type?->value ?? $inventory->product->type,
+                ]
                 : null,
+            'variant' => $variant
+                ? [
+                    'sku' => $variant->sku,
+                    'name' => $variant->name,
+                    'label' => InventoryFormOptions::variantLabel($variant),
+                ]
+                : null,
+            'displayName' => $this->inventoryDisplayName($inventory->product, $variant),
+            'displaySku' => $variant?->sku ?? $inventory->product?->sku,
             'warehouse' => $inventory->relationLoaded('warehouse') && $inventory->warehouse
                 ? ['name' => $inventory->warehouse->name]
                 : null,
         ];
+    }
+
+    private function inventoryDisplayName(?Product $product, ?ProductVariant $variant): string
+    {
+        if (! $product) {
+            return '—';
+        }
+
+        if (! $variant) {
+            return $product->name;
+        }
+
+        $label = InventoryFormOptions::variantLabel($variant);
+
+        return $label ? "{$product->name} — {$label}" : $product->name;
     }
 
     private function validateInventory(Request $request, ?Inventory $inventory = null): array
@@ -115,6 +180,12 @@ class InventoryController extends Controller
             'stock' => 'required|integer|min:0',
             'low_stock_threshold' => 'nullable|integer|min:0',
         ]);
+
+        $product = Product::findOrFail($validated['product_id']);
+        $validated['product_variant_id'] = InventoryFormOptions::resolveVariantId(
+            $product,
+            $validated['product_variant_id'] ?? null,
+        );
 
         $validated['low_stock_threshold'] = $validated['low_stock_threshold'] ?? 5;
 

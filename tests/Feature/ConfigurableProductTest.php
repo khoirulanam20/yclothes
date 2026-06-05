@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ProductType;
+use App\Models\AttributeFamily;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -28,19 +29,37 @@ class ConfigurableProductTest extends TestCase
         $admin = User::where('is_admin', true)->first();
         $category = Category::first();
 
+        $family = AttributeFamily::where('name', 'Fashion Default')->first();
+
         $response = $this->actingAs($admin)->post(route('admin.products.store'), [
-            'category_id' => $category->id,
             'type' => ProductType::Configurable->value,
+            'attribute_family_id' => $family->id,
+            'sku' => 'CFG-001',
             'name' => 'Kaos Configurable',
-            'price' => 150000,
-            'sizes' => 'S,M,L',
-            'colors' => "#000000|Hitam\n#FFFFFF|Putih",
-            'image' => UploadedFile::fake()->image('product.jpg'),
         ]);
 
-        $response->assertRedirect(route('admin.products.index'));
+        $product = Product::where('sku', 'CFG-001')->first();
+        $response->assertRedirect(route('admin.products.edit', $product));
 
-        $product = Product::where('name', 'Kaos Configurable')->first();
+        $this->actingAs($admin)->put(route('admin.products.update', $product), [
+            'category_id' => $category->id,
+            'attribute_family_id' => $family->id,
+            'type' => ProductType::Configurable->value,
+            'sku' => 'CFG-001',
+            'name' => 'Kaos Configurable',
+            'price' => 150000,
+            'is_active' => true,
+            'image' => UploadedFile::fake()->image('product.jpg'),
+            'attributes' => [
+                'size' => ['S', 'M', 'L'],
+                'color' => [
+                    ['hex' => '#000000', 'name' => 'Hitam'],
+                    ['hex' => '#FFFFFF', 'name' => 'Putih'],
+                ],
+            ],
+        ]);
+
+        $product->refresh();
         $this->assertNotNull($product);
         $this->assertTrue($product->isConfigurable());
         $this->assertEquals(6, $product->variants()->count());

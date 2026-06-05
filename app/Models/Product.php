@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BadgePreset;
 use App\Enums\ProductType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,9 +12,13 @@ use Illuminate\Support\Str;
 class Product extends Model
 {
     protected $fillable = [
-        'category_id', 'attribute_family_id', 'type', 'name', 'slug', 'description', 'price', 'sale_price',
-        'image', 'images', 'sizes', 'colors', 'badge', 'weight',
-        'is_featured', 'track_stock', 'allow_backorder', 'is_returnable', 'return_window_days', 'warranty_days',
+        'category_id', 'attribute_family_id', 'type', 'sku', 'name', 'slug',
+        'description', 'short_description', 'price', 'sale_price',
+        'sale_price_starts_at', 'sale_price_ends_at',
+        'image', 'images', 'sizes', 'colors', 'badge', 'badge_preset', 'badge_color', 'weight',
+        'is_featured', 'is_active', 'track_stock', 'allow_backorder',
+        'is_returnable', 'return_window_days', 'warranty_days',
+        'meta_title', 'meta_description', 'meta_keywords',
         'views', 'rating_avg', 'review_count',
     ];
 
@@ -22,7 +27,9 @@ class Product extends Model
         return [
             'images' => 'array',
             'type' => ProductType::class,
+            'badge_preset' => BadgePreset::class,
             'is_featured' => 'boolean',
+            'is_active' => 'boolean',
             'track_stock' => 'boolean',
             'allow_backorder' => 'boolean',
             'is_returnable' => 'boolean',
@@ -30,6 +37,8 @@ class Product extends Model
             'warranty_days' => 'integer',
             'price' => 'integer',
             'sale_price' => 'integer',
+            'sale_price_starts_at' => 'datetime',
+            'sale_price_ends_at' => 'datetime',
             'views' => 'integer',
             'weight' => 'integer',
             'rating_avg' => 'decimal:2',
@@ -118,6 +127,9 @@ class Product extends Model
         static::creating(function (Product $product) {
             if (empty($product->slug)) {
                 $product->slug = Str::slug($product->name);
+            }
+            if (empty($product->sku)) {
+                $product->sku = 'SKU-'.strtoupper(Str::random(8));
             }
         });
     }
@@ -242,15 +254,67 @@ class Product extends Model
 
     public function getFinalPriceAttribute(): int
     {
-        return $this->sale_price ?: $this->price;
+        if ($this->sale_price && $this->isSalePriceActive()) {
+            return $this->sale_price;
+        }
+
+        return $this->price;
+    }
+
+    public function isSalePriceActive(): bool
+    {
+        if (! $this->sale_price) {
+            return false;
+        }
+
+        $now = now();
+
+        if ($this->sale_price_starts_at && $now->lt($this->sale_price_starts_at)) {
+            return false;
+        }
+
+        if ($this->sale_price_ends_at && $now->gt($this->sale_price_ends_at)) {
+            return false;
+        }
+
+        return true;
     }
 
     public function getDiscountPercentageAttribute(): ?int
     {
-        if ($this->sale_price && $this->price > 0) {
+        if ($this->isSalePriceActive() && $this->price > 0) {
             return (int) round((1 - $this->sale_price / $this->price) * 100);
         }
 
         return null;
+    }
+
+    public function getBadgeLabelAttribute(): ?string
+    {
+        $preset = $this->badge_preset;
+
+        if (! $preset || $preset === BadgePreset::None) {
+            return null;
+        }
+
+        if ($preset === BadgePreset::Custom) {
+            return $this->badge ?: null;
+        }
+
+        return $this->badge ?: $preset->defaultLabel();
+    }
+
+    public function getBadgeColorAttribute($value): ?string
+    {
+        if ($value) {
+            return $value;
+        }
+
+        $preset = $this->badge_preset;
+        if (! $preset || $preset === BadgePreset::None) {
+            return null;
+        }
+
+        return $preset->defaultColor();
     }
 }

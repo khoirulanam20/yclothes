@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\NavigationController as AdminNavigationController
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentBankController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ProductVariantController as AdminProductVariantController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Admin\ReturnRequestController as AdminReturnRequestController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
@@ -195,6 +196,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('attribute-families', AdminAttributeFamilyController::class);
             Route::resource('attributes', AdminAttributeController::class);
             Route::resource('products', AdminProductController::class);
+            Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
+            Route::put('products/{product}/variants', [AdminProductVariantController::class, 'update'])->name('products.variants.update');
             Route::post('/reviews/{review}/approve', [AdminReviewController::class, 'approve'])->name('reviews.approve');
             Route::delete('/reviews/{review}/reject', [AdminReviewController::class, 'reject'])->name('reviews.reject');
         });

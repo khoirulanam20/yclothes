@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { formatRupiah } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { contrastTextColor, cn } from '@/lib/utils';
 
 export type ProductCardData = {
     id: number;
@@ -12,6 +12,7 @@ export type ProductCardData = {
     price: number;
     salePrice?: number | null;
     badge?: string | null;
+    badgeColor?: string | null;
     discountPercentage?: number | null;
     catalogUnitPrice?: number;
     catalogHasDiscount?: boolean;
@@ -33,7 +34,19 @@ export function ProductCard({ product, compact }: { product: ProductCardData; co
         >
             <div className="relative aspect-square overflow-hidden bg-muted">
                 {product.badge && (
-                    <Badge className="absolute left-2 top-2 z-10 text-[10px] px-1.5 py-0">{product.badge}</Badge>
+                    <Badge
+                        className="absolute left-2 top-2 z-10 text-[10px] px-1.5 py-0 border-transparent"
+                        style={
+                            product.badgeColor
+                                ? {
+                                      backgroundColor: product.badgeColor,
+                                      color: contrastTextColor(product.badgeColor),
+                                  }
+                                : undefined
+                        }
+                    >
+                        {product.badge}
+                    </Badge>
                 )}
                 {product.discountPercentage ? (
                     <Badge className="bg-destructive text-destructive-foreground border-transparent absolute right-2 top-2 z-10 text-[10px] px-1.5 py-0">

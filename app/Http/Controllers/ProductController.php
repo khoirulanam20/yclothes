@@ -25,7 +25,7 @@ class ProductController extends Controller
     ) {}
     public function index()
     {
-        $query = Product::with('category');
+        $query = Product::with('category')->where('is_active', true);
 
         if ($search = request('search')) {
             $driver = $query->getConnection()->getDriverName();
@@ -116,6 +116,7 @@ class ProductController extends Controller
     {
         $product = Product::with(['category', 'attributeValues.attribute', 'activeVariants'])
             ->where('slug', $slug)
+            ->where('is_active', true)
             ->firstOrFail();
         $this->promotionEngine->decorateProduct($product);
         $product->increment('views');

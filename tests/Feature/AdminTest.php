@@ -73,19 +73,14 @@ class AdminTest extends TestCase
         $family = \App\Models\AttributeFamily::where('name', 'Fashion Default')->first();
 
         $response = $this->actingAs($this->admin)->post('/admin/products', [
-            'category_id' => $category->id,
+            'type' => 'simple',
             'attribute_family_id' => $family?->id,
+            'sku' => 'ADMIN-TEST-001',
             'name' => 'Produk Test',
-            'price' => 100000,
-            'description' => 'Deskripsi test',
-            'image' => UploadedFile::fake()->image('produk.jpg'),
-            'attributes' => [
-                'size' => ['S', 'M', 'L'],
-            ],
-            'is_featured' => '1',
         ]);
 
-        $response->assertRedirect('/admin/products');
+        $product = Product::where('sku', 'ADMIN-TEST-001')->first();
+        $response->assertRedirect("/admin/products/{$product->id}/edit");
         $this->assertDatabaseHas('products', ['name' => 'Produk Test']);
     }
 
@@ -102,14 +97,19 @@ class AdminTest extends TestCase
     {
         $product = Product::first();
 
+        $family = \App\Models\AttributeFamily::where('name', 'Fashion Default')->first();
+
         $response = $this->actingAs($this->admin)->put("/admin/products/{$product->id}", [
             'category_id' => $product->category_id,
+            'attribute_family_id' => $family->id,
+            'type' => $product->type->value ?? 'simple',
+            'sku' => $product->sku ?? 'UPDATED-SKU',
             'name' => 'Produk Updated',
             'price' => 150000,
             'description' => 'Deskripsi updated',
         ]);
 
-        $response->assertRedirect('/admin/products');
+        $response->assertRedirect("/admin/products/{$product->id}/edit");
         $this->assertDatabaseHas('products', ['name' => 'Produk Updated']);
     }
 

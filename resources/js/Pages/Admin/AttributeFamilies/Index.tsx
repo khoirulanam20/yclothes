@@ -1,10 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminHelpPanel } from '@/components/admin/AdminHelpPanel';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { attributeFamilyHelp } from '@/lib/admin-help-content';
 
 type Family = { id: number; name: string; attributesCount?: number; productsCount?: number };
 type Props = { families: Family[] };
@@ -14,6 +16,9 @@ export default function Index({ families }: Props) {
         <AdminLayout title="Keluarga Atribut" breadcrumbs={[{ label: 'Atribut' }, { label: 'Keluarga Atribut' }]}>
             <Head title="Keluarga Atribut" />
             <AdminPageHeader title="Keluarga Atribut" createHref="/admin/attribute-families/create" />
+            <div className="mb-4">
+                <AdminHelpPanel section={attributeFamilyHelp} defaultOpen />
+            </div>
             <Card><CardContent className="p-0">
                 <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Atribut</TableHead><TableHead>Produk</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{families.map((f) => (

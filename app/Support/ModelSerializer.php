@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\InventoryService;
 use App\Models\Review;
 use App\Models\Slider;
 use App\Models\StockMovement;
@@ -36,7 +37,9 @@ class ModelSerializer
             'catalogUnitPrice' => $product->getAttribute('catalog_unit_price'),
             'catalogHasDiscount' => (bool) $product->getAttribute('catalog_has_discount'),
             'imageUrl' => $product->image_url,
-            'badge' => $product->badge,
+            'badge' => $product->badge_label,
+            'badgeLabel' => $product->badge_label,
+            'badgeColor' => $product->badge_color,
             'discountPercentage' => $product->discount_percentage,
             'category' => $product->relationLoaded('category') && $product->category
                 ? self::category($product->category)
@@ -52,24 +55,40 @@ class ModelSerializer
             $data['reviewCount'] = $product->review_count;
             $data['trackStock'] = $product->track_stock;
             $data['variants'] = $product->relationLoaded('activeVariants')
-                ? $product->activeVariants->map(fn ($v) => self::variant($v))->values()->all()
+                ? $product->activeVariants->map(fn ($v) => self::variant($v, $product))->values()->all()
                 : [];
         }
 
         return $data;
     }
 
-    public static function variant(ProductVariant $variant): array
+    public static function variant(ProductVariant $variant, ?Product $product = null): array
     {
+        $stock = $variant->stock;
+        if ($product) {
+            $stock = app(InventoryService::class)->getAvailableStock($product, $variant);
+        }
+
         return [
             'id' => $variant->id,
             'sku' => $variant->sku,
+            'name' => $variant->name,
             'price' => $variant->price,
+            'stock' => $stock,
             'finalPrice' => $variant->final_price,
             'imageUrl' => $variant->image_url,
-            'attributeValues' => $variant->attribute_values,
+            'attributes' => $variant->attributes,
             'isActive' => $variant->is_active,
         ];
+    }
+
+    public static function adminVariant(Product $product, ProductVariant $variant): array
+    {
+        $inventoryService = app(InventoryService::class);
+
+        return array_merge(self::variant($variant, $product), [
+            'inventories' => $inventoryService->inventoryRowsFor($product, $variant->id),
+        ]);
     }
 
     public static function category(Category $category, bool $withChildren = false): array
@@ -109,12 +128,41 @@ class ModelSerializer
 
     public static function adminProduct(Product $product): array
     {
-        return array_merge(self::product($product), [
+        $product->loadMissing(['variants', 'relations']);
+
+        return array_merge(self::product($product, true), [
+            'sku' => $product->sku,
+            'shortDescription' => $product->short_description,
             'categoryId' => $product->category_id,
+            'attributeFamilyId' => $product->attribute_family_id,
             'isFeatured' => (bool) $product->is_featured,
+            'isActive' => (bool) $product->is_active,
             'trackStock' => (bool) $product->track_stock,
             'allowBackorder' => (bool) $product->allow_backorder,
+            'isReturnable' => (bool) $product->is_returnable,
+            'returnWindowDays' => $product->return_window_days,
+            'warrantyDays' => $product->warranty_days,
             'weight' => $product->weight,
+            'salePriceStartsAt' => $product->sale_price_starts_at?->toIso8601String(),
+            'salePriceEndsAt' => $product->sale_price_ends_at?->toIso8601String(),
+            'metaTitle' => $product->meta_title,
+            'metaDescription' => $product->meta_description,
+            'metaKeywords' => $product->meta_keywords,
+            'imagesPaths' => $product->images ?? [],
+            'badgePreset' => $product->badge_preset?->value ?? 'none',
+            'variants' => $product->variants->map(fn ($v) => self::adminVariant($product, $v))->values()->all(),
+            'relatedProductIds' => $product->relations->where('type', 'related')->pluck('related_product_id')->values()->all(),
+        ]);
+    }
+
+    public static function adminProductListItem(Product $product): array
+    {
+        return array_merge(self::product($product), [
+            'sku' => $product->sku,
+            'isActive' => (bool) $product->is_active,
+            'category' => $product->relationLoaded('category') && $product->category
+                ? ['name' => $product->category->name]
+                : null,
         ]);
     }
 
@@ -577,9 +625,45 @@ class ModelSerializer
             'product' => $movement->relationLoaded('product') && $movement->product
                 ? ['name' => $movement->product->name]
                 : null,
+            'variant' => $movement->relationLoaded('variant') && $movement->variant
+                ? [
+                    'sku' => $movement->variant->sku,
+                    'label' => self::variantLabel($movement->variant),
+                ]
+                : null,
+            'displayName' => self::movementDisplayName($movement),
             'warehouse' => $movement->relationLoaded('warehouse') && $movement->warehouse
                 ? ['name' => $movement->warehouse->name]
                 : null,
         ];
+    }
+
+    public static function movementDisplayName(StockMovement $movement): string
+    {
+        $productName = $movement->product?->name ?? '—';
+        $variant = $movement->relationLoaded('variant') ? $movement->variant : null;
+
+        if (! $variant) {
+            return $productName;
+        }
+
+        $label = self::variantLabel($variant);
+
+        return $label ? "{$productName} — {$label}" : $productName;
+    }
+
+    public static function variantLabel(ProductVariant $variant): ?string
+    {
+        $attributes = $variant->attributes ?? [];
+        $parts = array_filter([
+            $attributes['size'] ?? null,
+            $attributes['color'] ?? null,
+        ]);
+
+        if ($parts !== []) {
+            return implode(' / ', $parts);
+        }
+
+        return $variant->name ?: null;
     }
 }

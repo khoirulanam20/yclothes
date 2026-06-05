@@ -11,8 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toggleWishlist } from '@/lib/toggleWishlist';
 import { guestToast } from '@/lib/guestToast';
-import { cn } from '@/lib/utils';
-import { formatRupiah } from '@/lib/utils';
+import { cn, contrastTextColor, formatRupiah } from '@/lib/utils';
 
 type Variant = {
     id: number; sku: string; price: number; imageUrl?: string; size?: string | null;
@@ -107,7 +106,21 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                         </div>
 
                         <div className="p-4 lg:sticky lg:top-36 lg:self-start border-t lg:border-t-0 lg:border-l">
-                            {product.badge && <Badge className="mb-2">{product.badge}</Badge>}
+                            {product.badge && (
+                                <Badge
+                                    className="mb-2 border-transparent"
+                                    style={
+                                        product.badgeColor
+                                            ? {
+                                                  backgroundColor: product.badgeColor,
+                                                  color: contrastTextColor(product.badgeColor),
+                                              }
+                                            : undefined
+                                    }
+                                >
+                                    {product.badge}
+                                </Badge>
+                            )}
                             <h1 className="text-xl font-bold">{product.name}</h1>
                             {product.ratingAvg ? (
                                 <p className="text-sm text-muted-foreground mt-1">

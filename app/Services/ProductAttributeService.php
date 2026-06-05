@@ -62,13 +62,77 @@ class ProductAttributeService
                 $attribute->type === AttributeType::Decimal => $rule.'|numeric',
                 $attribute->type === AttributeType::Price => $rule.'|integer|min:0',
                 $attribute->type === AttributeType::Multiselect, $attribute->code === 'size' => $rule.'|array',
-                $attribute->type === AttributeType::Select && $attribute->code === 'color' => $rule.'|string',
+                $attribute->type === AttributeType::Select && $attribute->code === 'color' => $rule.'|array',
                 $attribute->type === AttributeType::Select => $rule.'|string|max:255',
                 default => $rule.'|string',
             };
         }
 
         return $rules;
+    }
+
+    public function definitionsForFamily(?int $familyId): array
+    {
+        return $this->familyAttributes($familyId)->map(function (Attribute $attribute) {
+            return [
+                'id' => $attribute->id,
+                'code' => $attribute->code,
+                'name' => $attribute->name,
+                'type' => $attribute->type->value,
+                'isRequired' => $attribute->is_required,
+                'isFilterable' => $attribute->is_filterable,
+                'isVariantAxis' => in_array($attribute->code, ['size', 'color'], true),
+                'options' => $attribute->options->map(fn ($o) => [
+                    'id' => $o->id,
+                    'name' => $o->name,
+                ])->values()->all(),
+            ];
+        })->values()->all();
+    }
+
+    public function valuesForProduct(Product $product): array
+    {
+        $map = $this->valueMapForProduct($product);
+        $decoded = [];
+
+        foreach ($this->familyAttributes($product->attribute_family_id) as $attribute) {
+            $raw = $map[$attribute->code] ?? null;
+            if ($raw === null) {
+                $decoded[$attribute->code] = null;
+                continue;
+            }
+
+            if ($attribute->type === AttributeType::Multiselect || $attribute->code === 'size') {
+                $decoded[$attribute->code] = json_decode($raw, true) ?: [];
+            } elseif ($attribute->code === 'color') {
+                $colors = json_decode($raw, true);
+                $decoded[$attribute->code] = is_array($colors) ? $colors : [];
+            } elseif ($attribute->type === AttributeType::Boolean) {
+                $decoded[$attribute->code] = filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+            } else {
+                $decoded[$attribute->code] = $raw;
+            }
+        }
+
+        return $decoded;
+    }
+
+    public function syncLegacyVariantColumns(Product $product): void
+    {
+        $values = $this->valuesForProduct($product);
+        $updates = [];
+
+        if (array_key_exists('size', $values)) {
+            $updates['sizes'] = $values['size'] ?: null;
+        }
+
+        if (array_key_exists('color', $values)) {
+            $updates['colors'] = $values['color'] ?: null;
+        }
+
+        if ($updates !== []) {
+            $product->update($updates);
+        }
     }
 
     private function normalizeInputValue(Attribute $attribute, mixed $raw): string
@@ -81,6 +145,23 @@ class ProductAttributeService
 
         if ($attribute->type === AttributeType::Boolean) {
             return $raw ? '1' : '0';
+        }
+
+        if ($attribute->code === 'color' && is_array($raw)) {
+            $colors = array_values(array_filter(array_map(function ($item) {
+                if (is_string($item)) {
+                    return ['hex' => $item, 'name' => $item];
+                }
+                if (! is_array($item)) {
+                    return null;
+                }
+                $hex = trim($item['hex'] ?? '');
+                $name = trim($item['name'] ?? $hex);
+
+                return $hex ? ['hex' => $hex, 'name' => $name] : null;
+            }, $raw)));
+
+            return json_encode($colors);
         }
 
         if ($attribute->code === 'color' && is_string($raw)) {

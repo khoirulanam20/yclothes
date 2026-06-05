@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Services\InventoryService;
+use App\Support\InventoryFormOptions;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -71,11 +72,10 @@ class StockMovementController extends Controller
 
     public function createTransfer()
     {
-        $products = Product::orderBy('name')->get();
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Admin/StockMovements/Transfer', [
-            'products' => $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values()->all(),
+            'products' => InventoryFormOptions::products(),
             'warehouses' => $warehouses->map(fn ($w) => ['id' => $w->id, 'name' => $w->name])->values()->all(),
         ]);
     }
@@ -84,6 +84,7 @@ class StockMovementController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
+            'product_variant_id' => 'nullable|exists:product_variants,id',
             'from_warehouse_id' => 'required|exists:warehouses,id|different:to_warehouse_id',
             'to_warehouse_id' => 'required|exists:warehouses,id',
             'quantity' => 'required|integer|min:1',
@@ -91,12 +92,18 @@ class StockMovementController extends Controller
         ]);
 
         $product = Product::findOrFail($validated['product_id']);
+        $variantId = InventoryFormOptions::resolveVariantId(
+            $product,
+            $validated['product_variant_id'] ?? null,
+        );
+
         $this->inventoryService->transfer(
             $product,
             $validated['from_warehouse_id'],
             $validated['to_warehouse_id'],
             $validated['quantity'],
             $validated['reason'] ?? null,
+            $variantId,
         );
 
         return redirect()->route('admin.stock-movements.index')

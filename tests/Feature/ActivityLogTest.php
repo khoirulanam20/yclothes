@@ -23,11 +23,16 @@ class ActivityLogTest extends TestCase
         $admin = User::where('email', 'admin@yclothes.test')->first();
         $product = Product::first();
 
+        $family = \App\Models\AttributeFamily::where('name', 'Fashion Default')->first();
+
         $this->actingAs($admin)
             ->put("/admin/products/{$product->id}", [
                 'name' => $product->name,
                 'slug' => $product->slug,
                 'category_id' => $product->category_id,
+                'attribute_family_id' => $family->id,
+                'type' => $product->type->value ?? 'simple',
+                'sku' => $product->sku ?? 'LOG-SKU',
                 'price' => $product->price,
                 'description' => $product->description,
                 'is_featured' => $product->is_featured ? 1 : 0,

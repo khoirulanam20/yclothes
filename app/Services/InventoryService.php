@@ -163,7 +163,7 @@ class InventoryService
 
     public function getOrCreateInventory(Product $product, ?Warehouse $warehouse = null, ?int $variantId = null): Inventory
     {
-        $warehouse ??= Warehouse::where('is_active', true)->orderBy('id')->first();
+        $warehouse ??= $this->defaultWarehouse();
 
         return Inventory::firstOrCreate(
             [
@@ -173,6 +173,88 @@ class InventoryService
             ],
             ['stock' => 0, 'low_stock_threshold' => (int) setting('low_stock_threshold', 5)],
         );
+    }
+
+    public function defaultWarehouse(): ?Warehouse
+    {
+        return Warehouse::where('is_active', true)->orderBy('id')->first();
+    }
+
+    /**
+     * @return list<array{warehouseId: int, warehouseName: string, stock: int, lowStockThreshold: int}>
+     */
+    public function inventoryRowsFor(Product $product, ?int $variantId = null, ?Collection $warehouses = null): array
+    {
+        $warehouses ??= Warehouse::where('is_active', true)->orderBy('name')->get();
+        $existing = Inventory::where('product_id', $product->id)
+            ->when(
+                $variantId,
+                fn ($q) => $q->where('product_variant_id', $variantId),
+                fn ($q) => $q->whereNull('product_variant_id'),
+            )
+            ->get()
+            ->keyBy('warehouse_id');
+
+        return $warehouses->map(function (Warehouse $warehouse) use ($existing) {
+            $inv = $existing->get($warehouse->id);
+
+            return [
+                'warehouseId' => $warehouse->id,
+                'warehouseName' => $warehouse->name,
+                'stock' => $inv?->stock ?? 0,
+                'lowStockThreshold' => $inv?->low_stock_threshold ?? (int) setting('low_stock_threshold', 5),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return array<int, list<array{warehouseId: int, warehouseName: string, stock: int, lowStockThreshold: int}>>
+     */
+    public function inventoriesGroupedByVariant(Product $product): array
+    {
+        $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
+        $grouped = [];
+
+        foreach ($product->variants as $variant) {
+            $grouped[$variant->id] = $this->inventoryRowsFor($product, $variant->id, $warehouses);
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @param  list<array{warehouse_id: int, stock: int, low_stock_threshold?: int|null}>  $rows
+     */
+    public function syncInventories(Product $product, ?int $variantId, array $rows, string $reason = 'Update stok dari form produk'): void
+    {
+        foreach ($rows as $row) {
+            $warehouseId = (int) $row['warehouse_id'];
+            $targetStock = (int) ($row['stock'] ?? 0);
+            $threshold = isset($row['low_stock_threshold']) && $row['low_stock_threshold'] !== ''
+                ? (int) $row['low_stock_threshold']
+                : (int) setting('low_stock_threshold', 5);
+
+            $inventory = Inventory::firstOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'warehouse_id' => $warehouseId,
+                    'product_variant_id' => $variantId,
+                ],
+                ['stock' => 0, 'low_stock_threshold' => $threshold],
+            );
+
+            if ($inventory->stock !== $targetStock) {
+                $this->adjust(
+                    $product,
+                    $targetStock,
+                    $reason,
+                    $warehouseId,
+                    $variantId,
+                );
+            } elseif ($inventory->low_stock_threshold !== $threshold) {
+                $inventory->update(['low_stock_threshold' => $threshold]);
+            }
+        }
     }
 
     public function adjust(Product $product, int $newStock, string $reason, ?int $warehouseId = null, ?int $variantId = null): StockMovement

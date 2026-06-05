@@ -1,7 +1,14 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { ChevronsUpDown, ExternalLink, LogOut } from 'lucide-react';
-import { groupNavItems, isNavItemActive } from '@/lib/admin-nav';
+import { ChevronsUpDown, ChevronDown, ExternalLink, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+    groupNavItems,
+    isNavGroupActive,
+    isNavItemActive,
+    type AdminNavGroup,
+} from '@/lib/admin-nav';
 import type { SharedPageProps } from '@/types';
+import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,11 +22,13 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     SidebarRail,
 } from '@/components/ui/sidebar';
 
@@ -32,12 +41,106 @@ function getInitials(name: string): string {
         .toUpperCase();
 }
 
+function NavGroupSection({
+    group,
+    url,
+    open,
+    onToggle,
+}: {
+    group: AdminNavGroup;
+    url: string;
+    open: boolean;
+    onToggle: () => void;
+}) {
+    const GroupIcon = group.icon;
+    const groupActive = isNavGroupActive(url, group);
+
+    if (!group.collapsible) {
+        const item = group.items[0];
+        const ItemIcon = item.icon;
+
+        return (
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isNavItemActive(url, item)} tooltip={item.label}>
+                    <Link href={item.href}>
+                        <ItemIcon />
+                        <span>{item.label}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        );
+    }
+
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton
+                tooltip={group.label}
+                isActive={groupActive}
+                onClick={onToggle}
+            >
+                <GroupIcon />
+                <span className="flex-1 truncate">{group.label}</span>
+                <ChevronDown
+                    className={cn(
+                        'size-4 shrink-0 transition-transform group-data-[collapsible=icon]:hidden',
+                        open && 'rotate-180',
+                    )}
+                />
+            </SidebarMenuButton>
+            {open && (
+                <SidebarMenuSub>
+                    {group.items.map((item) => (
+                        <SidebarMenuSubItem key={item.href}>
+                            <SidebarMenuSubButton asChild isActive={isNavItemActive(url, item)}>
+                                <Link href={item.href}>
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    ))}
+                </SidebarMenuSub>
+            )}
+        </SidebarMenuItem>
+    );
+}
+
 export function AdminSidebar() {
     const { auth, theme } = usePage<SharedPageProps>().props;
     const { url } = usePage();
     const admin = auth.admin!;
     const { post } = useForm({});
     const navGroups = groupNavItems(admin.permissions, admin.isSuperAdmin);
+
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
+        Object.fromEntries(
+            navGroups
+                .filter((group) => group.collapsible)
+                .map((group) => [group.label, isNavGroupActive(url, group)]),
+        ),
+    );
+
+    useEffect(() => {
+        setOpenGroups((current) => {
+            const next = { ...current };
+            let changed = false;
+
+            navGroups.forEach((group) => {
+                if (group.collapsible && isNavGroupActive(url, group) && !next[group.label]) {
+                    next[group.label] = true;
+                    changed = true;
+                }
+            });
+
+            return changed ? next : current;
+        });
+    }, [url]);
+
+    const toggleGroup = (label: string) => {
+        setOpenGroups((current) => ({
+            ...current,
+            [label]: !current[label],
+        }));
+    };
 
     return (
         <Sidebar collapsible="icon">
@@ -60,30 +163,21 @@ export function AdminSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {navGroups.map((group, groupIndex) => (
-                    <SidebarGroup key={group.section ?? `main-${groupIndex}`}>
-                        {group.section && <SidebarGroupLabel>{group.section}</SidebarGroupLabel>}
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {group.items.map((item) => {
-                                    const Icon = item.icon;
-                                    const isActive = isNavItemActive(url, item);
-
-                                    return (
-                                        <SidebarMenuItem key={item.href}>
-                                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                                                <Link href={item.href}>
-                                                    <Icon />
-                                                    <span>{item.label}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    );
-                                })}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                ))}
+                <SidebarGroup>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {navGroups.map((group) => (
+                                <NavGroupSection
+                                    key={group.label}
+                                    group={group}
+                                    url={url}
+                                    open={openGroups[group.label] ?? false}
+                                    onToggle={() => toggleGroup(group.label)}
+                                />
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarFooter>
