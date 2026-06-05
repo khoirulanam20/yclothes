@@ -28,7 +28,7 @@ export default function Show({ order }: Props) {
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-xl font-bold">Pesanan #{order.orderNumber}</h1>
                     <Button variant="outline" size="sm" asChild>
-                        <Link href="/order/track">Lacak Lain</Link>
+                        <Link href="/order/track">Lacak Pesanan</Link>
                     </Button>
                 </div>
 

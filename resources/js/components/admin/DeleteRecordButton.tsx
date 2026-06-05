@@ -1,40 +1,37 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAdminConfirm } from '@/hooks/use-admin-confirm';
 
 export function DeleteRecordButton({
     href,
     name,
     variant = 'destructive',
+    description,
 }: {
     href: string;
     name: string;
     variant?: 'destructive' | 'outline';
+    description?: string;
 }) {
-    const [confirming, setConfirming] = useState(false);
+    const confirm = useAdminConfirm();
 
-    if (!confirming) {
-        return (
-            <Button type="button" variant={variant} size="sm" onClick={() => setConfirming(true)}>
-                Hapus
-            </Button>
-        );
-    }
+    const handleDelete = async () => {
+        const ok = await confirm({
+            title: `Hapus ${name}?`,
+            description: description ?? 'Tindakan ini tidak dapat dibatalkan.',
+            confirmLabel: 'Hapus',
+            cancelLabel: 'Batal',
+            variant: 'destructive',
+        });
+
+        if (ok) {
+            router.delete(href, { preserveScroll: true });
+        }
+    };
 
     return (
-        <div className="flex gap-1">
-            <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={() => router.delete(href, { preserveScroll: true })}
-            >
-                Ya
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setConfirming(false)}>
-                Batal
-            </Button>
-            <span className="sr-only">{name}</span>
-        </div>
+        <Button type="button" variant={variant} size="sm" onClick={handleDelete}>
+            Hapus
+        </Button>
     );
 }

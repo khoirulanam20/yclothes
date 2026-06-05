@@ -1,8 +1,10 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import { LogOut } from 'lucide-react';
 import { PropsWithChildren } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const links = [
@@ -14,6 +16,7 @@ const links = [
 
 export default function AccountLayout({ children, title }: PropsWithChildren<{ title?: string }>) {
     const { url } = usePage();
+    const { post } = useForm();
 
     return (
         <GuestLayout>
@@ -40,6 +43,16 @@ export default function AccountLayout({ children, title }: PropsWithChildren<{ t
                                         </Link>
                                     );
                                 })}
+                                <div className="hidden md:block border-t my-2" />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="justify-start px-3 py-2 h-auto text-sm font-normal text-muted-foreground hover:text-destructive hover:bg-destructive/10 whitespace-nowrap"
+                                    onClick={() => post('/account/logout')}
+                                >
+                                    <LogOut className="h-4 w-4 mr-2 shrink-0" />
+                                    Keluar
+                                </Button>
                             </nav>
                         </SectionCard>
                     </aside>

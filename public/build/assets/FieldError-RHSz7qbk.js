@@ -1,1 +1,0 @@
-import{j as r}from"./app-CBH_nEWZ.js";function i({message:t}){return t?r.jsx("p",{className:"text-sm text-destructive mt-1",children:t}):null}export{i as F};

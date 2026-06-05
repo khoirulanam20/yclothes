@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { ProductCard, type ProductCardData } from '@/components/ProductCard';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { toggleWishlist } from '@/lib/toggleWishlist';
+import { guestToast } from '@/lib/guestToast';
 import { cn } from '@/lib/utils';
 import { formatRupiah } from '@/lib/utils';
 
@@ -28,9 +30,11 @@ type Props = {
     categoryPath?: BreadcrumbItem[];
 };
 
-export default function Show({ product, relatedProducts, reviews, inWishlist, productStock, variants, categoryPath = [] }: Props) {
+export default function Show({ product, relatedProducts, reviews, inWishlist: initialInWishlist, productStock, variants, categoryPath = [] }: Props) {
     const images = product.imagesUrl?.length ? product.imagesUrl : [product.imageUrl];
     const [activeImage, setActiveImage] = useState(images[0]);
+    const [inWishlist, setInWishlist] = useState(initialInWishlist);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
 
     const { data, setData, post, processing } = useForm({
         product_id: product.id,
@@ -41,7 +45,26 @@ export default function Show({ product, relatedProducts, reviews, inWishlist, pr
     });
 
     const addToCart = () => post('/cart/add', { preserveScroll: true });
-    const toggleWishlist = () => router.post('/account/wishlist/toggle', { product_id: product.id }, { preserveScroll: true });
+
+    const handleToggleWishlist = async () => {
+        if (wishlistLoading) {
+            return;
+        }
+
+        setWishlistLoading(true);
+
+        try {
+            const result = await toggleWishlist(product.id);
+            setInWishlist(result.in_wishlist);
+            guestToast.success(
+                result.in_wishlist ? 'Ditambahkan ke wishlist.' : 'Dihapus dari wishlist.',
+            );
+        } catch (error) {
+            guestToast.error(error instanceof Error ? error.message : 'Gagal memperbarui wishlist.');
+        } finally {
+            setWishlistLoading(false);
+        }
+    };
 
     return (
         <GuestLayout>
@@ -141,7 +164,7 @@ export default function Show({ product, relatedProducts, reviews, inWishlist, pr
                                     <Button onClick={addToCart} disabled={processing} className="flex-1">
                                         + Keranjang
                                     </Button>
-                                    <Button variant="outline" onClick={toggleWishlist}>
+                                    <Button variant="outline" onClick={handleToggleWishlist} disabled={wishlistLoading}>
                                         {inWishlist ? '♥' : '♡'}
                                     </Button>
                                 </div>

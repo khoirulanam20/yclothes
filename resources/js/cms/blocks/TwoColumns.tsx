@@ -1,3 +1,5 @@
+import { cmsHtmlField } from '@/cms/fields/cmsHtmlField';
+
 export type TwoColumnsProps = {
     leftHtml: string;
     rightHtml: string;
@@ -13,8 +15,8 @@ export function TwoColumnsBlock({ leftHtml, rightHtml }: TwoColumnsProps) {
 }
 
 export const twoColumnsFields = {
-    leftHtml: { type: 'textarea' as const, label: 'Kolom Kiri (HTML)' },
-    rightHtml: { type: 'textarea' as const, label: 'Kolom Kanan (HTML)' },
+    leftHtml: cmsHtmlField('Kolom Kiri', 480, 'Edit Kolom Kiri'),
+    rightHtml: cmsHtmlField('Kolom Kanan', 480, 'Edit Kolom Kanan'),
 };
 
 export const twoColumnsDefaultProps: TwoColumnsProps = {

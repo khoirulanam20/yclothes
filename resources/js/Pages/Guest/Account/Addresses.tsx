@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
 import { SectionCard } from '@/components/storefront/SectionCard';
-import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { GuestConfirmDeleteButton } from '@/components/guest/GuestConfirmDeleteButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -37,7 +37,7 @@ export default function Addresses({ addresses }: Props) {
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={`/account/addresses/${addr.id}/edit`}>Edit</Link>
                                     </Button>
-                                    <DeleteRecordButton href={`/account/addresses/${addr.id}`} name={addr.label} variant="outline" />
+                                    <GuestConfirmDeleteButton href={`/account/addresses/${addr.id}`} name={addr.label} variant="outline" />
                                 </div>
                             </div>
                             <p className="text-sm">{addr.recipientName} — {addr.phone}</p>

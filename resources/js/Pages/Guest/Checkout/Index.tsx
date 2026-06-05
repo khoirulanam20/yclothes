@@ -23,15 +23,20 @@ type Props = {
 };
 
 export default function Index({ items, pricing, cities, banks, midtransActive, customer }: Props) {
+    const defaultBankId = banks[0]?.id;
+    const defaultPaymentMethod = midtransActive
+        ? 'midtrans'
+        : defaultBankId
+          ? `bank_${defaultBankId}`
+          : '';
+
     const { data, setData, post, processing, errors } = useForm({
         customer_name: customer?.name ?? '',
         customer_email: customer?.email ?? '',
         customer_phone: customer?.phone ?? '',
         shipping_address: '',
-        shipping_city: cities[0]?.cityName ?? '',
-        city_id: cities[0]?.id ?? '',
-        payment_method: midtransActive ? 'midtrans' : 'bank_transfer',
-        bank_id: banks[0]?.id ?? '',
+        shipping_city: cities[0]?.id ?? '',
+        payment_method: defaultPaymentMethod,
         notes: '',
     });
 
@@ -40,7 +45,11 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
         post('/checkout/process');
     };
 
-    const shippingCost = cities.find((c) => c.id === Number(data.city_id))?.calculatedCost ?? 0;
+    const selectedBankId = data.payment_method.startsWith('bank_')
+        ? Number(data.payment_method.replace('bank_', ''))
+        : defaultBankId ?? 0;
+
+    const shippingCost = cities.find((c) => c.id === Number(data.shipping_city))?.calculatedCost ?? 0;
     const grandTotal = pricing.subtotal - pricing.discountAmount + pricing.taxAmount + shippingCost;
 
     return (
@@ -62,27 +71,26 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
                                     <div>
                                         <Label htmlFor="customer_phone" className="text-xs">WhatsApp</Label>
                                         <Input id="customer_phone" value={data.customer_phone} onChange={(e) => setData('customer_phone', e.target.value)} required className="h-9" />
+                                        <FieldError message={errors.customer_phone} />
                                     </div>
                                 </div>
                                 <div>
                                     <Label htmlFor="customer_email" className="text-xs">Email</Label>
                                     <Input id="customer_email" type="email" value={data.customer_email} onChange={(e) => setData('customer_email', e.target.value)} required className="h-9" />
+                                    <FieldError message={errors.customer_email} />
                                 </div>
                                 <div>
                                     <Label htmlFor="shipping_address" className="text-xs">Alamat Lengkap</Label>
                                     <Textarea id="shipping_address" rows={3} value={data.shipping_address} onChange={(e) => setData('shipping_address', e.target.value)} required />
+                                    <FieldError message={errors.shipping_address} />
                                 </div>
                                 <div>
-                                    <Label htmlFor="city_id" className="text-xs">Kota</Label>
+                                    <Label htmlFor="shipping_city" className="text-xs">Kota</Label>
                                     <select
-                                        id="city_id"
+                                        id="shipping_city"
                                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                        value={data.city_id}
-                                        onChange={(e) => {
-                                            const city = cities.find((c) => c.id === Number(e.target.value));
-                                            setData('city_id', Number(e.target.value));
-                                            setData('shipping_city', city?.cityName ?? '');
-                                        }}
+                                        value={data.shipping_city}
+                                        onChange={(e) => setData('shipping_city', Number(e.target.value))}
                                     >
                                         {cities.map((c) => (
                                             <option key={c.id} value={c.id}>
@@ -90,6 +98,7 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
                                             </option>
                                         ))}
                                     </select>
+                                    <FieldError message={errors.shipping_city} />
                                 </div>
                             </div>
                         </SectionCard>
@@ -103,20 +112,26 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
                                     </label>
                                 )}
                                 <label className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50">
-                                    <input type="radio" name="pm" checked={data.payment_method === 'bank_transfer'} onChange={() => setData('payment_method', 'bank_transfer')} />
+                                    <input
+                                        type="radio"
+                                        name="pm"
+                                        checked={data.payment_method.startsWith('bank_')}
+                                        onChange={() => setData('payment_method', `bank_${selectedBankId || defaultBankId}`)}
+                                    />
                                     Transfer Bank
                                 </label>
-                                {data.payment_method === 'bank_transfer' && (
+                                {data.payment_method.startsWith('bank_') && (
                                     <select
                                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                        value={data.bank_id}
-                                        onChange={(e) => setData('bank_id', Number(e.target.value))}
+                                        value={selectedBankId}
+                                        onChange={(e) => setData('payment_method', `bank_${Number(e.target.value)}`)}
                                     >
                                         {banks.map((b) => (
                                             <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
                                         ))}
                                     </select>
                                 )}
+                                <FieldError message={errors.payment_method} />
                             </div>
                         </SectionCard>
                     </div>

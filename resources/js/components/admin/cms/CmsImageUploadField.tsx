@@ -1,7 +1,7 @@
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { storageUrl } from '@/cms/storageUrl';
-import { uploadCmsImage } from '@/cms/uploadCmsImage';
+import { uploadEditorImage } from '@/lib/uploadEditorImage';
 import { Button } from '@/components/ui/button';
 
 type Props = {
@@ -25,7 +25,7 @@ export function CmsImageUploadField({ value, onChange }: Props) {
         setError(null);
 
         try {
-            const path = await uploadCmsImage(file);
+            const { path } = await uploadEditorImage(file);
             onChange(path);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Gagal mengunggah gambar');

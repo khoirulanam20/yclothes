@@ -1,1 +1,0 @@
-import{j as t}from"./app-CBH_nEWZ.js";import{c as n}from"./utils-BOtJ5xbd.js";function x({children:a,className:o,narrow:r}){return t.jsx("div",{className:n("container mx-auto px-4 py-6",r&&"max-w-3xl",o),children:a})}export{x as P};

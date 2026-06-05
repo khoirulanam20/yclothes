@@ -3,7 +3,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "tsc && vite build"
+        "dev:fresh": "rm -rf node_modules/.vite && vite --force",
+        "build": "node scripts/copy-tinymce.mjs && tsc && vite build",
+        "postinstall": "node scripts/copy-tinymce.mjs"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.0.1",
@@ -20,6 +22,7 @@
         "@radix-ui/react-slot": "^1.2.0",
         "@radix-ui/react-switch": "^1.2.2",
         "@radix-ui/react-tabs": "^1.1.9",
+        "@tinymce/tinymce-react": "^6.3.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^0.511.0",
@@ -29,6 +32,7 @@
         "react-hook-form": "^7.56.4",
         "sonner": "^2.0.3",
         "tailwind-merge": "^3.3.0",
+        "tinymce": "^8.6.0",
         "ziggy-js": "^2.5.2",
         "zod": "^3.25.28"
     },

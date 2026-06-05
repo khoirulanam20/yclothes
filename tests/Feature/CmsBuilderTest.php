@@ -202,14 +202,14 @@ class CmsBuilderTest extends TestCase
         $this->assertCount(3, $page->layout_json['content']);
     }
 
-    public function test_admin_can_upload_cms_image(): void
+    public function test_admin_can_upload_editor_image(): void
     {
         Storage::fake('public');
 
         $file = UploadedFile::fake()->image('banner.jpg');
 
         $response = $this->actingAs($this->admin())
-            ->post('/admin/cms-pages/upload-image', ['image' => $file])
+            ->post('/admin/editor/upload-image', ['image' => $file])
             ->assertOk()
             ->assertJsonStructure(['path', 'url']);
 

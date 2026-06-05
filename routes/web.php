@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CartRuleController as AdminCartRuleController;
 use App\Http\Controllers\Admin\CatalogRuleController as AdminCatalogRuleController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CmsPageController as AdminCmsPageController;
+use App\Http\Controllers\Admin\EditorUploadController as AdminEditorUploadController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqCategoryController as AdminFaqCategoryController;
 use App\Http\Controllers\Admin\FaqItemController as AdminFaqItemController;
@@ -178,9 +179,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::middleware('permission:cms.manage')->group(function () {
+            Route::post('editor/upload-image', [AdminEditorUploadController::class, 'uploadImage'])->name('editor.upload-image');
             Route::get('cms-pages/builder/new', [AdminCmsPageController::class, 'newBuilder'])->name('cms-pages.builder.new');
             Route::post('cms-pages/builder', [AdminCmsPageController::class, 'storeBuilder'])->name('cms-pages.builder.store');
-            Route::post('cms-pages/upload-image', [AdminCmsPageController::class, 'uploadImage'])->name('cms-pages.upload-image');
             Route::get('cms-pages/{cms_page}/builder', [AdminCmsPageController::class, 'builder'])->name('cms-pages.builder');
             Route::put('cms-pages/{cms_page}/builder', [AdminCmsPageController::class, 'saveBuilder'])->name('cms-pages.builder.save');
             Route::get('cms-pages/{cms_page}/preview', [AdminCmsPageController::class, 'preview'])->name('cms-pages.preview');

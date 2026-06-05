@@ -1,13 +1,14 @@
-import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { FlashToaster } from '@/components/FlashToaster';
+import { AdminConfirmProvider } from '@/components/admin/AdminConfirmProvider';
+import { NotificationLayer } from '@/components/NotificationLayer';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
         <ThemeProvider>
-            {children}
-            <FlashToaster />
-            <Toaster position="top-right" richColors />
+            <AdminConfirmProvider>
+                {children}
+                <NotificationLayer />
+            </AdminConfirmProvider>
         </ThemeProvider>
     );
 }

@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             AttributeSeeder::class,
             AdminUserSeeder::class,
+            CustomerSeeder::class,
             SettingSeeder::class,
             PaymentBankSeeder::class,
             ShippingCostSeeder::class,

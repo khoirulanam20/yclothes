@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card, CardContent } from '@/components/ui/card';
 
 type BlogPost = {
@@ -120,12 +121,12 @@ export default function Form({ post }: Props) {
                         </div>
                         <div>
                             <Label htmlFor="content">Konten</Label>
-                            <Textarea
-                                id="content"
-                                rows={10}
+                            <RichTextEditor
                                 value={data.content}
-                                onChange={(e) => setData('content', e.target.value)}
+                                onChange={(html) => setData('content', html)}
+                                minHeight={400}
                             />
+                            <FieldError message={errors.content} />
                         </div>
                         <div>
                             <Label htmlFor="featured_image">Featured Image</Label>

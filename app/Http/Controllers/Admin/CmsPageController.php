@@ -100,20 +100,6 @@ class CmsPageController extends Controller
         return redirect()->route('pages.show', ['slug' => $cmsPage->slug, 'preview' => 1]);
     }
 
-    public function uploadImage(Request $request)
-    {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
-
-        $path = $request->file('image')->store('cms', 'public');
-
-        return response()->json([
-            'path' => $path,
-            'url' => storage_url($path),
-        ]);
-    }
-
     private function validateBuilder(Request $request, ?int $ignoreId = null): array
     {
         $slugRule = 'nullable|max:255|unique:cms_pages,slug';
