@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Services\EmailNotificationService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Console\Command;
 
@@ -12,7 +13,7 @@ class ExpirePendingOrdersCommand extends Command
 
     protected $description = 'Batalkan pesanan pending yang melewati batas waktu pembayaran';
 
-    public function handle(OrderWorkflowService $workflow): int
+    public function handle(OrderWorkflowService $workflow, EmailNotificationService $emailNotifications): int
     {
         if (! setting_bool('auto_cancel_unpaid_orders', true)) {
             $this->info('Auto-cancel unpaid orders is disabled.');
@@ -28,7 +29,7 @@ class ExpirePendingOrdersCommand extends Command
             ->get();
 
         foreach ($orders as $order) {
-            $notify = setting_bool('send_email_on_payment_expired', true);
+            $notify = $emailNotifications->shouldSendPaymentExpiredEmail();
             $workflow->transition($order, 'cancelled', 'Pembayaran kedaluwarsa', 'system', null, $notify, [
                 'payment_status' => 'expired',
             ]);

@@ -65,8 +65,8 @@ return [
     ],
     [
         'key' => 'general.email',
-        'name' => 'Email & Notifikasi',
-        'info' => 'Konfigurasi SMTP untuk email pesanan dan notifikasi.',
+        'name' => 'Email (SMTP)',
+        'info' => 'Konfigurasi SMTP untuk pengiriman email.',
         'sort' => 6,
         'fields' => [
             ['name' => 'mail_enabled', 'title' => 'Gunakan Pengaturan SMTP Admin', 'type' => 'boolean', 'default' => '0'],
@@ -102,10 +102,32 @@ return [
         ],
     ],
     [
+        'key' => 'general.email_notifications',
+        'name' => 'Notifikasi Email',
+        'info' => 'Atur kapan email dikirim dan ke siapa (pembeli & admin).',
+        'sort' => 7,
+        'fields' => [
+            ['name' => 'email_admin_recipients', 'title' => 'Email Penerima Admin', 'type' => 'textarea', 'validation' => 'nullable|string|max:2000', 'default' => ''],
+            ['name' => 'email_admin_new_order', 'title' => 'Admin: Pesanan Baru', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_admin_payment_submitted', 'title' => 'Admin: Konfirmasi Pembayaran', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_order_created', 'title' => 'Pembeli: Konfirmasi Pesanan Dibuat', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_invoice_on_created', 'title' => 'Pembeli: Faktur Saat Checkout', 'type' => 'boolean', 'default' => '0'],
+            ['name' => 'email_customer_invoice_on_paid', 'title' => 'Pembeli: Faktur Saat Lunas', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'send_email_on_payment_expired', 'title' => 'Pembeli: Pembayaran Kedaluwarsa', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_awaiting_verification', 'title' => 'Status: Menunggu Verifikasi Pembayaran', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_confirmed', 'title' => 'Status: Pembayaran Dikonfirmasi', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_processed', 'title' => 'Status: Sedang Diproses', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_shipped', 'title' => 'Status: Barang Dikirim', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_delivered', 'title' => 'Status: Barang Sampai', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_completed', 'title' => 'Status: Pesanan Selesai', 'type' => 'boolean', 'default' => '1'],
+            ['name' => 'email_customer_status_cancelled', 'title' => 'Status: Pesanan Dibatalkan', 'type' => 'boolean', 'default' => '1'],
+        ],
+    ],
+    [
         'key' => 'general.gdpr',
         'name' => 'Cookie & GDPR',
         'info' => 'Banner persetujuan cookie untuk pengunjung.',
-        'sort' => 7,
+        'sort' => 8,
         'fields' => [
             ['name' => 'gdpr_enabled', 'title' => 'Aktifkan Banner Cookie', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'gdpr_message', 'title' => 'Pesan Cookie', 'type' => 'textarea', 'default' => 'Situs ini menggunakan cookie untuk meningkatkan pengalaman Anda.', 'validation' => 'nullable|string|max:1000', 'depends' => 'gdpr_enabled:1'],
@@ -255,13 +277,13 @@ return [
     ],
     [
         'key' => 'sales.invoice',
-        'name' => 'Faktur',
-        'info' => 'Header, footer, dan tampilan faktur pesanan.',
+        'name' => 'Invoice',
+        'info' => 'Header, footer, dan tampilan invoice pesanan.',
         'sort' => 7,
         'fields' => [
             ['name' => 'invoice_company_name', 'title' => 'Nama Perusahaan', 'type' => 'text', 'validation' => 'nullable|string|max:255'],
             ['name' => 'invoice_address', 'title' => 'Alamat Perusahaan', 'type' => 'textarea', 'validation' => 'nullable|string|max:500'],
-            ['name' => 'invoice_footer_text', 'title' => 'Teks Footer Faktur', 'type' => 'textarea', 'validation' => 'nullable|string|max:500'],
+            ['name' => 'invoice_footer_text', 'title' => 'Teks Footer Invoice', 'type' => 'textarea', 'validation' => 'nullable|string|max:500'],
             ['name' => 'invoice_show_tax_breakdown', 'title' => 'Tampilkan Rincian Pajak', 'type' => 'boolean', 'default' => '0'],
         ],
     ],
@@ -354,7 +376,6 @@ return [
         'fields' => [
             ['name' => 'payment_timeout_hours', 'title' => 'Batas Waktu (jam)', 'type' => 'number', 'default' => '24', 'validation' => 'nullable|integer|min:1|max:168'],
             ['name' => 'auto_cancel_unpaid_orders', 'title' => 'Auto-batal Pesanan Expired', 'type' => 'boolean', 'default' => '1'],
-            ['name' => 'send_email_on_payment_expired', 'title' => 'Email Saat Pembayaran Expired', 'type' => 'boolean', 'default' => '1'],
         ],
     ],
     [

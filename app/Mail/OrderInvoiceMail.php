@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\InvoiceEmailContext;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,12 +15,29 @@ class OrderInvoiceMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public string $heading;
+
+    public string $intro;
+
+    public function __construct(
+        public Order $order,
+        public InvoiceEmailContext $context = InvoiceEmailContext::Paid,
+    ) {
+        $this->heading = match ($this->context) {
+            InvoiceEmailContext::Created => 'Faktur Proforma #'.$order->order_number,
+            InvoiceEmailContext::Paid => 'Faktur Pembayaran #'.$order->order_number,
+        };
+
+        $this->intro = match ($this->context) {
+            InvoiceEmailContext::Created => 'Berikut faktur proforma untuk pesanan Anda.',
+            InvoiceEmailContext::Paid => 'Pembayaran pesanan Anda telah dikonfirmasi. Berikut faktur pembayaran Anda.',
+        };
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nota Pembayaran #'.$this->order->order_number,
+            subject: $this->heading,
         );
     }
 
@@ -27,6 +45,10 @@ class OrderInvoiceMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.orders.invoice',
+            with: [
+                'heading' => $this->heading,
+                'intro' => $this->intro,
+            ],
         );
     }
 }

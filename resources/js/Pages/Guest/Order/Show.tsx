@@ -135,7 +135,7 @@ export default function Show({
                 <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <p className="text-sm text-muted-foreground">Detail Pesanan</p>
-                        <h1 className="text-2xl font-bold">#{order.orderNumber}</h1>
+                        <h1 className="text-2xl font-bold">No. Pesanan: {order.orderNumber}</h1>
                     </div>
                     <Button variant="outline" size="sm" asChild>
                         <Link href="/order/track">Lacak Pesanan</Link>

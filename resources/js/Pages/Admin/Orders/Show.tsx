@@ -166,7 +166,7 @@ export default function Show({
                     backHref="/admin/orders"
                     actions={
                         <Button size="sm" variant="outline" asChild>
-                            <a href={`/admin/orders/${order.id}/invoice`} target="_blank" rel="noreferrer">Faktur</a>
+                            <a href={`/admin/orders/${order.id}/invoice`} target="_blank" rel="noreferrer">Invoice</a>
                         </Button>
                     }
                 />

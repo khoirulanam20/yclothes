@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceEmailContext;
 use App\Mail\OrderInvoiceMail;
 use App\Models\Order;
-use Illuminate\Support\Facades\Mail;
 
 class OrderPaymentService
 {
+    public function __construct(private EmailNotificationService $emailNotifications) {}
     public function applyMidtransStatus(Order $order, string $transactionStatus): void
     {
         if ($transactionStatus === 'settlement' || $transactionStatus === 'capture') {
@@ -72,9 +73,11 @@ class OrderPaymentService
             $fresh = $fresh->fresh();
         }
 
-        if ($fresh->customer_email) {
-            Mail::to($fresh->customer_email)->queue(new OrderInvoiceMail($fresh->fresh(['items'])));
-        }
+        $this->emailNotifications->queueToCustomer(
+            $fresh,
+            new OrderInvoiceMail($fresh->fresh(['items']), InvoiceEmailContext::Paid),
+            'email_customer_invoice_on_paid',
+        );
 
         return $fresh;
     }

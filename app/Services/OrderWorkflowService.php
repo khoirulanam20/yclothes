@@ -9,12 +9,11 @@ use App\Mail\AdminPaymentSubmittedMail;
 use App\Models\AdminNotification;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
-use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 
 class OrderWorkflowService
 {
+    public function __construct(private EmailNotificationService $emailNotifications) {}
     /** @var array<string, list<string>> */
     private const TRANSITIONS = [
         OrderStatus::Pending->value => ['awaiting_verification', 'confirmed', 'cancelled'],
@@ -106,7 +105,7 @@ class OrderWorkflowService
             ['order_id' => $order->id, 'order_number' => $order->order_number],
         );
 
-        $this->mailAdmins(new AdminNewOrderMail($order));
+        $this->emailNotifications->queueToAdmins(new AdminNewOrderMail($order), 'email_admin_new_order');
     }
 
     public function notifyAdminPaymentSubmitted(Order $order): void
@@ -118,19 +117,6 @@ class OrderWorkflowService
             ['order_id' => $order->id, 'order_number' => $order->order_number],
         );
 
-        $this->mailAdmins(new AdminPaymentSubmittedMail($order));
-    }
-
-    private function mailAdmins(object $mailable): void
-    {
-        $emails = User::where('is_admin', true)->pluck('email')->filter()->all();
-
-        if (empty($emails)) {
-            return;
-        }
-
-        foreach ($emails as $email) {
-            Mail::to($email)->queue($mailable);
-        }
+        $this->emailNotifications->queueToAdmins(new AdminPaymentSubmittedMail($order), 'email_admin_payment_submitted');
     }
 }

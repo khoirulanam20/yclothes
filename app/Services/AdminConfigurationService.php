@@ -148,6 +148,10 @@ class AdminConfigurationService
 
         $validated = Validator::make($request->all(), $rules, [], $attributes)->validate();
 
+        if ($slug === 'general.email_notifications') {
+            $this->validateEmailNotificationSettings($request);
+        }
+
         $previousBrandName = $slug === 'general.store'
             ? (setting('brand_name') ?: null)
             : null;
@@ -188,6 +192,26 @@ class AdminConfigurationService
             if ($name === 'brand_name' && filled($value)) {
                 $this->syncDerivedBrandFields((string) $value, $previousBrandName);
             }
+        }
+    }
+
+    private function validateEmailNotificationSettings(Request $request): void
+    {
+        $adminEnabled = $request->boolean('email_admin_new_order')
+            || $request->boolean('email_admin_payment_submitted');
+
+        if (! $adminEnabled) {
+            return;
+        }
+
+        $recipients = app(EmailNotificationService::class)->resolveAdminRecipientsFromRaw(
+            (string) $request->input('email_admin_recipients', ''),
+        );
+
+        if ($recipients === []) {
+            throw ValidationException::withMessages([
+                'email_admin_recipients' => 'Isi minimal satu email admin yang valid jika notifikasi admin diaktifkan.',
+            ]);
         }
     }
 

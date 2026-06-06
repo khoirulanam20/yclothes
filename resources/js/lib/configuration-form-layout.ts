@@ -12,6 +12,37 @@ const SECTION_GROUPS: Record<string, { title: string; names: string[]; layout: '
         { title: 'Warna Tema', names: ['color_gold', 'color_accent'], layout: 'grid-2' },
         { title: 'Sosial Media', names: ['social_instagram', 'social_facebook', 'social_tiktok'], layout: 'grid-2' },
     ],
+    'general.email_notifications': [
+        { title: 'Penerima Admin', names: ['email_admin_recipients'], layout: 'stack' },
+        {
+            title: 'Email ke Admin',
+            names: ['email_admin_new_order', 'email_admin_payment_submitted'],
+            layout: 'stack',
+        },
+        {
+            title: 'Email ke Pembeli',
+            names: [
+                'email_customer_order_created',
+                'email_customer_invoice_on_created',
+                'email_customer_invoice_on_paid',
+                'send_email_on_payment_expired',
+            ],
+            layout: 'stack',
+        },
+        {
+            title: 'Email Update Status ke Pembeli',
+            names: [
+                'email_customer_status_awaiting_verification',
+                'email_customer_status_confirmed',
+                'email_customer_status_processed',
+                'email_customer_status_shipped',
+                'email_customer_status_delivered',
+                'email_customer_status_completed',
+                'email_customer_status_cancelled',
+            ],
+            layout: 'stack',
+        },
+    ],
 };
 
 function groupTitleForType(type: string, field: ConfigField): string | undefined {

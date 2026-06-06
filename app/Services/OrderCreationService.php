@@ -4,14 +4,15 @@ namespace App\Services;
 
 use App\Exceptions\CheckoutProcessException;
 use App\Exceptions\InsufficientStockException;
+use App\Enums\InvoiceEmailContext;
 use App\Mail\OrderCreatedMail;
+use App\Mail\OrderInvoiceMail;
 use App\Models\Order;
 use App\Models\PaymentBank;
 use App\Models\ShippingCost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OrderCreationService
@@ -22,6 +23,7 @@ class OrderCreationService
         private InventoryService $inventoryService,
         private PromotionEngine $promotionEngine,
         private OrderWorkflowService $orderWorkflow,
+        private EmailNotificationService $emailNotifications,
     ) {}
 
     /**
@@ -108,13 +110,18 @@ class OrderCreationService
             ]);
         }
 
-        if ($order->customer_email) {
-            try {
-                Mail::to($order->customer_email)->queue(new OrderCreatedMail($order));
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
+        $this->emailNotifications->queueToCustomer(
+            $order,
+            new OrderCreatedMail($order),
+            'email_customer_order_created',
+        );
+
+        $this->emailNotifications->queueToCustomer(
+            $order,
+            new OrderInvoiceMail($order, InvoiceEmailContext::Created),
+            'email_customer_invoice_on_created',
+            default: false,
+        );
 
         return [
             'order' => $order,
