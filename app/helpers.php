@@ -29,6 +29,37 @@ if (! function_exists('setting_bool')) {
     }
 }
 
+if (! function_exists('site_app_name')) {
+    /** Nama situs untuk tab browser & suffix judul halaman (utamakan Nama Brand dari konfigurasi). */
+    function site_app_name(): string
+    {
+        $brand = setting('brand_name');
+        if (is_string($brand) && $brand !== '') {
+            return $brand;
+        }
+
+        $title = setting('site_title');
+        if (is_string($title) && $title !== '') {
+            return $title;
+        }
+
+        return 'YClothes';
+    }
+}
+
+if (! function_exists('site_seo_title')) {
+    /** Judul SEO/Open Graph — Judul Situs jika diisi, fallback ke Nama Brand. */
+    function site_seo_title(): string
+    {
+        $title = setting('site_title');
+        if (is_string($title) && $title !== '') {
+            return $title;
+        }
+
+        return site_app_name();
+    }
+}
+
 if (! function_exists('generate_order_number')) {
     function generate_order_number(): string
     {
@@ -121,14 +152,16 @@ if (! function_exists('site_integrations')) {
     function site_integrations(): array
     {
         $keys = [
-            'site_title', 'site_description', 'site_keywords', 'og_image', 'favicon',
+            'brand_name', 'site_title', 'site_description', 'site_keywords', 'og_image', 'favicon',
             'meta_pixel_id', 'google_tag_manager_id',
             'custom_head_scripts', 'custom_body_scripts',
         ];
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
 
         return [
+            'appName' => site_app_name(),
             'siteTitle' => $settings['site_title'] ?? null,
+            'ogTitle' => site_seo_title(),
             'siteDescription' => $settings['site_description'] ?? null,
             'siteKeywords' => $settings['site_keywords'] ?? null,
             'ogImageUrl' => storage_url($settings['og_image'] ?? null),

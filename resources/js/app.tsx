@@ -4,10 +4,25 @@ import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { AppProviders } from '@/components/AppProviders';
 
-const appName = import.meta.env.VITE_APP_NAME || 'YClothes';
+function getAppName(): string {
+    return (
+        document.querySelector('meta[name="app-name"]')?.getAttribute('content')?.trim() ||
+        import.meta.env.VITE_APP_NAME ||
+        'YClothes'
+    );
+}
 
 createInertiaApp({
-    title: (title) => (title ? `${title} — ${appName}` : appName),
+    title: (title) => {
+        const appName = getAppName();
+        const pageTitle = title?.trim();
+
+        if (!pageTitle || pageTitle === appName) {
+            return appName;
+        }
+
+        return `${pageTitle} — ${appName}`;
+    },
     resolve: (name) =>
         resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
     setup({ el, App, props }) {

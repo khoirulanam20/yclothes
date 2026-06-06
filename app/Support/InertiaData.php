@@ -25,14 +25,15 @@ class InertiaData
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
 
         return [
-            'brandName' => $settings['brand_name'] ?? 'yClothes',
+            'brandName' => $settings['brand_name'] ?? 'YClothes',
             'brandLogo' => isset($settings['brand_logo']) ? storage_url($settings['brand_logo']) : null,
             'faviconUrl' => isset($settings['favicon']) ? storage_url($settings['favicon']) : null,
             'colorGold' => $settings['color_gold'] ?? '#C2A56D',
             'colorAccent' => $settings['color_accent'] ?? '#547A95',
             'waNumber' => $settings['wa_number'] ?? '6280000000000',
             'storeLocation' => $settings['store_location'] ?? 'Makassar',
-            'siteTitle' => $settings['site_title'] ?? 'yClothes',
+            'siteTitle' => $settings['site_title'] ?? '',
+            'appName' => site_app_name(),
             'siteDescription' => $settings['site_description'] ?? '',
             'siteKeywords' => $settings['site_keywords'] ?? '',
             'promoBarText' => $settings['promo_bar_text'] ?? 'Free Ongkir Pembelian > Rp 200rb',

@@ -8,9 +8,11 @@
 @if(!empty($integrations['ogImageUrl']))
     <meta property="og:image" content="{{ $integrations['ogImageUrl'] }}">
 @endif
-@if(!empty($integrations['siteTitle']))
-    <meta property="og:title" content="{{ $integrations['siteTitle'] }}">
-    <meta property="og:site_name" content="{{ $integrations['siteTitle'] }}">
+@if(!empty($integrations['ogTitle']))
+    <meta property="og:title" content="{{ $integrations['ogTitle'] }}">
+@endif
+@if(!empty($integrations['appName']))
+    <meta property="og:site_name" content="{{ $integrations['appName'] }}">
 @endif
 @if(!empty($integrations['siteDescription']))
     <meta property="og:description" content="{{ $integrations['siteDescription'] }}">

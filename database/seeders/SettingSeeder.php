@@ -16,7 +16,7 @@ class SettingSeeder extends Seeder
 
         Setting::firstOrCreate(
             ['key' => 'brand_name'],
-            ['value' => 'yClothes'],
+            ['value' => 'YClothes'],
         );
 
         Setting::firstOrCreate(
@@ -39,7 +39,7 @@ class SettingSeeder extends Seeder
 
         Setting::firstOrCreate(
             ['key' => 'site_title'],
-            ['value' => 'yClothes'],
+            ['value' => 'YClothes'],
         );
 
         Setting::firstOrCreate(

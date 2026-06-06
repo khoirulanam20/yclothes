@@ -11,7 +11,7 @@ export default function Home({ sections }: Props) {
 
     return (
         <GuestLayout>
-            <Head title={theme.siteTitle ? `${theme.siteTitle}` : 'Beranda'}>
+            <Head>
                 {theme.siteDescription && (
                     <meta head-key="description" name="description" content={theme.siteDescription} />
                 )}
