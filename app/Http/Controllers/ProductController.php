@@ -10,6 +10,7 @@ use App\Models\ProductRelation;
 use App\Models\Review;
 use App\Models\Wishlist;
 use App\Services\CategoryTreeService;
+use App\Services\FlashSaleService;
 use App\Services\InventoryService;
 use App\Services\PromotionEngine;
 use App\Support\ModelSerializer;
@@ -22,6 +23,7 @@ class ProductController extends Controller
         private InventoryService $inventoryService,
         private PromotionEngine $promotionEngine,
         private CategoryTreeService $categoryTree,
+        private FlashSaleService $flashSaleService,
     ) {}
     public function index()
     {
@@ -72,6 +74,12 @@ class ProductController extends Controller
             $query->whereRaw('COALESCE(sale_price, price) <= ?', [(int) $maxPrice]);
         }
 
+        $flashSaleFilter = request()->boolean('flash_sale');
+        if ($flashSaleFilter) {
+            $flashIds = $this->flashSaleService->activeProductIds();
+            $query->whereIn('id', $flashIds !== [] ? $flashIds : [0]);
+        }
+
         if ($sort = request('sort')) {
             $query = match ($sort) {
                 'price_asc' => $query->orderBy('price'),
@@ -108,7 +116,9 @@ class ProductController extends Controller
                 'sort' => request('sort'),
                 'min_price' => request('min_price'),
                 'max_price' => request('max_price'),
+                'flash_sale' => $flashSaleFilter ? '1' : null,
             ],
+            'pageTitle' => $flashSaleFilter ? 'Flash Sale' : null,
         ]);
     }
 

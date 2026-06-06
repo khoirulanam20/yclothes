@@ -31,6 +31,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (theme?.colorAccent) {
             root.style.setProperty('--accent', theme.colorAccent);
         }
+        if (theme?.faviconUrl) {
+            let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = theme.faviconUrl;
+        }
     }, [theme]);
 
     return <>{children}</>;

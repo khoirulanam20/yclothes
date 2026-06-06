@@ -15,6 +15,7 @@ type CartRule = {
     discountType: string; discountAmount: number; minOrderAmount?: number | null;
     maxDiscount?: number | null; startDate?: string; endDate?: string; isActive?: boolean;
     priority?: number; usesPerCoupon?: number; usesPerCustomer?: number; categoryIds?: number[];
+    slug?: string | null; metaTitle?: string | null; metaDescription?: string | null; bannerImageUrl?: string | null;
 };
 type Props = { rule?: CartRule; categoryOptions: CategoryOption[] };
 
@@ -35,6 +36,11 @@ export default function Form({ rule, categoryOptions }: Props) {
         end_date: rule?.endDate?.slice(0, 10) ?? '',
         is_active: rule?.isActive ?? true,
         priority: rule?.priority ?? 0,
+        slug: rule?.slug ?? '',
+        meta_title: rule?.metaTitle ?? '',
+        meta_description: rule?.metaDescription ?? '',
+        banner_image: null as File | null,
+        remove_banner_image: false,
     });
 
     const toggleCategory = (id: number) => {
@@ -43,11 +49,13 @@ export default function Form({ rule, categoryOptions }: Props) {
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
+        const needsFormData = !!data.banner_image || (isEdit && data.remove_banner_image);
+        const options = needsFormData ? { forceFormData: true as const } : {};
         if (isEdit) {
             transform((d) => ({ ...d, _method: 'put' }));
-            post(`/admin/cart-rules/${rule!.id}`);
+            post(`/admin/cart-rules/${rule!.id}`, options);
         } else {
-            post('/admin/cart-rules');
+            post('/admin/cart-rules', options);
         }
     };
 
@@ -83,14 +91,58 @@ export default function Form({ rule, categoryOptions }: Props) {
                         <div><Label htmlFor="start_date">Mulai</Label><Input id="start_date" type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} required /></div>
                         <div><Label htmlFor="end_date">Selesai</Label><Input id="end_date" type="date" value={data.end_date} onChange={(e) => setData('end_date', e.target.value)} required /></div>
                     </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="min_order_amount">Min. Order (opsional)</Label>
+                            <Input id="min_order_amount" type="number" min={0} value={data.min_order_amount} onChange={(e) => setData('min_order_amount', e.target.value === '' ? '' : Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <Label htmlFor="max_discount">Maks. Diskon (opsional)</Label>
+                            <Input id="max_discount" type="number" min={0} value={data.max_discount} onChange={(e) => setData('max_discount', e.target.value === '' ? '' : Number(e.target.value))} />
+                        </div>
+                    </div>
+                    <div className="border rounded-lg p-4 space-y-3">
+                        <h3 className="font-medium text-sm">Batas Pemakaian Kupon</h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="uses_per_coupon">Maks. pemakaian (global)</Label>
+                                <Input id="uses_per_coupon" type="number" min={0} value={data.uses_per_coupon} onChange={(e) => setData('uses_per_coupon', Number(e.target.value))} />
+                                <p className="text-xs text-muted-foreground mt-1">0 = tidak terbatas untuk semua pembeli</p>
+                            </div>
+                            <div>
+                                <Label htmlFor="uses_per_customer">Maks. per pembeli</Label>
+                                <Input id="uses_per_customer" type="number" min={0} value={data.uses_per_customer} onChange={(e) => setData('uses_per_customer', Number(e.target.value))} />
+                                <p className="text-xs text-muted-foreground mt-1">0 = tidak terbatas. Tamu dicek via email checkout</p>
+                            </div>
+                        </div>
+                    </div>
                     <div><Label>Kategori (opsional)</Label>
                         <CategoryCheckboxList
                             options={categoryOptions}
                             selectedIds={data.category_ids}
                             onToggle={toggleCategory}
                         />
+                        <FieldError message={errors.category_ids} />
                     </div>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} /> Aktif</label>
+
+                    <div className="border-t pt-4 space-y-4">
+                        <h3 className="font-medium">SEO & Landing Page</h3>
+                        <div><Label htmlFor="slug">Slug Landing (/promo/…)</Label><Input id="slug" value={data.slug} onChange={(e) => setData('slug', e.target.value)} placeholder="promo-natal" /><FieldError message={errors.slug} /></div>
+                        <div><Label htmlFor="meta_title">Meta Title</Label><Input id="meta_title" value={data.meta_title} onChange={(e) => setData('meta_title', e.target.value)} /></div>
+                        <div><Label htmlFor="meta_description">Meta Description</Label><Textarea id="meta_description" rows={2} value={data.meta_description} onChange={(e) => setData('meta_description', e.target.value)} /></div>
+                        <div>
+                            <Label htmlFor="banner_image">Banner Landing</Label>
+                            <Input id="banner_image" type="file" accept="image/*" onChange={(e) => setData('banner_image', e.target.files?.[0] ?? null)} />
+                            {rule?.bannerImageUrl && (
+                                <div className="mt-2 flex items-center gap-3">
+                                    <img src={rule.bannerImageUrl} alt="" className="h-16 rounded" />
+                                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.remove_banner_image} onChange={(e) => setData('remove_banner_image', e.target.checked)} /> Hapus banner</label>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex gap-2"><Button type="submit" disabled={processing}>Simpan</Button><Button variant="outline" asChild><Link href="/admin/cart-rules">Batal</Link></Button></div>
                 </form>
             </CardContent></Card>

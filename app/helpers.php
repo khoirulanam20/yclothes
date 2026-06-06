@@ -5,12 +5,18 @@ use App\Models\Setting;
 if (! function_exists('setting')) {
     function setting(string $key, mixed $default = null): mixed
     {
-        static $all = null;
-        if ($all === null) {
-            $all = Setting::pluck('value', 'key')->all();
+        if (! isset($GLOBALS['__settings_cache'])) {
+            $GLOBALS['__settings_cache'] = Setting::pluck('value', 'key')->all();
         }
 
-        return $all[$key] ?? $default;
+        return $GLOBALS['__settings_cache'][$key] ?? $default;
+    }
+}
+
+if (! function_exists('clear_settings_cache')) {
+    function clear_settings_cache(): void
+    {
+        unset($GLOBALS['__settings_cache']);
     }
 }
 
@@ -63,6 +69,30 @@ if (! function_exists('storage_url')) {
         }
 
         return asset('storage/'.ltrim($path, '/'));
+    }
+}
+
+if (! function_exists('site_integrations')) {
+    function site_integrations(): array
+    {
+        $keys = [
+            'site_title', 'site_description', 'site_keywords', 'og_image', 'favicon',
+            'meta_pixel_id', 'google_tag_manager_id',
+            'custom_head_scripts', 'custom_body_scripts',
+        ];
+        $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
+
+        return [
+            'siteTitle' => $settings['site_title'] ?? null,
+            'siteDescription' => $settings['site_description'] ?? null,
+            'siteKeywords' => $settings['site_keywords'] ?? null,
+            'ogImageUrl' => storage_url($settings['og_image'] ?? null),
+            'faviconUrl' => storage_url($settings['favicon'] ?? null),
+            'metaPixelId' => $settings['meta_pixel_id'] ?? null,
+            'googleTagManagerId' => $settings['google_tag_manager_id'] ?? null,
+            'customHeadScripts' => $settings['custom_head_scripts'] ?? null,
+            'customBodyScripts' => $settings['custom_body_scripts'] ?? null,
+        ];
     }
 }
 

@@ -1,13 +1,19 @@
 export type Theme = {
     brandName: string;
     brandLogo: string | null;
+    faviconUrl: string | null;
     colorGold: string;
     colorAccent: string;
     waNumber: string;
     storeLocation: string;
     siteTitle: string;
     siteDescription: string;
+    siteKeywords: string;
     promoBarText: string;
+    promoBarEnabled: boolean;
+    promoBarCtaLabel: string;
+    promoBarBgColor: string | null;
+    promoBarTextColor: string | null;
     socialInstagram: string | null;
     socialFacebook: string | null;
     socialTiktok: string | null;
@@ -30,6 +36,15 @@ export type NavItem = {
     children?: { id: number; label: string; url: string }[];
 };
 
+export type PromotionPopupData = {
+    id: number;
+    title: string;
+    imageUrl?: string | null;
+    buttonLabel?: string | null;
+    buttonUrl?: string | null;
+    displayDurationSeconds?: number;
+};
+
 export type SharedPageProps = {
     auth: {
         customer: { id: number; name: string; email: string; emailVerified: boolean } | null;
@@ -40,6 +55,7 @@ export type SharedPageProps = {
     theme: Theme;
     navigation: { header: NavItem[]; footer: NavItem[] };
     categories: CategoryNav[];
+    promotionPopup?: PromotionPopupData | null;
 };
 
 declare module '@inertiajs/core' {

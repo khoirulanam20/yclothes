@@ -119,25 +119,53 @@ class CartController extends Controller
     {
         $validated = $request->validate([
             'coupon_code' => 'required|string|max:50',
+            'redirect' => 'nullable|string|in:checkout,cart',
         ]);
 
         $code = strtoupper(trim($validated['coupon_code']));
         $error = $this->promotionEngine->validateCoupon($code, auth('customer')->id());
 
         if ($error) {
-            return back()->with('error', $error);
+            return $this->couponActionResponse($request, 'error', $error);
         }
 
         session([CartService::COUPON_SESSION_KEY => $code]);
 
-        return back()->with('success', 'Kupon berhasil diterapkan.');
+        $pricing = $this->cartPricing->build();
+        $rule = $pricing['cart_rule'];
+
+        if (! $rule || strcasecmp($rule->coupon_code ?? '', $code) !== 0) {
+            session()->forget(CartService::COUPON_SESSION_KEY);
+
+            return $this->couponActionResponse($request, 'error', 'Kupon tidak berlaku untuk pesanan ini.');
+        }
+
+        session([CartService::COUPON_SESSION_KEY => strtoupper($rule->coupon_code)]);
+
+        return $this->couponActionResponse($request, 'success', 'Kupon berhasil diterapkan.');
     }
 
-    public function removeCoupon()
+    public function removeCoupon(Request $request)
     {
         session()->forget(CartService::COUPON_SESSION_KEY);
 
-        return back()->with('success', 'Kupon dihapus.');
+        return $this->couponActionResponse($request, 'success', 'Kupon dihapus.');
+    }
+
+    private function couponActionResponse(Request $request, string $flashKey, string $message)
+    {
+        $redirect = $request->input('redirect');
+        $target = match ($redirect) {
+            'checkout' => route('checkout.index'),
+            'cart' => route('cart.index'),
+            default => null,
+        };
+
+        if ($target) {
+            return redirect($target)->with($flashKey, $message);
+        }
+
+        return back()->with($flashKey, $message);
     }
 
     public function update(Request $request)

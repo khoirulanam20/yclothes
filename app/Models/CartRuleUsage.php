@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CartRuleUsage extends Model
 {
-    protected $fillable = ['cart_rule_id', 'customer_id', 'times_used'];
+    protected $fillable = ['cart_rule_id', 'customer_id', 'customer_email', 'times_used'];
 
     protected function casts(): array
     {

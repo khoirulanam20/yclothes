@@ -13,7 +13,10 @@ class PromotionEngine
     /** @var Collection<int, CatalogRule>|null */
     private ?Collection $catalogRules = null;
 
-    public function __construct(private CategoryTreeService $categoryTree) {}
+    public function __construct(
+        private CategoryTreeService $categoryTree,
+        private FlashSaleService $flashSaleService,
+    ) {}
 
     /**
      * @param  array<int, array{product: Product, qty: int, unit_price?: int}>  $lineItems
@@ -71,6 +74,11 @@ class PromotionEngine
     {
         $base = $product->final_price;
         $best = $base;
+
+        $flashPrice = $this->flashSaleService->priceForProduct($product);
+        if ($flashPrice !== null) {
+            $best = min($best, $flashPrice);
+        }
 
         foreach ($this->activeCatalogRules() as $rule) {
             if (! $this->catalogRuleMatchesProduct($rule, $product)) {
@@ -148,9 +156,9 @@ class PromotionEngine
         ];
     }
 
-    public function validateCoupon(string $code, ?int $customerId = null): ?string
+    public function validateCoupon(string $code, ?int $customerId = null, ?string $customerEmail = null): ?string
     {
-        $rule = CartRule::where('coupon_code', $code)->where('is_active', true)->first();
+        $rule = $this->findCartRuleByCouponCode($code);
 
         if (! $rule || ! $rule->isActiveNow()) {
             return 'Kupon tidak valid atau sudah kedaluwarsa.';
@@ -163,11 +171,9 @@ class PromotionEngine
             }
         }
 
-        if ($customerId && $rule->uses_per_customer > 0) {
-            $customerUses = CartRuleUsage::where('cart_rule_id', $rule->id)
-                ->where('customer_id', $customerId)
-                ->value('times_used') ?? 0;
-            if ($customerUses >= $rule->uses_per_customer) {
+        if ($rule->uses_per_customer > 0) {
+            $buyerUses = $this->buyerUsageCount($rule, $customerId, $customerEmail);
+            if ($buyerUses >= $rule->uses_per_customer) {
                 return 'Anda sudah menggunakan kupon ini.';
             }
         }
@@ -175,16 +181,66 @@ class PromotionEngine
         return null;
     }
 
-    public function recordCouponUsage(?CartRule $rule, ?int $customerId): void
+    public function recordCouponUsage(?CartRule $rule, ?int $customerId, ?string $customerEmail = null): void
     {
         if (! $rule || ! $rule->coupon_code) {
             return;
         }
 
-        CartRuleUsage::updateOrCreate(
-            ['cart_rule_id' => $rule->id, 'customer_id' => $customerId],
-            []
-        )->increment('times_used');
+        if ($customerId) {
+            CartRuleUsage::updateOrCreate(
+                ['cart_rule_id' => $rule->id, 'customer_id' => $customerId],
+                ['customer_email' => null]
+            )->increment('times_used');
+
+            return;
+        }
+
+        $email = $this->normalizeEmail($customerEmail);
+        if ($email) {
+            CartRuleUsage::updateOrCreate(
+                ['cart_rule_id' => $rule->id, 'customer_email' => $email],
+                ['customer_id' => null]
+            )->increment('times_used');
+        }
+    }
+
+    private function buyerUsageCount(CartRule $rule, ?int $customerId, ?string $customerEmail): int
+    {
+        if ($customerId) {
+            return (int) (CartRuleUsage::where('cart_rule_id', $rule->id)
+                ->where('customer_id', $customerId)
+                ->value('times_used') ?? 0);
+        }
+
+        $email = $this->normalizeEmail($customerEmail);
+        if ($email) {
+            return (int) (CartRuleUsage::where('cart_rule_id', $rule->id)
+                ->whereNull('customer_id')
+                ->where('customer_email', $email)
+                ->value('times_used') ?? 0);
+        }
+
+        return 0;
+    }
+
+    private function normalizeEmail(?string $email): ?string
+    {
+        if (! $email) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($email));
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    private function findCartRuleByCouponCode(string $code): ?CartRule
+    {
+        return CartRule::query()
+            ->where('is_active', true)
+            ->whereRaw('UPPER(coupon_code) = ?', [strtoupper(trim($code))])
+            ->first();
     }
 
     /**
@@ -200,7 +256,7 @@ class PromotionEngine
             ->orderByDesc('priority');
 
         if ($couponCode) {
-            $query->where('coupon_code', $couponCode);
+            $query->whereRaw('UPPER(coupon_code) = ?', [strtoupper($couponCode)]);
         } else {
             $query->whereNull('coupon_code');
         }

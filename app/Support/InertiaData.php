@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\CategoryTreeService;
+use App\Services\PromotionPopupService;
 use Illuminate\Support\Facades\Auth;
 
 class InertiaData
@@ -15,8 +16,9 @@ class InertiaData
     public static function theme(): array
     {
         $keys = [
-            'brand_name', 'brand_logo', 'color_gold', 'color_accent', 'wa_number', 'store_location',
-            'site_title', 'site_description', 'promo_bar_text',
+            'brand_name', 'brand_logo', 'favicon', 'color_gold', 'color_accent', 'wa_number', 'store_location',
+            'site_title', 'site_description', 'site_keywords', 'promo_bar_text',
+            'promo_bar_enabled', 'promo_bar_cta_label', 'promo_bar_bg_color', 'promo_bar_text_color',
             'social_instagram', 'social_facebook', 'social_tiktok',
         ];
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -24,13 +26,19 @@ class InertiaData
         return [
             'brandName' => $settings['brand_name'] ?? 'yClothes',
             'brandLogo' => isset($settings['brand_logo']) ? storage_url($settings['brand_logo']) : null,
+            'faviconUrl' => isset($settings['favicon']) ? storage_url($settings['favicon']) : null,
             'colorGold' => $settings['color_gold'] ?? '#C2A56D',
             'colorAccent' => $settings['color_accent'] ?? '#547A95',
             'waNumber' => $settings['wa_number'] ?? '6280000000000',
             'storeLocation' => $settings['store_location'] ?? 'Makassar',
             'siteTitle' => $settings['site_title'] ?? 'yClothes',
             'siteDescription' => $settings['site_description'] ?? '',
+            'siteKeywords' => $settings['site_keywords'] ?? '',
             'promoBarText' => $settings['promo_bar_text'] ?? 'Free Ongkir Pembelian > Rp 200rb',
+            'promoBarEnabled' => ($settings['promo_bar_enabled'] ?? '1') === '1',
+            'promoBarCtaLabel' => $settings['promo_bar_cta_label'] ?? 'Hubungi WA',
+            'promoBarBgColor' => $settings['promo_bar_bg_color'] ?? null,
+            'promoBarTextColor' => $settings['promo_bar_text_color'] ?? null,
             'socialInstagram' => $settings['social_instagram'] ?? null,
             'socialFacebook' => $settings['social_facebook'] ?? null,
             'socialTiktok' => $settings['social_tiktok'] ?? null,
@@ -104,6 +112,14 @@ class InertiaData
         $cart = app(CartService::class)->get();
 
         return (int) array_sum(array_column($cart, 'qty'));
+    }
+
+    public static function promotionPopup(): ?array
+    {
+        $routeName = request()->route()?->getName();
+        $popup = app(PromotionPopupService::class)->resolveForRoute($routeName);
+
+        return app(PromotionPopupService::class)->serialize($popup);
     }
 
     public static function flash(): array

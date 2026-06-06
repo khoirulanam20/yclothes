@@ -76,6 +76,10 @@ class CartRuleController extends Controller
             'endDate' => $rule->end_date?->format('Y-m-d'),
             'isActive' => (bool) $rule->is_active,
             'priority' => $rule->priority,
+            'slug' => $rule->slug,
+            'metaTitle' => $rule->meta_title,
+            'metaDescription' => $rule->meta_description,
+            'bannerImageUrl' => storage_url($rule->banner_image),
         ];
     }
 
@@ -97,13 +101,33 @@ class CartRuleController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
             'is_active' => 'nullable|boolean',
             'priority' => 'nullable|integer',
+            'slug' => ['nullable', 'string', 'max:100', Rule::unique('cart_rules', 'slug')->ignore($rule?->id)],
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'remove_banner_image' => 'nullable|boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['uses_per_coupon'] = $validated['uses_per_coupon'] ?? 0;
         $validated['uses_per_customer'] = $validated['uses_per_customer'] ?? 0;
         $validated['priority'] = $validated['priority'] ?? 0;
-        $validated['category_ids'] = $validated['category_ids'] ?? null;
+
+        if (! empty($validated['coupon_code'])) {
+            $validated['coupon_code'] = strtoupper(trim($validated['coupon_code']));
+        }
+
+        $validated['category_ids'] = ! empty($validated['category_ids'])
+            ? array_values(array_unique(array_map('intval', $validated['category_ids'])))
+            : null;
+
+        if ($request->hasFile('banner_image')) {
+            $validated['banner_image'] = $request->file('banner_image')->store('promotions', 'public');
+        } elseif ($request->boolean('remove_banner_image')) {
+            $validated['banner_image'] = null;
+        } else {
+            unset($validated['banner_image'], $validated['remove_banner_image']);
+        }
 
         return $validated;
     }

@@ -21,6 +21,7 @@ type Review = { id: number; rating: number; comment: string; customerName: strin
 type Product = ProductCardData & {
     description?: string | null; imagesUrl?: string[]; sizes?: string[]; colors?: string[];
     ratingAvg?: number; reviewCount?: number; trackStock?: boolean; variants?: Variant[];
+    metaTitle?: string | null; metaDescription?: string | null;
 };
 type BreadcrumbItem = { label: string; href: string };
 type Props = {
@@ -67,7 +68,11 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
 
     return (
         <GuestLayout>
-            <Head title={product.name} />
+            <Head title={product.metaTitle ?? product.name}>
+                {product.metaDescription && (
+                    <meta name="description" content={product.metaDescription} />
+                )}
+            </Head>
             <PageContainer>
                 <Breadcrumb
                     items={[

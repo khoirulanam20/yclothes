@@ -158,6 +158,24 @@ class CheckoutController extends Controller
         $shipping = ShippingCost::findOrFail($validated['shipping_city']);
         $pricing = $this->cartPricing->build($shipping->city_name);
 
+        if ($pricing['coupon_code']) {
+            $couponError = $this->promotionEngine->validateCoupon(
+                $pricing['coupon_code'],
+                $customer?->id,
+                $validated['customer_email'],
+            );
+
+            if ($couponError) {
+                return back()->with('error', $couponError);
+            }
+
+            if (! $pricing['cart_rule']) {
+                session()->forget(CartService::COUPON_SESSION_KEY);
+
+                return back()->with('error', 'Kupon tidak berlaku untuk pesanan ini.');
+            }
+        }
+
         foreach ($pricing['line_items'] as $line) {
             if (! $this->inventoryService->canOrder($line['product'], $line['variant'] ?? null, $line['qty'])) {
                 return back()->with('error', "Stok {$line['product']->name} tidak mencukupi.");
@@ -256,7 +274,11 @@ class CheckoutController extends Controller
             }
         }
 
-        $this->promotionEngine->recordCouponUsage($pricing['cart_rule'], $customer?->id);
+        $this->promotionEngine->recordCouponUsage(
+            $pricing['cart_rule'],
+            $customer?->id,
+            $validated['customer_email'],
+        );
         session()->forget(CartService::COUPON_SESSION_KEY);
         $this->cartService->clear();
         grant_order_access($order);

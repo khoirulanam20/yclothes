@@ -7,6 +7,7 @@ use App\Models\CatalogRule;
 use App\Models\Product;
 use App\Services\CategoryTreeService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CatalogRuleController extends Controller
@@ -48,7 +49,7 @@ class CatalogRuleController extends Controller
 
     public function update(Request $request, CatalogRule $catalogRule)
     {
-        $catalogRule->update($this->validateRule($request));
+        $catalogRule->update($this->validateRule($request, $catalogRule));
 
         return redirect()->route('admin.catalog-rules.index')->with('success', 'Catalog rule berhasil diubah');
     }
@@ -80,10 +81,14 @@ class CatalogRuleController extends Controller
             'endDate' => $rule->end_date?->format('Y-m-d'),
             'isActive' => (bool) $rule->is_active,
             'priority' => $rule->priority,
+            'slug' => $rule->slug,
+            'metaTitle' => $rule->meta_title,
+            'metaDescription' => $rule->meta_description,
+            'bannerImageUrl' => storage_url($rule->banner_image),
         ];
     }
 
-    private function validateRule(Request $request): array
+    private function validateRule(Request $request, ?CatalogRule $rule = null): array
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
@@ -104,11 +109,24 @@ class CatalogRuleController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
             'is_active' => 'nullable|boolean',
             'priority' => 'nullable|integer',
+            'slug' => ['nullable', 'string', 'max:100', Rule::unique('catalog_rules', 'slug')->ignore($rule?->id)],
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'remove_banner_image' => 'nullable|boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['priority'] = $validated['priority'] ?? 0;
         $validated['discount_amount'] = $validated['discount_amount'] ?? 0;
+
+        if ($request->hasFile('banner_image')) {
+            $validated['banner_image'] = $request->file('banner_image')->store('promotions', 'public');
+        } elseif ($request->boolean('remove_banner_image')) {
+            $validated['banner_image'] = null;
+        } else {
+            unset($validated['banner_image'], $validated['remove_banner_image']);
+        }
 
         return $validated;
     }

@@ -10,6 +10,7 @@ class CartRule extends Model
         'name', 'description', 'coupon_code', 'uses_per_coupon', 'uses_per_customer',
         'discount_type', 'discount_amount', 'min_order_amount', 'max_discount',
         'category_ids', 'start_date', 'end_date', 'is_active', 'priority',
+        'slug', 'meta_title', 'meta_description', 'banner_image',
     ];
 
     protected function casts(): array

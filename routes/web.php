@@ -2,7 +2,11 @@
 
 use App\Http\Controllers\Admin\AdminRoleController as AdminAdminRoleController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Admin\AppearanceController;
+use App\Http\Controllers\Admin\HomepageController as AdminHomepageController;
+use App\Http\Controllers\Admin\IntegrationController as AdminIntegrationController;
+use App\Http\Controllers\Admin\PromoBarController as AdminPromoBarController;
+use App\Http\Controllers\Admin\PromotionPopupController as AdminPromotionPopupController;
+use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AttributeFamilyController as AdminAttributeFamilyController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -16,7 +20,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqCategoryController as AdminFaqCategoryController;
 use App\Http\Controllers\Admin\FaqItemController as AdminFaqItemController;
 use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
-use App\Http\Controllers\Admin\SliderController as AdminSliderController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\StockMovementController as AdminStockMovementController;
 use App\Http\Controllers\Admin\TaxRateController as AdminTaxRateController;
@@ -51,6 +54,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PromotionLandingController;
 use App\Http\Controllers\PaymentConfirmationController;
 use App\Http\Controllers\WilayahController;
 use Illuminate\Support\Facades\Route;
@@ -62,6 +66,7 @@ Route::get('/products/{slug}', [ProductController::class, 'show'])->name('produc
 Route::get('/cara-belanja', fn () => redirect()->route('pages.show', ['slug' => 'cara-belanja'], 301))->name('cara-belanja');
 Route::get('/tentang-kami', fn () => redirect()->route('pages.show', ['slug' => 'tentang-kami'], 301))->name('about');
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('pages.show');
+Route::get('/promo/{slug}', [PromotionLandingController::class, 'show'])->name('promo.show');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
@@ -156,12 +161,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:settings.manage')->group(function () {
             Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
             Route::post('/settings', [SettingController::class, 'update']);
-            Route::get('/appearance', [AppearanceController::class, 'edit'])->name('appearance');
-            Route::post('/appearance', [AppearanceController::class, 'update']);
+            Route::get('/theme', [AdminThemeController::class, 'edit'])->name('theme.edit');
+            Route::post('/theme', [AdminThemeController::class, 'update'])->name('theme.update');
+            Route::get('/integrations', [AdminIntegrationController::class, 'edit'])->name('integrations.edit');
+            Route::post('/integrations', [AdminIntegrationController::class, 'update'])->name('integrations.update');
+            Route::redirect('/appearance', '/admin/integrations')->name('appearance');
+            Route::post('/appearance', fn () => redirect('/admin/integrations'));
+            Route::get('/promo-bar', [AdminPromoBarController::class, 'edit'])->name('promo-bar.edit');
+            Route::post('/promo-bar', [AdminPromoBarController::class, 'update'])->name('promo-bar.update');
             Route::resource('payment-banks', PaymentBankController::class);
             Route::resource('shipping-costs', ShippingCostController::class);
             Route::resource('tax-rates', AdminTaxRateController::class);
             Route::resource('tax-zones', AdminTaxZoneController::class);
+        });
+
+        Route::middleware('permission:cms.manage,settings.manage')->group(function () {
+            Route::get('/homepage', [AdminHomepageController::class, 'edit'])->name('homepage.edit');
+            Route::put('/homepage', [AdminHomepageController::class, 'update'])->name('homepage.update');
+            Route::get('/homepage/products/search', [AdminHomepageController::class, 'searchProducts'])->name('homepage.products.search');
+            Route::post('/homepage/banner-image', [AdminHomepageController::class, 'uploadBannerImage'])->name('homepage.banner-image');
+            Route::post('/homepage/sliders', [AdminHomepageController::class, 'storeSlider'])->name('homepage.sliders.store');
+            Route::put('/homepage/sliders/{slider}', [AdminHomepageController::class, 'updateSlider'])->name('homepage.sliders.update');
+            Route::delete('/homepage/sliders/{slider}', [AdminHomepageController::class, 'destroySlider'])->name('homepage.sliders.destroy');
         });
 
         Route::middleware('permission:orders.view,orders.manage')->group(function () {
@@ -215,6 +236,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:promotions.manage')->group(function () {
             Route::resource('cart-rules', AdminCartRuleController::class);
             Route::resource('catalog-rules', AdminCatalogRuleController::class);
+            Route::resource('promotion-popups', AdminPromotionPopupController::class)->except(['show']);
         });
 
         Route::middleware('permission:cms.manage')->group(function () {
@@ -226,7 +248,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('cms-pages/{cms_page}/preview', [AdminCmsPageController::class, 'preview'])->name('cms-pages.preview');
             Route::resource('cms-pages', AdminCmsPageController::class)->only(['index', 'destroy']);
             Route::resource('blog-posts', AdminBlogPostController::class);
-            Route::resource('sliders', AdminSliderController::class);
+            Route::redirect('/sliders', '/admin/homepage');
+            Route::get('/sliders/{any}', fn () => redirect('/admin/homepage'))->where('any', '.*');
             Route::resource('navigation', AdminNavigationController::class)->except(['show']);
             Route::resource('faq-categories', AdminFaqCategoryController::class)->except(['show']);
             Route::resource('faq-categories.items', AdminFaqItemController::class)->except(['show']);

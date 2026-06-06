@@ -10,6 +10,7 @@ class CatalogRule extends Model
         'name', 'description', 'rule_type', 'discount_type', 'discount_amount',
         'min_order_amount', 'min_qty', 'buy_qty', 'get_qty', 'get_discount_percent',
         'category_ids', 'product_ids', 'start_date', 'end_date', 'is_active', 'priority',
+        'slug', 'meta_title', 'meta_description', 'banner_image',
     ];
 
     protected function casts(): array

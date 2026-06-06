@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useMemo } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
@@ -40,6 +40,11 @@ const emptyWilayah = (): WilayahValue => ({
 export default function Index({ items, pricing, cities, banks, midtransActive, customer, addresses }: Props) {
     const defaultBankId = banks[0]?.id;
     const defaultPaymentMethod = midtransActive ? 'midtrans' : defaultBankId ? `bank_${defaultBankId}` : '';
+
+    const couponForm = useForm({
+        coupon_code: pricing.couponCode ?? '',
+        redirect: 'checkout' as const,
+    });
 
     const { data, setData, post, processing, errors, transform } = useForm({
         customer_name: customer?.name ?? '',
@@ -97,6 +102,18 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
             village_code: addr.villageCode ?? '',
             village_name: addr.villageName ?? '',
             postal_code: addr.postalCode ?? '',
+        });
+    };
+
+    const applyCoupon = (e: React.FormEvent) => {
+        e.preventDefault();
+        couponForm.post('/cart/coupon', { preserveScroll: true });
+    };
+
+    const removeCoupon = () => {
+        router.delete('/cart/coupon', {
+            data: { redirect: 'checkout' },
+            preserveScroll: true,
         });
     };
 
@@ -242,10 +259,33 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
                                         <span className="shrink-0">{formatRupiah(item.subtotal)}</span>
                                     </div>
                                 ))}
+                                {pricing.couponCode ? (
+                                    <div className="flex items-center justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                                        <span>Kupon <strong>{pricing.couponCode}</strong> aktif</span>
+                                        <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800 hover:text-green-900" onClick={removeCoupon}>
+                                            Hapus
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={applyCoupon} className="flex gap-2">
+                                        <Input
+                                            placeholder="Kode kupon"
+                                            value={couponForm.data.coupon_code}
+                                            onChange={(e) => couponForm.setData('coupon_code', e.target.value)}
+                                            className="h-9"
+                                        />
+                                        <Button type="submit" variant="outline" size="sm" disabled={couponForm.processing}>
+                                            Apply
+                                        </Button>
+                                    </form>
+                                )}
                                 <div className="border-t pt-2 space-y-1">
                                     <div className="flex justify-between"><span>Subtotal</span><span>{formatRupiah(pricing.subtotal)}</span></div>
                                     {pricing.discountAmount > 0 && (
-                                        <div className="flex justify-between text-green-600"><span>Diskon</span><span>-{formatRupiah(pricing.discountAmount)}</span></div>
+                                        <div className="flex justify-between text-green-600">
+                                            <span>Diskon{pricing.couponCode ? ` (${pricing.couponCode})` : ''}</span>
+                                            <span>-{formatRupiah(pricing.discountAmount)}</span>
+                                        </div>
                                     )}
                                     {pricing.taxAmount > 0 && (
                                         <div className="flex justify-between"><span>Pajak</span><span>{formatRupiah(pricing.taxAmount)}</span></div>

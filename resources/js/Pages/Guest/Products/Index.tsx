@@ -20,8 +20,10 @@ type Props = {
         sort?: string;
         min_price?: string;
         max_price?: string;
+        flash_sale?: string | null;
     };
     activeCategory?: ActiveCategory | null;
+    pageTitle?: string | null;
 };
 
 const sortOptions = [
@@ -30,20 +32,23 @@ const sortOptions = [
     { value: 'price_desc', label: 'Harga Tertinggi' },
 ];
 
-export default function Index({ products, categories, filters, activeCategory }: Props) {
+export default function Index({ products, categories, filters, activeCategory, pageTitle }: Props) {
+    const isFlashSale = filters.flash_sale === '1';
+
     const applySort = (sort: string) => {
         router.get('/products', { ...filters, sort }, { preserveState: true });
     };
 
     const breadcrumbItems = [
         { label: 'Beranda', href: '/' },
-        { label: 'Produk', href: '/products' },
-        ...(activeCategory?.breadcrumbPath ?? []),
+        ...(isFlashSale
+            ? [{ label: 'Flash Sale', href: '/products?flash_sale=1' }]
+            : [{ label: 'Produk', href: '/products' }, ...(activeCategory?.breadcrumbPath ?? [])]),
     ];
 
     return (
         <GuestLayout>
-            <Head title={activeCategory ? `${activeCategory.name} — Produk` : 'Produk'} />
+            <Head title={isFlashSale ? 'Flash Sale' : activeCategory ? `${activeCategory.name} — Produk` : 'Produk'} />
             <PageContainer>
                 <Breadcrumb items={breadcrumbItems} />
 
@@ -55,7 +60,7 @@ export default function Index({ products, categories, filters, activeCategory }:
                             <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
                                 <p className="text-sm text-muted-foreground">
                                     {products.meta.total} produk ditemukan
-                                    {activeCategory ? ` di ${activeCategory.name}` : ''}
+                                    {isFlashSale ? ' di Flash Sale' : activeCategory ? ` di ${activeCategory.name}` : ''}
                                 </p>
                                 <div className="flex gap-1 overflow-x-auto">
                                     {sortOptions.map((opt) => (

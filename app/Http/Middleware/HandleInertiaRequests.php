@@ -25,6 +25,7 @@ class HandleInertiaRequests extends Middleware
             'theme' => InertiaData::theme(),
             'navigation' => InertiaData::navigation(),
             'categories' => InertiaData::categories(),
+            'promotionPopup' => InertiaData::promotionPopup(),
         ];
     }
 }

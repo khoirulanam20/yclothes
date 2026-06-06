@@ -19,13 +19,23 @@ type Pricing = {
 type Props = { items: CartItem[]; pricing: Pricing };
 
 export default function Index({ items, pricing }: Props) {
-    const couponForm = useForm({ coupon_code: '' });
+    const couponForm = useForm({
+        coupon_code: pricing.couponCode ?? '',
+        redirect: 'cart' as const,
+    });
 
     const updateQty = (key: string, qty: number) => router.post('/cart/update', { key, qty }, { preserveScroll: true });
     const removeItem = (key: string) => router.post('/cart/remove', { key }, { preserveScroll: true });
     const applyCoupon = (e: React.FormEvent) => {
         e.preventDefault();
         couponForm.post('/cart/coupon', { preserveScroll: true });
+    };
+
+    const removeCoupon = () => {
+        router.delete('/cart/coupon', {
+            data: { redirect: 'cart' },
+            preserveScroll: true,
+        });
     };
 
     const total = pricing.subtotal - pricing.discountAmount + pricing.taxAmount;
@@ -108,15 +118,26 @@ export default function Index({ items, pricing }: Props) {
                                         <span className="text-primary">{formatRupiah(total)}</span>
                                     </div>
                                 </div>
-                                <form onSubmit={applyCoupon} className="flex gap-2 pt-4">
-                                    <Input
-                                        placeholder="Kode kupon"
-                                        value={couponForm.data.coupon_code}
-                                        onChange={(e) => couponForm.setData('coupon_code', e.target.value)}
-                                        className="h-9"
-                                    />
-                                    <Button type="submit" variant="outline" size="sm">Apply</Button>
-                                </form>
+                                {pricing.couponCode ? (
+                                    <div className="flex items-center justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 pt-4">
+                                        <span>Kupon <strong>{pricing.couponCode}</strong> aktif</span>
+                                        <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800 hover:text-green-900" onClick={removeCoupon}>
+                                            Hapus
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={applyCoupon} className="flex gap-2 pt-4">
+                                        <Input
+                                            placeholder="Kode kupon"
+                                            value={couponForm.data.coupon_code}
+                                            onChange={(e) => couponForm.setData('coupon_code', e.target.value)}
+                                            className="h-9"
+                                        />
+                                        <Button type="submit" variant="outline" size="sm" disabled={couponForm.processing}>
+                                            Apply
+                                        </Button>
+                                    </form>
+                                )}
                                 <Button className="w-full mt-4" asChild>
                                     <Link href="/checkout">Checkout</Link>
                                 </Button>
