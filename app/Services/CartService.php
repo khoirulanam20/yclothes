@@ -61,6 +61,45 @@ class CartService
         return array_sum(array_column($this->get(), 'qty'));
     }
 
+    public function resolvableCount(CartItemResolver $resolver): int
+    {
+        $total = 0;
+
+        foreach ($this->get() as $item) {
+            if ($resolver->resolve($item)) {
+                $total += (int) ($item['qty'] ?? 0);
+            }
+        }
+
+        return $total;
+    }
+
+    /** @param  array<int, string>  $removedKeys */
+    public function pruneCheckoutSelection(): void
+    {
+        $selection = $this->getCheckoutSelection();
+
+        if ($selection === null) {
+            return;
+        }
+
+        $cart = $this->get();
+        $valid = array_values(array_filter(
+            $selection,
+            fn (string $key) => isset($cart[$key]),
+        ));
+
+        if ($valid === []) {
+            $this->clearCheckoutSelection();
+
+            return;
+        }
+
+        if ($valid !== $selection) {
+            $this->setCheckoutSelection($valid);
+        }
+    }
+
     public function merge(array $incoming): array
     {
         $cart = $this->get();

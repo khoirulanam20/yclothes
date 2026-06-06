@@ -37,7 +37,6 @@ class CartPricingService
     public function build(?string $shippingCity = null, ?string $couponCode = null, ?array $onlyKeys = null): array
     {
         $cart = $this->cartService->get();
-        $onlyKeys ??= $this->cartService->getCheckoutSelection();
 
         if ($onlyKeys !== null) {
             $cart = array_intersect_key($cart, array_flip($onlyKeys));

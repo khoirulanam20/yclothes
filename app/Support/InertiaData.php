@@ -7,6 +7,7 @@ use App\Models\NavigationItem;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AdminBadgeService;
+use App\Services\CartItemResolver;
 use App\Services\CartService;
 use App\Services\CategoryTreeService;
 use App\Services\PromotionPopupService;
@@ -111,9 +112,9 @@ class InertiaData
 
     public static function cartCount(): int
     {
-        $cart = app(CartService::class)->get();
+        $cartService = app(CartService::class);
 
-        return (int) array_sum(array_column($cart, 'qty'));
+        return $cartService->resolvableCount(app(CartItemResolver::class));
     }
 
     public static function promotionPopup(): ?array

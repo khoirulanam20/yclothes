@@ -47,7 +47,7 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
 
-        $pricing = $this->cartPricing->build();
+        $pricing = $this->cartPricing->build(null, null, $this->checkoutOnlyKeys());
         if ($pricing['items'] === []) {
             $this->cartService->clearCheckoutSelection();
 
@@ -104,7 +104,7 @@ class CheckoutController extends Controller
             return response()->json(['cost' => 0, 'error' => 'Kota tidak tersedia']);
         }
 
-        $pricing = $this->cartPricing->build($shipping->city_name);
+        $pricing = $this->cartPricing->build($shipping->city_name, null, $this->checkoutOnlyKeys());
         $totalWeight = $pricing['total_weight'];
         $cost = $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping']);
 
@@ -129,7 +129,7 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
 
-        $previewPricing = $this->cartPricing->build();
+        $previewPricing = $this->cartPricing->build(null, null, $this->checkoutOnlyKeys());
         if ($previewPricing['items'] === []) {
             $this->cartService->clearCheckoutSelection();
 
@@ -195,7 +195,7 @@ class CheckoutController extends Controller
         }
 
         $shipping = ShippingCost::findOrFail($validated['shipping_city']);
-        $pricing = $this->cartPricing->build($shipping->city_name);
+        $pricing = $this->cartPricing->build($shipping->city_name, null, $this->checkoutOnlyKeys());
 
         if ($pricing['coupon_code']) {
             $couponError = $this->promotionEngine->validateCoupon(
@@ -421,5 +421,11 @@ class CheckoutController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /** @return array<int, string>|null */
+    private function checkoutOnlyKeys(): ?array
+    {
+        return $this->cartService->getCheckoutSelection();
     }
 }

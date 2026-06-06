@@ -127,6 +127,30 @@ class CartTest extends TestCase
             );
     }
 
+    public function test_cart_index_shows_all_items_when_checkout_selection_is_stale(): void
+    {
+        $products = Product::take(2)->get();
+        $first = $products[0];
+        $second = $products[1];
+        $firstKey = $first->id.'--';
+        $secondKey = $second->id.'--';
+
+        $this->postJson('/cart/add', ['product_id' => $first->id, 'qty' => 1]);
+        $this->postJson('/cart/add', ['product_id' => $second->id, 'qty' => 1]);
+
+        session([CartService::CHECKOUT_SELECTION_KEY => [$firstKey]]);
+
+        $this->postJson('/cart/remove', ['key' => $firstKey]);
+
+        $this->get('/cart')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Cart/Index')
+                ->has('items', 1)
+                ->where('items.0.product.slug', $second->slug)
+            );
+    }
+
     public function test_checkout_process_removes_only_selected_items_from_cart(): void
     {
         $products = Product::take(2)->get();

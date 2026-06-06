@@ -260,6 +260,7 @@ class CartController extends Controller
         $cart = $this->cartService->get();
         unset($cart[$validated['key']]);
         $this->cartService->put($cart);
+        $this->cartService->pruneCheckoutSelection();
 
         return $this->cartActionResponse($request, 'Item dihapus dari keranjang');
     }
