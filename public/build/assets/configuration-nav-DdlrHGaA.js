@@ -1,1 +1,0 @@
-const i="/admin/configuration";function o(...n){return n.length===0?[{label:"Konfigurasi"}]:[{label:"Konfigurasi",href:i},...n]}function t(n,r,...a){return o(r?{label:n,href:r}:{label:n},...a)}export{i as C,t as a,o as c};
