@@ -107,6 +107,24 @@ if (! function_exists('weight_unit_label')) {
     }
 }
 
+if (! function_exists('format_product_weight')) {
+    function format_product_weight(?int $weightGrams): ?string
+    {
+        if ($weightGrams === null || $weightGrams <= 0) {
+            return null;
+        }
+
+        if ($weightGrams >= 1000) {
+            $kg = $weightGrams / 1000;
+            $formatted = rtrim(rtrim(number_format($kg, 2, '.', ''), '0'), '.');
+
+            return "{$formatted} kg";
+        }
+
+        return "{$weightGrams} gram";
+    }
+}
+
 if (! function_exists('generate_unique_payment_amount')) {
     function generate_unique_payment_amount(int $grandTotal, int $orderId): int
     {

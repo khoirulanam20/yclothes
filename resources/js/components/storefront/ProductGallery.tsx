@@ -21,7 +21,7 @@ export function ProductGallery({ images, activeImage, onActiveChange, overlayLab
 
     return (
         <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-xl border bg-muted aspect-square">
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted">
                 {overlayLabel && (
                     <Badge className="absolute left-3 top-3 z-10 border-transparent bg-foreground/80 text-background">
                         {overlayLabel}
@@ -30,7 +30,7 @@ export function ProductGallery({ images, activeImage, onActiveChange, overlayLab
                 {mainImage ? (
                     <img src={mainImage} alt="" className="h-full w-full object-cover" />
                 ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                         Tidak ada gambar
                     </div>
                 )}
@@ -65,8 +65,10 @@ export function ProductGallery({ images, activeImage, onActiveChange, overlayLab
                                 type="button"
                                 onClick={() => onActiveChange(url)}
                                 className={cn(
-                                    'h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors',
-                                    (activeImage || images[0]) === url ? 'border-primary' : 'border-transparent hover:border-border',
+                                    'h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg border-2 bg-background transition-colors',
+                                    (activeImage || images[0]) === url
+                                        ? 'border-primary'
+                                        : 'border-border/60 hover:border-primary/40',
                                 )}
                             >
                                 <img src={url} alt="" className="h-full w-full object-cover" />

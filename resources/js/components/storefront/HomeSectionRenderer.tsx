@@ -8,10 +8,14 @@ import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type Slider = { id: number; title: string | null; imageUrl: string; linkUrl: string | null };
 type BlogPost = { id: number; title: string; slug: string; excerpt: string | null; featuredImageUrl: string | null };
 type Category = { id: number; name: string; slug: string; imageUrl: string | null };
+
+/** Radius seragam dengan hero slider di halaman utama */
+const HOME_SECTION_RADIUS = 'rounded-2xl';
 
 export type HomeSection = {
     id: string;
@@ -60,6 +64,7 @@ function ProductGridSection({
 }) {
     return (
         <SectionCard
+            className={HOME_SECTION_RADIUS}
             title={title}
             action={actionLabel && actionHref ? { label: actionLabel, href: actionHref } : undefined}
         >
@@ -103,6 +108,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                     <SectionHeadMeta props={props} />
                     <PageContainer>
                         <SectionCard
+                            className={HOME_SECTION_RADIUS}
                             title={(props.title as string) || 'Flash Sale'}
                             variant="primary"
                             headerExtra={
@@ -128,7 +134,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
             }
             return (
                 <PageContainer>
-                    <SectionCard title={(props.title as string) || 'Kategori'}>
+                    <SectionCard className={HOME_SECTION_RADIUS} title={(props.title as string) || 'Kategori'}>
                         <div
                             className="grid gap-3"
                             style={{
@@ -139,7 +145,10 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                                 <Link
                                     key={cat.id}
                                     href={`/products?category=${cat.slug}`}
-                                    className="group store-card store-card-hover rounded-xl border bg-card p-3 text-center transition-colors hover:border-primary/40"
+                                    className={cn(
+                                        'group store-card store-card-hover border bg-card p-3 text-center transition-colors hover:border-primary/40',
+                                        HOME_SECTION_RADIUS,
+                                    )}
                                 >
                                     {(props.showImages as boolean) !== false && cat.imageUrl && (
                                         <img
@@ -197,6 +206,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
             return (
                 <PageContainer>
                     <SectionCard
+                        className={HOME_SECTION_RADIUS}
                         title={(props.title as string) || 'Blog Terbaru'}
                         action={
                             props.actionLabel && props.actionHref
@@ -206,7 +216,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                     >
                         <div className="grid md:grid-cols-3 gap-4">
                             {section.posts.map((post) => (
-                                <Card key={post.id} className="overflow-hidden border shadow-none">
+                                <Card key={post.id} className={cn('overflow-hidden border shadow-none', HOME_SECTION_RADIUS)}>
                                     <Link href={`/blog/${post.slug}`}>
                                         {post.featuredImageUrl && (
                                             <img

@@ -111,12 +111,68 @@
     }
 }
 
-.cms-content img {
-    @apply max-w-full rounded-lg my-4;
+.cms-content {
+    @apply max-w-none text-sm leading-relaxed text-foreground;
 }
 
-.cms-content p {
+.cms-content :where(h1, h2, h3, h4, h5, h6) {
+    @apply mt-6 mb-3 font-semibold leading-snug text-foreground first:mt-0;
+}
+
+.cms-content :where(h1) {
+    @apply text-2xl;
+}
+
+.cms-content :where(h2) {
+    @apply text-xl;
+}
+
+.cms-content :where(h3) {
+    @apply text-lg;
+}
+
+.cms-content :where(p) {
     @apply mb-4 leading-relaxed;
+}
+
+.cms-content :where(ul) {
+    @apply mb-4 list-disc space-y-1 pl-5;
+}
+
+.cms-content :where(ol) {
+    @apply mb-4 list-decimal space-y-1 pl-5;
+}
+
+.cms-content :where(li) {
+    @apply leading-relaxed;
+}
+
+.cms-content :where(a) {
+    @apply font-medium text-primary underline-offset-2 hover:underline;
+}
+
+.cms-content :where(strong, b) {
+    @apply font-semibold text-foreground;
+}
+
+.cms-content :where(blockquote) {
+    @apply my-4 border-l-4 border-primary/40 pl-4 italic text-muted-foreground;
+}
+
+.cms-content :where(table) {
+    @apply my-4 w-full border-collapse overflow-hidden rounded-lg border text-sm;
+}
+
+.cms-content :where(th, td) {
+    @apply border px-3 py-2 text-left align-top;
+}
+
+.cms-content :where(th) {
+    @apply bg-muted font-semibold;
+}
+
+.cms-content img {
+    @apply my-4 max-w-full rounded-lg;
 }
 
 @layer utilities {

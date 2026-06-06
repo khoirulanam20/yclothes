@@ -1,197 +1,121 @@
-import { Star } from 'lucide-react';
-import { ProductGrid } from '@/components/storefront/ProductGrid';
-import { StorefrontTabs } from '@/components/storefront/StorefrontTabs';
-import { type ProductCardData } from '@/components/ProductCard';
+import { Link } from '@inertiajs/react';
+import { type ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 
-type Review = {
-    id: number;
-    rating: number;
-    comment: string;
-    customerName: string;
-    createdAt?: string;
-    imagesUrl?: string[];
+type Category = {
+    name: string;
+    slug: string;
+};
+
+type SpecRow = {
+    label: string;
+    value: ReactNode;
 };
 
 type Props = {
     description?: string | null;
-    ratingAvg?: number;
-    reviewCount?: number;
-    reviews: Review[];
-    relatedProducts: ProductCardData[];
-    upSellProducts: ProductCardData[];
+    shortDescription?: string | null;
+    category?: Category | null;
+    weightLabel?: string | null;
+    minPurchaseQty?: number;
 };
 
-function RatingSummary({ ratingAvg, reviewCount, reviews }: { ratingAvg?: number; reviewCount?: number; reviews: Review[] }) {
-    const distribution = [5, 4, 3, 2, 1].map((star) => ({
-        star,
-        count: reviews.filter((r) => r.rating === star).length,
-    }));
-    const maxCount = Math.max(...distribution.map((d) => d.count), 1);
-
+function SpecList({ rows }: { rows: SpecRow[] }) {
     return (
-        <div className="mb-6 flex flex-wrap gap-6">
-            <div className="text-center">
-                <p className="text-4xl font-bold">{ratingAvg?.toFixed(1) ?? '—'}</p>
-                <div className="mt-1 flex items-center justify-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <Star
-                            key={i}
-                            className={cn(
-                                'size-4',
-                                i <= Math.round(ratingAvg ?? 0)
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-muted-foreground/30',
-                            )}
-                        />
-                    ))}
+        <dl className="space-y-3 border-b pb-5 text-sm">
+            {rows.map((row) => (
+                <div key={row.label} className="grid grid-cols-[7.5rem_1fr] gap-x-4 gap-y-1">
+                    <dt className="text-muted-foreground">{row.label}</dt>
+                    <dd className="font-semibold text-foreground">{row.value}</dd>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{reviewCount ?? 0} ulasan</p>
-            </div>
-            <div className="flex-1 min-w-[200px] space-y-1.5">
-                {distribution.map(({ star, count }) => (
-                    <div key={star} className="flex items-center gap-2 text-xs">
-                        <span className="w-3">{star}</span>
-                        <Star className="size-3 fill-amber-400 text-amber-400" />
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                            <div
-                                className="h-full rounded-full bg-primary transition-all"
-                                style={{ width: `${(count / maxCount) * 100}%` }}
-                            />
-                        </div>
-                        <span className="w-6 text-muted-foreground">{count}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
+            ))}
+        </dl>
     );
 }
 
 export function ProductDetailTabs({
     description,
-    ratingAvg,
-    reviewCount,
-    reviews,
-    relatedProducts,
-    upSellProducts,
+    shortDescription,
+    category,
+    weightLabel,
+    minPurchaseQty = 1,
 }: Props) {
-    const [activeTab, setActiveTab] = useState('detail');
     const [expanded, setExpanded] = useState(false);
-
-    const buyerPhotos = reviews.flatMap((r) => r.imagesUrl ?? []);
-    const recommendationProducts = [...upSellProducts, ...relatedProducts].filter(
-        (product, index, arr) => arr.findIndex((p) => p.id === product.id) === index,
-    );
-
-    const tabs = [
-        { id: 'detail', label: 'Detail Produk' },
-        { id: 'reviews', label: `Ulasan${reviewCount ? ` (${reviewCount})` : ''}` },
-        { id: 'recommendations', label: 'Rekomendasi' },
-    ];
 
     const plainDescription = description?.replace(/<[^>]+>/g, '') ?? '';
     const isLong = plainDescription.length > 280;
 
-    return (
-        <div className="space-y-4">
-            <StorefrontTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+    const specRows: SpecRow[] = [
+        { label: 'Kondisi', value: 'Baru' },
+        ...(weightLabel ? [{ label: 'Berat Satuan', value: weightLabel }] : []),
+        { label: 'Min. Beli', value: `${minPurchaseQty} Buah` },
+        ...(category
+            ? [
+                  {
+                      label: 'Kategori',
+                      value: (
+                          <Link
+                              href={`/products?category=${category.slug}`}
+                              className="font-semibold text-primary hover:underline"
+                          >
+                              {category.name}
+                          </Link>
+                      ),
+                  },
+              ]
+            : []),
+        {
+            label: 'Etalase',
+            value: (
+                <Link href="/products" className="font-semibold text-primary hover:underline">
+                    Semua Produk
+                </Link>
+            ),
+        },
+    ];
 
-            {activeTab === 'detail' && (
-                <div className="py-4 space-y-4">
-                    {description ? (
-                        <div>
-                            <div
-                                className={cn(
-                                    'prose prose-sm max-w-none text-muted-foreground',
-                                    !expanded && isLong && 'line-clamp-6',
-                                )}
-                                dangerouslySetInnerHTML={{ __html: description }}
-                            />
-                            {isLong && (
-                                <button
-                                    type="button"
-                                    onClick={() => setExpanded((v) => !v)}
-                                    className="mt-2 text-sm font-medium text-primary hover:underline"
-                                >
-                                    {expanded ? 'Sembunyikan' : 'Lihat selengkapnya'}
-                                </button>
+    return (
+        <div className="mt-4">
+            <div className="border-b">
+                <p className="inline-block border-b-2 border-primary pb-3 pt-1 text-sm font-semibold text-primary">
+                    Detail Produk
+                </p>
+            </div>
+
+            <div className="space-y-5 pt-5">
+                <SpecList rows={specRows} />
+
+                {shortDescription && (
+                    <p className="text-sm font-medium leading-relaxed text-foreground">{shortDescription}</p>
+                )}
+
+                {description ? (
+                    <div>
+                        <div
+                            className={cn(
+                                'cms-content relative',
+                                !expanded && isLong && 'max-h-48 overflow-hidden',
+                            )}
+                        >
+                            <div dangerouslySetInnerHTML={{ __html: description }} />
+                            {!expanded && isLong && (
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
                             )}
                         </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">Belum ada deskripsi produk.</p>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'reviews' && (
-                <div className="py-4">
-                    {(ratingAvg ?? 0) > 0 && (
-                        <RatingSummary ratingAvg={ratingAvg} reviewCount={reviewCount} reviews={reviews} />
-                    )}
-
-                    {buyerPhotos.length > 0 && (
-                        <div className="mb-6">
-                            <p className="mb-2 text-sm font-medium">Foto & Video Pembeli</p>
-                            <div className="store-scroll-x flex gap-2 overflow-x-auto pb-1">
-                                {buyerPhotos.map((url, index) => (
-                                    <img
-                                        key={`${url}-${index}`}
-                                        src={url}
-                                        alt=""
-                                        className="size-20 shrink-0 rounded-lg border object-cover"
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {reviews.length > 0 ? (
-                        <div className="space-y-3">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="rounded-xl border bg-card p-4">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-medium">{review.customerName}</span>
-                                        <div className="flex items-center gap-0.5">
-                                            {Array.from({ length: review.rating }).map((_, i) => (
-                                                <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {review.createdAt && (
-                                        <p className="mt-0.5 text-xs text-muted-foreground">{review.createdAt}</p>
-                                    )}
-                                    <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
-                                    {review.imagesUrl && review.imagesUrl.length > 0 && (
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {review.imagesUrl.map((url, index) => (
-                                                <img
-                                                    key={`${url}-${index}`}
-                                                    src={url}
-                                                    alt=""
-                                                    className="size-16 rounded-md border object-cover"
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">Belum ada ulasan untuk produk ini.</p>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'recommendations' && (
-                <div className="py-4">
-                    {recommendationProducts.length > 0 ? (
-                        <ProductGrid products={recommendationProducts} columns="wide" />
-                    ) : (
-                        <p className="text-sm text-muted-foreground">Belum ada rekomendasi produk.</p>
-                    )}
-                </div>
-            )}
+                        {isLong && (
+                            <button
+                                type="button"
+                                onClick={() => setExpanded((v) => !v)}
+                                className="mt-3 text-sm font-semibold text-primary hover:underline"
+                            >
+                                {expanded ? 'Sembunyikan' : 'Lihat selengkapnya'}
+                            </button>
+                        )}
+                    </div>
+                ) : !shortDescription ? (
+                    <p className="text-sm text-muted-foreground">Belum ada deskripsi produk.</p>
+                ) : null}
+            </div>
         </div>
     );
 }

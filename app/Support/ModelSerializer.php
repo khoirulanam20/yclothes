@@ -56,6 +56,10 @@ class ModelSerializer
             $data['imagesUrl'] = $product->images_url;
             $data['sizes'] = $product->sizes;
             $data['colors'] = $product->colors;
+            $data['shortDescription'] = $product->short_description;
+            $data['weight'] = $product->weight;
+            $data['weightLabel'] = format_product_weight($product->weight);
+            $data['minPurchaseQty'] = 1;
             $data['ratingAvg'] = (float) $product->rating_avg;
             $data['reviewCount'] = $product->review_count;
             $data['trackStock'] = $product->track_stock;

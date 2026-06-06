@@ -7,12 +7,14 @@ import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductDetailTabs } from '@/components/storefront/ProductDetailTabs';
 import { ProductGallery } from '@/components/storefront/ProductGallery';
+import { ProductGrid } from '@/components/storefront/ProductGrid';
 import { ProductPurchaseCard } from '@/components/storefront/ProductPurchaseCard';
+import { ProductReviewsSection } from '@/components/storefront/ProductReviewsSection';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Badge } from '@/components/ui/badge';
 import { toggleWishlist } from '@/lib/toggleWishlist';
 import { guestToast } from '@/lib/guestToast';
-import { contrastTextColor } from '@/lib/utils';
+import { contrastTextColor, formatRupiah } from '@/lib/utils';
 
 type Variant = {
     id: number;
@@ -42,6 +44,10 @@ type Review = {
 
 type Product = ProductCardData & {
     description?: string | null;
+    shortDescription?: string | null;
+    weightLabel?: string | null;
+    minPurchaseQty?: number;
+    category?: { id: number; name: string; slug: string } | null;
     imagesUrl?: string[];
     sizes?: string[];
     colors?: string[];
@@ -135,6 +141,15 @@ export default function Show({
     const displayPurchasable = selectedVariant?.isPurchasable ?? defaultPurchasable;
     const displayOutOfStock = selectedVariant?.isOutOfStock ?? defaultOutOfStock;
     const trackStock = selectedVariant?.trackStock ?? product.trackStock ?? true;
+    const showStrikePrice = (product.salePrice || product.catalogHasDiscount) && displayPrice < product.price;
+
+    const recommendationProducts = useMemo(
+        () =>
+            [...upSellProducts, ...relatedProducts].filter(
+                (item, index, arr) => arr.findIndex((p) => p.id === item.id) === index,
+            ),
+        [relatedProducts, upSellProducts],
+    );
 
     useEffect(() => {
         if (displayImages[0]) {
@@ -199,21 +214,23 @@ export default function Show({
                     ]}
                 />
 
-                <SectionCard noPadding className="mb-4 overflow-hidden">
-                    <div className="grid gap-0 lg:grid-cols-12">
-                        <div className="p-4 lg:col-span-4">
-                            <ProductGallery
-                                images={displayImages}
-                                activeImage={activeImage}
-                                onActiveChange={setActiveImage}
-                                overlayLabel={variantOverlayLabel(selectedVariant)}
-                            />
+                <div className="mb-4 rounded-xl border bg-card shadow-sm">
+                    <div className="grid lg:grid-cols-12 lg:items-stretch">
+                        <div className="border-b p-4 lg:col-span-4 lg:row-start-1 lg:border-b-0">
+                            <div className="lg:sticky lg:top-[5.75rem] lg:z-10">
+                                <ProductGallery
+                                    images={displayImages}
+                                    activeImage={activeImage}
+                                    onActiveChange={setActiveImage}
+                                    overlayLabel={variantOverlayLabel(selectedVariant)}
+                                />
+                            </div>
                         </div>
 
-                        <div className="border-t p-4 lg:col-span-5 lg:border-t-0 lg:border-l">
+                        <div className="border-b p-4 lg:col-span-5 lg:row-start-1 lg:border-b-0">
                             {product.badge && (
                                 <Badge
-                                    className="mb-2 border-transparent"
+                                    className="mb-3 border-transparent"
                                     style={
                                         product.badgeColor
                                             ? {
@@ -226,53 +243,82 @@ export default function Show({
                                     {product.badge}
                                 </Badge>
                             )}
-                            <h1 className="text-xl font-bold leading-snug lg:text-2xl">{product.name}</h1>
+                            <h1 className="text-xl font-bold leading-snug text-foreground lg:text-2xl">
+                                {product.name}
+                            </h1>
+
                             {product.ratingAvg ? (
-                                <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-                                    <Star className="size-4 fill-amber-400 text-amber-400" />
-                                    <span className="font-medium text-foreground">{product.ratingAvg.toFixed(1)}</span>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1">
+                                        <Star className="size-4 fill-amber-400 text-amber-400" />
+                                        <span className="font-medium text-foreground">
+                                            {product.ratingAvg.toFixed(1)}
+                                        </span>
+                                    </span>
                                     <span>· {product.reviewCount} ulasan</span>
                                 </div>
                             ) : null}
 
-                            <div className="mt-6">
-                                <ProductDetailTabs
-                                    description={product.description}
-                                    ratingAvg={product.ratingAvg}
-                                    reviewCount={product.reviewCount}
-                                    reviews={reviews}
-                                    relatedProducts={relatedProducts}
-                                    upSellProducts={upSellProducts}
+                            <div className="mt-4 border-b pb-4">
+                                {showStrikePrice && (
+                                    <p className="text-sm text-muted-foreground line-through">
+                                        {formatRupiah(product.price)}
+                                    </p>
+                                )}
+                                <p className="text-3xl font-bold tracking-tight text-foreground">
+                                    {formatRupiah(displayPrice)}
+                                </p>
+                            </div>
+
+                            <ProductDetailTabs
+                                description={product.description}
+                                shortDescription={product.shortDescription}
+                                category={product.category}
+                                weightLabel={product.weightLabel}
+                                minPurchaseQty={product.minPurchaseQty}
+                            />
+                        </div>
+
+                        <div className="border-b p-4 lg:col-span-3 lg:row-start-1 lg:border-b-0 lg:p-0 lg:self-stretch">
+                            <div className="lg:sticky lg:top-[5.75rem] lg:z-10 lg:p-4">
+                                <ProductPurchaseCard
+                                    productPrice={product.price}
+                                    salePrice={product.salePrice}
+                                    variants={variants}
+                                    selectedVariantId={data.variant_id}
+                                    onVariantChange={handleVariantChange}
+                                    qty={data.qty}
+                                    onQtyChange={(qty) => setData('qty', qty)}
+                                    displayPrice={displayPrice}
+                                    displayStock={displayStock}
+                                    displayPurchasable={displayPurchasable}
+                                    displayOutOfStock={displayOutOfStock}
+                                    trackStock={trackStock}
+                                    processing={processing}
+                                    inWishlist={inWishlist}
+                                    wishlistLoading={wishlistLoading}
+                                    onAddToCart={addToCart}
+                                    onBuyNow={buyNow}
+                                    onToggleWishlist={handleToggleWishlist}
                                 />
                             </div>
                         </div>
 
-                        <div className="border-t p-4 lg:col-span-3 lg:border-t-0 lg:border-l lg:bg-muted/20">
-                            <ProductPurchaseCard
-                                productName={product.name}
-                                productPrice={product.price}
-                                salePrice={product.salePrice}
-                                variants={variants}
-                                selectedVariantId={data.variant_id}
-                                onVariantChange={handleVariantChange}
-                                qty={data.qty}
-                                onQtyChange={(qty) => setData('qty', qty)}
-                                displayPrice={displayPrice}
-                                displayStock={displayStock}
-                                displayPurchasable={displayPurchasable}
-                                displayOutOfStock={displayOutOfStock}
-                                trackStock={trackStock}
-                                processing={processing}
-                                inWishlist={inWishlist}
-                                wishlistLoading={wishlistLoading}
-                                onAddToCart={addToCart}
-                                onBuyNow={buyNow}
-                                onToggleWishlist={handleToggleWishlist}
-                                variantPreviewUrl={activeImage || displayImages[0]}
+                        <div className="border-t p-4 lg:col-span-12 lg:row-start-2">
+                            <ProductReviewsSection
+                                ratingAvg={product.ratingAvg}
+                                reviewCount={product.reviewCount}
+                                reviews={reviews}
                             />
                         </div>
                     </div>
-                </SectionCard>
+                </div>
+
+                {recommendationProducts.length > 0 && (
+                    <SectionCard title="Rekomendasi untuk Kamu" className="mt-4">
+                        <ProductGrid products={recommendationProducts} columns="wide" />
+                    </SectionCard>
+                )}
             </PageContainer>
         </GuestLayout>
     );
