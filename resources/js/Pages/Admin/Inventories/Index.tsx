@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
@@ -73,6 +74,7 @@ export default function Index({ inventories, recentMovements, warehouses, filter
     return (
         <AdminLayout title="Stok" breadcrumbs={[{ label: 'Stok' }]}>
             <Head title="Stok" />
+            <AdminContent>
             <AdminPageHeader title="Stok" createHref="/admin/inventories/create" />
 
             <Card className="mb-4">
@@ -118,7 +120,8 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                     {inventories.data.length === 0 ? (
                         <p className="p-4 text-sm text-muted-foreground">Tidak ada data stok.</p>
                     ) : (
-                        <Table>
+                        <AdminTableScroll>
+                            <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Barang</TableHead>
@@ -167,6 +170,7 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                                 ))}
                             </TableBody>
                         </Table>
+                        </AdminTableScroll>
                     )}
                 </CardContent>
             </Card>
@@ -183,7 +187,8 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                     {recentMovements.length === 0 ? (
                         <p className="p-4 text-sm text-muted-foreground">Belum ada pergerakan stok.</p>
                     ) : (
-                        <Table>
+                        <AdminTableScroll>
+                            <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Waktu</TableHead>
@@ -211,9 +216,11 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                                 ))}
                             </TableBody>
                         </Table>
+                        </AdminTableScroll>
                     )}
                 </CardContent>
             </Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

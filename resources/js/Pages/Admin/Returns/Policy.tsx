@@ -1,11 +1,12 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type Props = {
     policy: {
@@ -17,7 +18,7 @@ type Props = {
 };
 
 export default function Policy({ policy }: Props) {
-    const { data, setData, post, processing } = useForm({
+    const { data, setData, processing } = useForm({
         default_return_window_days: policy.defaultReturnWindowDays,
         default_warranty_days: policy.defaultWarrantyDays,
         return_reasons: policy.returnReasons.join('\n'),
@@ -35,25 +36,46 @@ export default function Policy({ policy }: Props) {
     };
 
     return (
-        <AdminLayout title="Kebijakan Retur" breadcrumbs={[{ label: 'Retur', href: '/admin/returns' }, { label: 'Kebijakan' }]}>
+        <AdminLayout title="Kebijakan Retur" breadcrumbs={configurationSectionBreadcrumbs('Kebijakan Retur')}>
             <Head title="Kebijakan Retur" />
-            <AdminPageHeader title="Kebijakan Retur" backHref="/admin/returns" />
-            <form onSubmit={submit}>
-                <Card>
-                    <CardHeader><CardTitle>Pengaturan Global</CardTitle></CardHeader>
-                    <CardContent className="space-y-4 max-w-xl">
-                        <div><Label>Periode Retur (hari)</Label>
-                            <Input type="number" value={data.default_return_window_days} onChange={(e) => setData('default_return_window_days', Number(e.target.value))} /></div>
-                        <div><Label>Garansi Default (hari)</Label>
-                            <Input type="number" value={data.default_warranty_days} onChange={(e) => setData('default_warranty_days', Number(e.target.value))} /></div>
-                        <div><Label>Alasan Retur (satu per baris)</Label>
-                            <Textarea rows={6} value={data.return_reasons} onChange={(e) => setData('return_reasons', e.target.value)} /></div>
-                        <div><Label>Teks Kebijakan</Label>
-                            <Textarea rows={4} value={data.policy_text} onChange={(e) => setData('policy_text', e.target.value)} /></div>
-                        <Button type="submit" disabled={processing}>Simpan</Button>
-                    </CardContent>
-                </Card>
-            </form>
+            <AdminContent>
+                <AdminPageHeader title="Kebijakan Retur" backHref={CONFIGURATION_HREF} />
+                <form onSubmit={submit}>
+                    <AdminFormCard
+                        footer={<Button type="submit" disabled={processing}>Simpan</Button>}
+                    >
+                        <h2 className="text-sm font-semibold mb-4">Pengaturan Global</h2>
+                        <AdminFormGrid columns={2}>
+                            <div className="space-y-2">
+                                <Label htmlFor="default_return_window_days">Periode Retur (hari)</Label>
+                                <Input
+                                    id="default_return_window_days"
+                                    type="number"
+                                    value={data.default_return_window_days}
+                                    onChange={(e) => setData('default_return_window_days', Number(e.target.value))}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="default_warranty_days">Garansi Default (hari)</Label>
+                                <Input
+                                    id="default_warranty_days"
+                                    type="number"
+                                    value={data.default_warranty_days}
+                                    onChange={(e) => setData('default_warranty_days', Number(e.target.value))}
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="return_reasons">Alasan Retur (satu per baris)</Label>
+                                <Textarea id="return_reasons" rows={6} value={data.return_reasons} onChange={(e) => setData('return_reasons', e.target.value)} />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="policy_text">Teks Kebijakan</Label>
+                                <Textarea id="policy_text" rows={4} value={data.policy_text} onChange={(e) => setData('policy_text', e.target.value)} />
+                            </div>
+                        </AdminFormGrid>
+                    </AdminFormCard>
+                </form>
+            </AdminContent>
         </AdminLayout>
     );
 }

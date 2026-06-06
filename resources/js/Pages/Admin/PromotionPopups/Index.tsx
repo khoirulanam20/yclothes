@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +16,11 @@ export default function Index({ popups }: Props) {
     return (
         <AdminLayout title="Pop up Promosi" breadcrumbs={[{ label: 'Pop up Promosi' }]}>
             <Head title="Pop up Promosi" />
+            <AdminContent>
             <AdminPageHeader title="Pop up Promosi" createHref="/admin/promotion-popups/create" createLabel="Tambah Pop up" />
             <Card><CardContent className="p-0">
-                <table className="w-full text-sm">
+                <AdminTableScroll>
+                    <table className="w-full text-sm">
                     <thead><tr className="border-b text-left"><th className="p-3">Judul</th><th className="p-3">Periode</th><th className="p-3">Status</th><th className="p-3"></th></tr></thead>
                     <tbody>
                         {popups.map((p) => (
@@ -31,7 +34,9 @@ export default function Index({ popups }: Props) {
                         {popups.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Belum ada pop up.</td></tr>}
                     </tbody>
                 </table>
+                </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

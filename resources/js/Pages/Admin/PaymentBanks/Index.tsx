@@ -1,21 +1,25 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type Bank = { id: number; bankName: string; accountNumber: string; accountName: string; isActive?: boolean };
 type Props = { banks: Bank[] };
 
 export default function Index({ banks }: Props) {
     return (
-        <AdminLayout title="Rekening Bank" breadcrumbs={[{ label: 'Rekening' }]}>
+        <AdminLayout title="Rekening Bank" breadcrumbs={configurationSectionBreadcrumbs('Rekening Transfer')}>
             <Head title="Rekening Bank" />
-            <AdminPageHeader title="Rekening Bank" createHref="/admin/payment-banks/create" />
+            <AdminContent>
+            <AdminPageHeader title="Rekening Bank" backHref={CONFIGURATION_HREF} createHref="/admin/payment-banks/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Bank</TableHead><TableHead>No. Rekening</TableHead><TableHead>Atas Nama</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Bank</TableHead><TableHead>No. Rekening</TableHead><TableHead>Atas Nama</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{banks.map((b) => (
                         <TableRow key={b.id}>
                             <TableCell>{b.bankName}</TableCell><TableCell>{b.accountNumber}</TableCell><TableCell>{b.accountName}</TableCell>
@@ -26,7 +30,9 @@ export default function Index({ banks }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

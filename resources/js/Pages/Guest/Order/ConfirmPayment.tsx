@@ -14,9 +14,19 @@ type Order = {
     orderNumber: string; grandTotal: number; uniquePaymentAmount?: number | null;
     bankName?: string | null; bankAccountNumber?: string | null; bankAccountName?: string | null;
 };
-type Props = { order: Order; banks: Bank[] };
+type QrisSettings = {
+    imageUrl?: string | null;
+    merchantName?: string | null;
+    instructions?: string | null;
+};
+type Props = {
+    order: Order;
+    banks: Bank[];
+    isQris?: boolean;
+    qris?: QrisSettings | null;
+};
 
-export default function ConfirmPayment({ order, banks }: Props) {
+export default function ConfirmPayment({ order, banks, isQris = false, qris }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         payment_bank_id: banks[0]?.id ?? '',
         amount_claimed: order.uniquePaymentAmount ?? order.grandTotal,
@@ -38,30 +48,49 @@ export default function ConfirmPayment({ order, banks }: Props) {
                 <p className="text-sm text-muted-foreground mb-4">Pesanan #{order.orderNumber}</p>
 
                 <SectionCard className="mb-4">
-                    <p className="text-sm">Transfer ke: <strong>{order.bankName}</strong> — {order.bankAccountNumber}</p>
-                    <p className="text-sm text-muted-foreground">a.n. {order.bankAccountName}</p>
-                    {order.uniquePaymentAmount && (
-                        <p className="text-primary font-semibold mt-2">
-                            Nominal unik: <CopyAmount amount={order.uniquePaymentAmount} />
-                        </p>
+                    {isQris && qris ? (
+                        <div className="space-y-2">
+                            {qris.merchantName && <p className="text-sm font-medium">{qris.merchantName}</p>}
+                            {qris.imageUrl && (
+                                <img src={qris.imageUrl} alt="QRIS" className="max-w-[220px] rounded border bg-white p-2" />
+                            )}
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold">
+                                    Nominal unik: <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                            {qris.instructions && <p className="text-sm text-muted-foreground">{qris.instructions}</p>}
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-sm">Transfer ke: <strong>{order.bankName}</strong> — {order.bankAccountNumber}</p>
+                            <p className="text-sm text-muted-foreground">a.n. {order.bankAccountName}</p>
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold mt-2">
+                                    Nominal unik: <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                        </>
                     )}
                 </SectionCard>
 
                 <form onSubmit={submit}>
                     <SectionCard title="Form Konfirmasi">
                         <div className="space-y-3">
-                            <div>
-                                <Label>Rekening Tujuan</Label>
-                                <select
-                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                    value={data.payment_bank_id}
-                                    onChange={(e) => setData('payment_bank_id', Number(e.target.value))}
-                                >
-                                    {banks.map((b) => (
-                                        <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {!isQris && banks.length > 0 && (
+                                <div>
+                                    <Label>Rekening Tujuan</Label>
+                                    <select
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                        value={data.payment_bank_id}
+                                        onChange={(e) => setData('payment_bank_id', Number(e.target.value))}
+                                    >
+                                        {banks.map((b) => (
+                                            <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <Label>Jumlah Dibayar</Label>
                                 <Input type="number" value={data.amount_claimed} onChange={(e) => setData('amount_claimed', Number(e.target.value))} required />

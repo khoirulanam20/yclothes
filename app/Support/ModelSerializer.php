@@ -26,6 +26,8 @@ class ModelSerializer
 {
     public static function product(Product $product, bool $detailed = false): array
     {
+        $inventory = app(InventoryService::class);
+
         $data = [
             'id' => $product->id,
             'name' => $product->name,
@@ -41,6 +43,8 @@ class ModelSerializer
             'badgeLabel' => $product->badge_label,
             'badgeColor' => $product->badge_color,
             'discountPercentage' => $product->discount_percentage,
+            'isOutOfStock' => $inventory->isOutOfStock($product),
+            'isPurchasable' => $inventory->canOrder($product, null, 1),
             'category' => $product->relationLoaded('category') && $product->category
                 ? self::category($product->category)
                 : null,
@@ -259,7 +263,7 @@ class ModelSerializer
             'orderItemId' => $review->order_item_id,
             'rating' => $review->rating,
             'comment' => $comment,
-            'customerName' => $review->customer?->name ?? 'Anonim',
+            'customerName' => $review->customer?->name ?? 'Pembeli',
             'createdAt' => $review->created_at?->toIso8601String(),
             'isApproved' => (bool) $review->is_approved,
             'product' => $review->relationLoaded('product') && $review->product

@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
         $middleware->validateCsrfTokens(except: [
             'midtrans/notification',
+            'doku/notification',
         ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,

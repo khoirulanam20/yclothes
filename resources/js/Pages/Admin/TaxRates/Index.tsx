@@ -1,22 +1,26 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type TaxRate = { id: number; name: string; rate: number; type: string; isActive?: boolean; categoriesCount?: number };
 type Props = { rates: TaxRate[] };
 
 export default function Index({ rates }: Props) {
     return (
-        <AdminLayout title="Tarif Pajak" breadcrumbs={[{ label: 'Tarif Pajak' }]}>
+        <AdminLayout title="Tarif Pajak" breadcrumbs={configurationSectionBreadcrumbs('Tarif Pajak')}>
             <Head title="Tarif Pajak" />
-            <AdminPageHeader title="Tarif Pajak" createHref="/admin/tax-rates/create" />
+            <AdminContent>
+            <AdminPageHeader title="Tarif Pajak" backHref={CONFIGURATION_HREF} createHref="/admin/tax-rates/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Rate</TableHead><TableHead>Tipe</TableHead><TableHead>Kategori</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Rate</TableHead><TableHead>Tipe</TableHead><TableHead>Kategori</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{rates.map((r) => (
                         <TableRow key={r.id}>
                             <TableCell>{r.name}</TableCell><TableCell>{r.rate}{r.type === 'percentage' ? '%' : ''}</TableCell>
@@ -28,7 +32,9 @@ export default function Index({ rates }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

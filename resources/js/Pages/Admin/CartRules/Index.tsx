@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +24,11 @@ export default function Index({ rules }: Props) {
     return (
         <AdminLayout title="Aturan Keranjang" breadcrumbs={[{ label: 'Aturan Keranjang' }]}>
             <Head title="Aturan Keranjang" />
+            <AdminContent>
             <AdminPageHeader title="Aturan Keranjang" createHref="/admin/cart-rules/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kupon</TableHead><TableHead>Tipe</TableHead><TableHead>Batas</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kupon</TableHead><TableHead>Tipe</TableHead><TableHead>Batas</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{rules.map((r) => (
                         <TableRow key={r.id}>
                             <TableCell>{r.name}</TableCell><TableCell>{r.couponCode ?? '—'}</TableCell>
@@ -42,7 +45,9 @@ export default function Index({ rules }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

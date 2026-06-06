@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,11 @@ export default function Index({ roles }: Props) {
     return (
         <AdminLayout title="Peran" breadcrumbs={[{ label: 'Peran' }]}>
             <Head title="Peran" />
+            <AdminContent>
             <AdminPageHeader title="Peran" createHref="/admin/roles/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Deskripsi</TableHead><TableHead>Permissions</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Deskripsi</TableHead><TableHead>Permissions</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{roles.map((r) => (
                         <TableRow key={r.id}>
                             <TableCell>{r.name}</TableCell><TableCell className="max-w-xs truncate">{r.description ?? '—'}</TableCell>
@@ -26,7 +29,9 @@ export default function Index({ roles }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

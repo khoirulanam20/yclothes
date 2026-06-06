@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
@@ -14,9 +15,11 @@ export default function Index({ categories }: Props) {
     return (
         <AdminLayout title="Kategori FAQ" breadcrumbs={[{ label: 'FAQ' }]}>
             <Head title="Kategori FAQ" />
+            <AdminContent>
             <AdminPageHeader title="Kategori FAQ" createHref="/admin/faq-categories/create" />
             <Card><CardContent className="p-0">
-                <Table>
+                <AdminTableScroll>
+                        <Table>
                     <TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Urutan</TableHead><TableHead>Items</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {categories.map((cat) => (
@@ -33,7 +36,9 @@ export default function Index({ categories }: Props) {
                         ))}
                     </TableBody>
                 </Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

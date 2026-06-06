@@ -100,6 +100,7 @@ class ProductController extends Controller
                 && ! $this->familyHasVariantAxes($familyId)
                 ? 'Produk configurable membutuhkan atribut size dan/atau color di keluarga atribut.'
                 : null,
+            'weightUnitLabel' => weight_unit_label(),
         ]);
     }
 

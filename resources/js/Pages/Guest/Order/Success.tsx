@@ -10,9 +10,14 @@ type Order = {
     orderNumber: string; grandTotal: number; uniquePaymentAmount?: number | null; paymentMethod: string;
     bankName?: string | null; bankAccountNumber?: string | null; bankAccountName?: string | null;
 };
-type Props = { order: Order; orderShowUrl: string };
+type QrisSettings = {
+    imageUrl?: string | null;
+    merchantName?: string | null;
+    instructions?: string | null;
+};
+type Props = { order: Order; orderShowUrl: string; qris?: QrisSettings | null };
 
-export default function Success({ order, orderShowUrl }: Props) {
+export default function Success({ order, orderShowUrl, qris }: Props) {
     return (
         <GuestLayout>
             <Head title="Pesanan Berhasil" />
@@ -39,6 +44,32 @@ export default function Success({ order, orderShowUrl }: Props) {
                             )}
                             <p className="pt-2">Setelah transfer, konfirmasi pembayaran di halaman detail pesanan.</p>
                         </div>
+                    )}
+                    {order.paymentMethod === 'qris' && qris && (
+                        <div className="text-sm space-y-3 text-muted-foreground">
+                            {qris.merchantName && (
+                                <p className="text-foreground font-medium">{qris.merchantName}</p>
+                            )}
+                            {qris.imageUrl && (
+                                <img
+                                    src={qris.imageUrl}
+                                    alt="QRIS"
+                                    className="mx-auto max-w-[220px] rounded border bg-white p-2"
+                                />
+                            )}
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold">
+                                    Nominal unik: <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                            <p className="text-foreground">{qris.instructions}</p>
+                            <p>Setelah bayar, konfirmasi pembayaran di halaman detail pesanan.</p>
+                        </div>
+                    )}
+                    {(order.paymentMethod === 'midtrans' || order.paymentMethod === 'doku') && (
+                        <p className="text-sm text-muted-foreground">
+                            Selesaikan pembayaran online melalui halaman gateway yang dibuka, atau cek status di detail pesanan.
+                        </p>
                     )}
                 </SectionCard>
 

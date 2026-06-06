@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Order;
 use App\Services\OrderWorkflowService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class ExpirePendingOrdersCommand extends Command
 {
@@ -15,6 +14,12 @@ class ExpirePendingOrdersCommand extends Command
 
     public function handle(OrderWorkflowService $workflow): int
     {
+        if (! setting_bool('auto_cancel_unpaid_orders', true)) {
+            $this->info('Auto-cancel unpaid orders is disabled.');
+
+            return self::SUCCESS;
+        }
+
         $orders = Order::where('payment_status', 'pending')
             ->where('order_status', 'pending')
             ->whereNotNull('payment_due_at')
@@ -22,7 +27,8 @@ class ExpirePendingOrdersCommand extends Command
             ->get();
 
         foreach ($orders as $order) {
-            $workflow->transition($order, 'cancelled', 'Pembayaran kedaluwarsa', 'system', null, true, [
+            $notify = setting_bool('send_email_on_payment_expired', true);
+            $workflow->transition($order, 'cancelled', 'Pembayaran kedaluwarsa', 'system', null, $notify, [
                 'payment_status' => 'expired',
             ]);
         }

@@ -45,6 +45,13 @@ export type PromotionPopupData = {
     displayDurationSeconds?: number;
 };
 
+export type GdprSettings = {
+    enabled: boolean;
+    message?: string;
+    policyUrl?: string | null;
+    cookieLifetimeDays?: number;
+};
+
 export type SharedPageProps = {
     auth: {
         customer: { id: number; name: string; email: string; emailVerified: boolean } | null;
@@ -56,6 +63,7 @@ export type SharedPageProps = {
     navigation: { header: NavItem[]; footer: NavItem[] };
     categories: CategoryNav[];
     promotionPopup?: PromotionPopupData | null;
+    gdpr?: GdprSettings;
 };
 
 declare module '@inertiajs/core' {

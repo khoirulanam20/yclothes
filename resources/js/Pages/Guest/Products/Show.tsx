@@ -27,10 +27,11 @@ type BreadcrumbItem = { label: string; href: string };
 type Props = {
     product: Product; relatedProducts: ProductCardData[]; reviews: Review[];
     inWishlist: boolean; productStock: number; variants: Variant[];
+    isPurchasable?: boolean; isOutOfStock?: boolean;
     categoryPath?: BreadcrumbItem[];
 };
 
-export default function Show({ product, relatedProducts, reviews, inWishlist: initialInWishlist, productStock, variants, categoryPath = [] }: Props) {
+export default function Show({ product, relatedProducts, reviews, inWishlist: initialInWishlist, productStock, variants, isPurchasable = true, isOutOfStock = false, categoryPath = [] }: Props) {
     const images = product.imagesUrl?.length ? product.imagesUrl : [product.imageUrl];
     const [activeImage, setActiveImage] = useState(images[0]);
     const [inWishlist, setInWishlist] = useState(initialInWishlist);
@@ -171,16 +172,18 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                                         id="qty"
                                         type="number"
                                         min={1}
-                                        max={99}
                                         value={data.qty}
                                         onChange={(e) => setData('qty', Number(e.target.value))}
                                         className="w-24 h-9 mt-1"
                                     />
                                 </div>
-                                <p className="text-xs text-muted-foreground">Stok: {productStock}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Stok: {productStock}
+                                    {isOutOfStock && <span className="ml-2 text-destructive font-medium">Habis</span>}
+                                </p>
                                 <div className="flex gap-2 pt-1">
-                                    <Button onClick={addToCart} disabled={processing} className="flex-1">
-                                        + Keranjang
+                                    <Button onClick={addToCart} disabled={processing || !isPurchasable} className="flex-1">
+                                        {isPurchasable ? '+ Keranjang' : 'Stok Habis'}
                                     </Button>
                                     <Button variant="outline" onClick={handleToggleWishlist} disabled={wishlistLoading}>
                                         {inWishlist ? '♥' : '♡'}

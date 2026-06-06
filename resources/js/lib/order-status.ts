@@ -22,6 +22,13 @@ export const orderStatusVariants: Record<string, 'default' | 'secondary' | 'dest
     cancelled: 'destructive',
 };
 
+export const paymentMethodLabels: Record<string, string> = {
+    bank_transfer: 'Transfer Bank',
+    qris: 'QRIS',
+    midtrans: 'Midtrans',
+    doku: 'DOKU',
+};
+
 export const paymentStatusLabels: Record<string, string> = {
     pending: 'Menunggu',
     paid: 'Lunas',

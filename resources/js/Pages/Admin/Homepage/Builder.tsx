@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type SectionType = { value: string; label: string };
 type Slider = {
@@ -350,9 +351,13 @@ export default function Builder({ layout: initialLayout, sectionTypes, sliders, 
     const typeLabel = (type: string) => sectionTypes.find((t) => t.value === type)?.label ?? type;
 
     return (
-        <AdminLayout title="Halaman Utama" breadcrumbs={[{ label: 'Halaman Utama' }]}>
+        <AdminLayout title="Halaman Utama" breadcrumbs={configurationSectionBreadcrumbs('Halaman Utama')}>
             <Head title="Halaman Utama" />
-            <AdminPageHeader title="Halaman Utama" description="Atur urutan dan konfigurasi section beranda." />
+            <AdminPageHeader
+                title="Halaman Utama"
+                description="Atur urutan dan konfigurasi section beranda."
+                backHref={CONFIGURATION_HREF}
+            />
             <div className="space-y-6">
                 <div className="grid lg:grid-cols-5 gap-6">
                     <Card className="lg:col-span-2">

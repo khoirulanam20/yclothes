@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export default function Index({ logs, users, filters }: Props) {
     return (
         <AdminLayout title="Log Aktivitas" breadcrumbs={[{ label: 'Log Aktivitas' }]}>
             <Head title="Log Aktivitas" />
+            <AdminContent>
             <AdminPageHeader title="Log Aktivitas" />
             <Card className="mb-4"><CardContent className="p-4">
                 <form onSubmit={submit} className="grid md:grid-cols-4 gap-3 items-end">
@@ -45,7 +47,8 @@ export default function Index({ logs, users, filters }: Props) {
                 </form>
             </CardContent></Card>
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>User</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>User</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
                     <TableBody>{logs.data.map((log) => (
                         <TableRow key={log.id}>
                             <TableCell className="text-sm">{log.createdAt ? new Date(log.createdAt).toLocaleString('id-ID') : '—'}</TableCell>
@@ -53,8 +56,10 @@ export default function Index({ logs, users, filters }: Props) {
                             <TableCell><code className="text-xs">{log.action}</code></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
             <PaginationLinks pagination={logs} />
+            </AdminContent>
         </AdminLayout>
     );
 }

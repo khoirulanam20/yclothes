@@ -25,14 +25,19 @@ class ThemeSettingsTest extends TestCase
         $admin = User::where('email', 'admin@yclothes.test')->first();
 
         $this->actingAs($admin)
-            ->post(route('admin.theme.update'), [
-                'brand_name' => 'YClothes Store',
-                'color_gold' => '#111111',
-                'color_accent' => '#222222',
+            ->post(route('admin.configuration.update', ['slug' => 'general/design']), [
                 'brand_logo' => UploadedFile::fake()->image('logo.png'),
                 'favicon' => UploadedFile::fake()->image('favicon.png'),
+                'color_gold' => '#111111',
+                'color_accent' => '#222222',
             ])
-            ->assertRedirect(route('admin.theme.edit'));
+            ->assertRedirect('/admin/configuration/general/design');
+
+        $this->actingAs($admin)
+            ->post(route('admin.configuration.update', ['slug' => 'general/store']), [
+                'brand_name' => 'YClothes Store',
+            ])
+            ->assertRedirect('/admin/configuration/general/store');
 
         $this->assertDatabaseHas('settings', ['key' => 'brand_name', 'value' => 'YClothes Store']);
         $this->assertDatabaseHas('settings', ['key' => 'color_gold', 'value' => '#111111']);

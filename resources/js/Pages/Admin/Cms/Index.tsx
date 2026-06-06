@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
@@ -31,11 +32,13 @@ export default function Index({ pages }: Props) {
     return (
         <AdminLayout title="Halaman CMS" breadcrumbs={[{ label: 'Halaman' }]}>
             <Head title="Halaman CMS" />
+            <AdminContent>
             <AdminPageHeader title="Halaman CMS" createHref="/admin/cms-pages/builder/new" />
 
             <Card>
                 <CardContent className="p-0">
-                    <Table>
+                    <AdminTableScroll>
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Judul</TableHead>
@@ -82,10 +85,12 @@ export default function Index({ pages }: Props) {
                             ))}
                         </TableBody>
                     </Table>
+                    </AdminTableScroll>
                 </CardContent>
             </Card>
 
             <PaginationLinks pagination={pages} />
+            </AdminContent>
         </AdminLayout>
     );
 }

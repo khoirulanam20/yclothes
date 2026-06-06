@@ -56,6 +56,8 @@ class ReviewController extends Controller
             ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
             ->firstOrFail();
 
+        $autoApprove = setting_bool('auto_approve_reviews');
+
         Review::create([
             'product_id' => $product->id,
             'customer_id' => $customer->id,
@@ -63,11 +65,13 @@ class ReviewController extends Controller
             'order_item_id' => $validated['order_item_id'] ?? null,
             'rating' => $validated['rating'],
             'review' => $validated['review'],
-            'is_approved' => false,
+            'is_approved' => $autoApprove,
             'created_at' => now(),
         ]);
 
         return redirect()->route('products.show', $product->slug)
-            ->with('success', 'Review berhasil dikirim dan menunggu persetujuan admin.');
+            ->with('success', $autoApprove
+                ? 'Review berhasil dikirim.'
+                : 'Review berhasil dikirim dan menunggu persetujuan admin.');
     }
 }

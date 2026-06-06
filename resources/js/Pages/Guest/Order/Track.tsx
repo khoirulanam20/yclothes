@@ -7,24 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FieldError } from '@/components/admin/FieldError';
 
-export default function Track() {
-    const { data, setData, post, processing, errors } = useForm({
+type Props = {
+    requiresEmail: boolean;
+};
+
+export default function Track({ requiresEmail }: Props) {
+    const { data, setData, post, processing, errors, transform } = useForm({
         order_number: '',
         email: '',
     });
+
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        transform((formData) => (requiresEmail ? formData : { order_number: formData.order_number }));
+        post('/order/track');
+    };
 
     return (
         <GuestLayout>
             <Head title="Lacak Pesanan" />
             <PageContainer narrow>
                 <SectionCard title="Lacak Pesanan">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            post('/order/track');
-                        }}
-                        className="space-y-4"
-                    >
+                    <form onSubmit={submit} className="space-y-4">
                         <div>
                             <Label htmlFor="order_number">Nomor Pesanan</Label>
                             <Input
@@ -35,17 +39,23 @@ export default function Track() {
                             />
                             <FieldError message={errors.order_number} />
                         </div>
-                        <div>
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
-                                required
-                            />
-                            <FieldError message={errors.email} />
-                        </div>
+                        {requiresEmail ? (
+                            <div>
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    required
+                                />
+                                <FieldError message={errors.email} />
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Anda sudah login — cukup masukkan nomor pesanan milik akun Anda.
+                            </p>
+                        )}
                         <Button type="submit" className="w-full" disabled={processing}>
                             Cari Pesanan
                         </Button>

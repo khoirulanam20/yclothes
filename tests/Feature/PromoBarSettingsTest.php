@@ -22,16 +22,21 @@ class PromoBarSettingsTest extends TestCase
         $admin = User::where('email', 'admin@yclothes.test')->first();
 
         $this->actingAs($admin)
-            ->post(route('admin.promo-bar.update'), [
-                'promo_bar_enabled' => true,
+            ->post(route('admin.configuration.update', ['slug' => 'general/store']), [
                 'store_location' => 'Jakarta',
+                'wa_number' => '6281111111111',
+            ])
+            ->assertRedirect('/admin/configuration/general/store');
+
+        $this->actingAs($admin)
+            ->post(route('admin.configuration.update', ['slug' => 'general/header_offer']), [
+                'promo_bar_enabled' => true,
                 'promo_bar_text' => 'Gratis Ongkir',
                 'promo_bar_cta_label' => 'Chat Kami',
-                'wa_number' => '6281111111111',
                 'promo_bar_bg_color' => '#112233',
                 'promo_bar_text_color' => '#ffffff',
             ])
-            ->assertRedirect(route('admin.promo-bar.edit'));
+            ->assertRedirect('/admin/configuration/general/header_offer');
 
         $this->assertDatabaseHas('settings', ['key' => 'store_location', 'value' => 'Jakarta']);
         $this->assertDatabaseHas('settings', ['key' => 'promo_bar_cta_label', 'value' => 'Chat Kami']);
@@ -42,6 +47,7 @@ class PromoBarSettingsTest extends TestCase
     {
         Setting::updateOrCreate(['key' => 'promo_bar_enabled'], ['value' => '0']);
         Setting::updateOrCreate(['key' => 'promo_bar_text'], ['value' => 'Promo Test Hidden']);
+        clear_settings_cache();
 
         $this->get('/')
             ->assertOk()
@@ -53,6 +59,7 @@ class PromoBarSettingsTest extends TestCase
         Setting::updateOrCreate(['key' => 'promo_bar_enabled'], ['value' => '1']);
         Setting::updateOrCreate(['key' => 'promo_bar_text'], ['value' => 'Promo Test Visible']);
         Setting::updateOrCreate(['key' => 'promo_bar_cta_label'], ['value' => 'Hubungi Sekarang']);
+        clear_settings_cache();
 
         $this->get('/')
             ->assertOk()

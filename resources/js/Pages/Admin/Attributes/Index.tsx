@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminHelpPanel } from '@/components/admin/AdminHelpPanel';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
@@ -16,12 +17,14 @@ export default function Index({ attributes }: Props) {
     return (
         <AdminLayout title="Atribut" breadcrumbs={[{ label: 'Atribut' }]}>
             <Head title="Atribut" />
+            <AdminContent>
             <AdminPageHeader title="Atribut" createHref="/admin/attributes/create" />
             <div className="mb-4">
                 <AdminHelpPanel section={attributeHelp} defaultOpen />
             </div>
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Code</TableHead><TableHead>Tipe</TableHead><TableHead>Flags</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Code</TableHead><TableHead>Tipe</TableHead><TableHead>Flags</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{attributes.map((a) => (
                         <TableRow key={a.id}>
                             <TableCell>{a.name}</TableCell><TableCell><code>{a.code}</code></TableCell>
@@ -33,7 +36,9 @@ export default function Index({ attributes }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

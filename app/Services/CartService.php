@@ -34,7 +34,7 @@ class CartService
 
         foreach ($incoming as $key => $item) {
             if (isset($cart[$key])) {
-                $cart[$key]['qty'] = min(99, $cart[$key]['qty'] + ($item['qty'] ?? 1));
+                $cart[$key]['qty'] = $cart[$key]['qty'] + ($item['qty'] ?? 1);
             } else {
                 $cart[$key] = $item;
             }

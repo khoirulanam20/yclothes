@@ -9,10 +9,12 @@ use App\Models\Product;
 use App\Models\ShippingCost;
 use App\Services\CartPricingService;
 use App\Services\CartService;
+use App\Services\DokuService;
 use App\Services\InventoryService;
 use App\Services\MidtransService;
 use App\Services\OrderPaymentService;
 use App\Services\OrderWorkflowService;
+use App\Services\PaymentMethodService;
 use App\Services\PromotionEngine;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
@@ -31,10 +33,15 @@ class CheckoutController extends Controller
         private InventoryService $inventoryService,
         private PromotionEngine $promotionEngine,
         private OrderWorkflowService $orderWorkflow,
+        private PaymentMethodService $paymentMethods,
     ) {}
 
     public function index()
     {
+        if (! setting_bool('guest_checkout_enabled', true) && ! Auth::guard('customer')->check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login untuk checkout.');
+        }
+
         $cart = $this->cartService->get();
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
@@ -50,7 +57,7 @@ class CheckoutController extends Controller
             return $city;
         });
         $banks = PaymentBank::where('is_active', true)->get();
-        $midtransActive = MidtransService::isActive();
+        $paymentMethodOptions = $this->paymentMethods->availableForCheckout();
 
         $customer = Auth::guard('customer')->user();
         $addresses = $customer
@@ -66,9 +73,11 @@ class CheckoutController extends Controller
             'pricing' => ModelSerializer::cartPricing($pricing),
             'cities' => $cities->map(fn ($city) => ModelSerializer::shippingCity($city, $city->calculated_cost))->values()->all(),
             'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
-            'midtransActive' => $midtransActive,
+            'paymentMethods' => $paymentMethodOptions,
             'customer' => $customer ? ModelSerializer::customer($customer) : null,
             'addresses' => $addresses,
+            'newsletterOptInEnabled' => setting_bool('newsletter_opt_in_enabled'),
+            'newsletterOptInLabel' => setting('newsletter_opt_in_label', 'Berlangganan newsletter untuk promo & update'),
         ]);
     }
 
@@ -100,12 +109,20 @@ class CheckoutController extends Controller
 
     public function process(Request $request)
     {
+        if (! setting_bool('guest_checkout_enabled', true) && ! Auth::guard('customer')->check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login untuk checkout.');
+        }
+
         $cart = $this->cartService->get();
         if (empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
 
-        $allowedPaymentMethods = $this->allowedPaymentMethods();
+        $allowedPaymentMethods = $this->paymentMethods->allowedCheckoutValues();
+
+        if ($allowedPaymentMethods === []) {
+            return back()->with('error', 'Tidak ada metode pembayaran yang tersedia. Hubungi penjual.');
+        }
 
         $customer = Auth::guard('customer')->user();
 
@@ -131,6 +148,7 @@ class CheckoutController extends Controller
             'shipping_city' => 'required|exists:shipping_costs,id',
             'payment_method' => ['required', 'string', Rule::in($allowedPaymentMethods)],
             'address_id' => $addressRules,
+            'newsletter_opt_in' => 'nullable|boolean',
         ]);
 
         if ($request->filled('address_id') && $customer) {
@@ -213,12 +231,22 @@ class CheckoutController extends Controller
             : 0;
         $grandTotal = $this->cartPricing->grandTotal($pricing, $shippingCost);
 
+        if (setting_bool('minimum_order_enabled')) {
+            $minimum = (int) setting('minimum_order_amount', 0);
+            if ($minimum > 0 && $grandTotal < $minimum) {
+                return back()->with('error', setting('minimum_order_message', 'Minimum pembelian belum terpenuhi.'));
+            }
+        }
+
+        $timeoutHours = max(1, (int) setting('payment_timeout_hours', 24));
+
         $orderData = [
             'order_number' => generate_order_number(),
             'customer_id' => $customer?->id,
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
             'customer_email' => $validated['customer_email'],
+            'newsletter_opt_in' => setting_bool('newsletter_opt_in_enabled') && $request->boolean('newsletter_opt_in'),
             'shipping_address' => $validated['shipping_address'],
             'province_code' => $validated['province_code'],
             'province_name' => $validated['province_name'],
@@ -240,7 +268,7 @@ class CheckoutController extends Controller
             'payment_method' => $validated['payment_method'],
             'payment_status' => 'pending',
             'payment_confirmation_status' => 'none',
-            'payment_due_at' => now()->addHours(24),
+            'payment_due_at' => now()->addHours($timeoutHours),
             'order_status' => 'pending',
         ];
 
@@ -252,12 +280,21 @@ class CheckoutController extends Controller
             $orderData['bank_name'] = $bank->bank_name;
             $orderData['bank_account_number'] = $bank->account_number;
             $orderData['bank_account_name'] = $bank->account_name;
+        } elseif ($validated['payment_method'] === 'qris') {
+            $orderData['payment_method'] = 'qris';
+        } elseif ($validated['payment_method'] === 'doku') {
+            $orderData['payment_method'] = 'doku';
+        } elseif ($validated['payment_method'] === 'midtrans') {
+            $orderData['payment_method'] = 'midtrans';
         }
 
         $order = Order::create($orderData);
         $order->items()->createMany($items);
 
-        if ($order->payment_method === 'bank_transfer') {
+        if (
+            in_array($order->payment_method, ['bank_transfer', 'qris'], true)
+            && setting_bool('unique_payment_amount_enabled', true)
+        ) {
             $order->update([
                 'unique_payment_amount' => generate_unique_payment_amount($order->grand_total, $order->id),
             ]);
@@ -301,6 +338,19 @@ class CheckoutController extends Controller
             }
         }
 
+        if ($validated['payment_method'] === 'doku') {
+            try {
+                $paymentUrl = app(DokuService::class)->createCheckout($order);
+
+                return redirect()->away($paymentUrl);
+            } catch (\Exception $e) {
+                report($e);
+
+                return redirect()->to(order_public_url('order.success', $order))
+                    ->with('error', 'Gagal memproses pembayaran DOKU. Silakan coba lagi atau hubungi kami.');
+            }
+        }
+
         return redirect()->to(order_public_url('order.success', $order));
     }
 
@@ -326,22 +376,5 @@ class CheckoutController extends Controller
         }
 
         return response()->json(['success' => true]);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function allowedPaymentMethods(): array
-    {
-        $methods = PaymentBank::where('is_active', true)
-            ->pluck('id')
-            ->map(fn (int $id) => 'bank_'.$id)
-            ->all();
-
-        if (MidtransService::isActive()) {
-            $methods[] = 'midtrans';
-        }
-
-        return $methods;
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\PaymentBank;
 use App\Models\PaymentConfirmation;
 use App\Services\OrderWorkflowService;
+use App\Services\PaymentMethodService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +33,8 @@ class PaymentConfirmationController extends Controller
         return Inertia::render('Guest/Order/ConfirmPayment', [
             'order' => ModelSerializer::order($order),
             'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
+            'isQris' => $order->payment_method === 'qris',
+            'qris' => $order->payment_method === 'qris' ? app(PaymentMethodService::class)->qrisSettings() : null,
         ]);
     }
 
@@ -45,8 +48,15 @@ class PaymentConfirmationController extends Controller
             return back()->with('error', 'Konfirmasi pembayaran sudah diajukan.');
         }
 
+        $maxAttempts = max(1, (int) setting('max_payment_confirmation_attempts', 3));
+        if ($order->paymentConfirmations()->count() >= $maxAttempts) {
+            return back()->with('error', 'Batas konfirmasi pembayaran telah tercapai. Hubungi penjual.');
+        }
+
+        $isQris = $order->payment_method === 'qris';
+
         $validated = $request->validate([
-            'payment_bank_id' => 'required|exists:payment_banks,id',
+            'payment_bank_id' => [$isQris ? 'nullable' : 'required', 'exists:payment_banks,id'],
             'amount_claimed' => 'required|integer|min:1',
             'transfer_date' => 'required|date',
             'sender_name' => 'required|string|max:255',
@@ -69,7 +79,7 @@ class PaymentConfirmationController extends Controller
         PaymentConfirmation::create([
             'order_id' => $order->id,
             'customer_id' => $customer?->id,
-            'payment_bank_id' => $validated['payment_bank_id'],
+            'payment_bank_id' => $validated['payment_bank_id'] ?? null,
             'amount_claimed' => $validated['amount_claimed'],
             'transfer_date' => $validated['transfer_date'],
             'sender_name' => $validated['sender_name'],

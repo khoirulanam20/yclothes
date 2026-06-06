@@ -3,28 +3,23 @@ import {
     ArrowLeftRight,
     Boxes,
     Building2,
-    CreditCard,
     FileText,
     FolderTree,
-    Globe,
     HelpCircle,
     History,
     LayoutDashboard,
-    LayoutTemplate,
     Megaphone,
     Menu,
     Newspaper,
     Package,
-    Palette,
     Percent,
-    Receipt,
     Settings,
     Shield,
     ShoppingBag,
+    SlidersHorizontal,
     Star,
     Tags,
     Ticket,
-    Truck,
     Users,
 } from 'lucide-react';
 
@@ -106,17 +101,6 @@ export const adminNavGroups: AdminNavGroup[] = [
         ],
     },
     {
-        label: 'Tampilan Situs',
-        icon: LayoutTemplate,
-        collapsible: true,
-        items: [
-            { label: 'Halaman Utama', href: '/admin/homepage', icon: LayoutTemplate, permission: ['cms.manage', 'settings.manage'] },
-            { label: 'Bar Promo', href: '/admin/promo-bar', icon: Megaphone, permission: 'settings.manage' },
-            { label: 'Tema & Branding', href: '/admin/theme', icon: Palette, permission: 'settings.manage' },
-            { label: 'SEO & Integrasi', href: '/admin/integrations', icon: Globe, permission: 'settings.manage' },
-        ],
-    },
-    {
         label: 'CMS',
         icon: FileText,
         collapsible: true,
@@ -143,37 +127,27 @@ export const adminNavGroups: AdminNavGroup[] = [
         ],
     },
     {
-        label: 'Pajak',
-        icon: Receipt,
-        collapsible: true,
-        items: [
-            { label: 'Tarif Pajak', href: '/admin/tax-rates', icon: Receipt, permission: 'settings.manage' },
-            { label: 'Zona Pajak', href: '/admin/tax-zones', icon: Receipt, permission: 'settings.manage' },
-        ],
-    },
-    {
         label: 'Promosi',
         icon: Ticket,
         collapsible: true,
         items: [
             { label: 'Aturan Keranjang', href: '/admin/cart-rules', icon: Ticket, permission: 'promotions.manage' },
             { label: 'Aturan Katalog', href: '/admin/catalog-rules', icon: Percent, permission: 'promotions.manage' },
-            { label: 'Pop up Promosi', href: '/admin/promotion-popups', icon: Ticket, permission: 'promotions.manage' },
-            { label: 'Ongkir', href: '/admin/shipping-costs', icon: Truck, permission: 'settings.manage' },
-            { label: 'Rekening', href: '/admin/payment-banks', icon: CreditCard, permission: 'settings.manage' },
+            { label: 'Pop up Promosi', href: '/admin/promotion-popups', icon: Megaphone, permission: 'promotions.manage' },
         ],
+    },
+    {
+        label: 'Konfigurasi',
+        icon: SlidersHorizontal,
+        collapsible: false,
+        items: [{ label: 'Konfigurasi', href: '/admin/configuration', icon: SlidersHorizontal, permission: 'settings.manage' }],
     },
     {
         label: 'Pengaturan',
         icon: Settings,
-        collapsible: false,
-        items: [{ label: 'Pengaturan', href: '/admin/settings', icon: Settings, permission: 'settings.manage' }],
-    },
-    {
-        label: 'Sistem',
-        icon: Shield,
         collapsible: true,
         items: [
+            { label: 'Profil', href: '/admin/settings', icon: Settings, permission: 'settings.manage' },
             { label: 'Peran', href: '/admin/roles', icon: Shield, permission: 'staff.manage' },
             { label: 'Staff', href: '/admin/staff', icon: Users, permission: 'staff.manage' },
             { label: 'Log Aktivitas', href: '/admin/activity-logs', icon: History, permission: 'staff.manage' },
@@ -196,6 +170,9 @@ export function isNavItemActive(url: string, item: AdminNavItem): boolean {
     const path = url.split('?')[0];
     if (item.href === '/admin') {
         return path === '/admin';
+    }
+    if (item.href === '/admin/configuration') {
+        return path === '/admin/configuration' || path.startsWith('/admin/configuration/');
     }
     return path === item.href || path.startsWith(`${item.href}/`);
 }

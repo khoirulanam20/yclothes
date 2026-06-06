@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,12 @@ export default function Index({ category, items }: Props) {
     return (
         <AdminLayout title={`FAQ — ${category.name}`} breadcrumbs={[{ label: 'FAQ', href: '/admin/faq-categories' }, { label: category.name }]}>
             <Head title={`FAQ — ${category.name}`} />
+            <AdminContent>
             <AdminPageHeader title={`FAQ: ${category.name}`} createHref={`/admin/faq-categories/${category.id}/items/create`} />
             <Button variant="outline" size="sm" className="mb-4" asChild><Link href="/admin/faq-categories">← Kategori FAQ</Link></Button>
             <Card><CardContent className="p-0">
-                <Table>
+                <AdminTableScroll>
+                        <Table>
                     <TableHeader><TableRow><TableHead>Pertanyaan</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {items.map((item) => (
@@ -33,7 +36,9 @@ export default function Index({ category, items }: Props) {
                         ))}
                     </TableBody>
                 </Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

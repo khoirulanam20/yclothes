@@ -133,40 +133,52 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->post('/admin/settings', [
             'name' => 'Admin Updated',
             'email' => 'admin@yclothes.test',
-            'wa_number' => '628123456789',
-            'brand_name' => 'yClothes Updated',
-            'color_gold' => '#FFD700',
-            'color_accent' => '#008080',
         ])->assertRedirect('/admin/settings');
+
+        $this->assertEquals('Admin Updated', $this->admin->fresh()->name);
+    }
+
+    public function test_admin_configuration_index(): void
+    {
+        $this->actingAs($this->admin)->get('/admin/configuration')->assertStatus(200);
+    }
+
+    public function test_admin_configuration_edit_and_save(): void
+    {
+        $this->actingAs($this->admin)
+            ->get('/admin/configuration/general/store')
+            ->assertStatus(200);
+
+        $this->actingAs($this->admin)
+            ->post('/admin/configuration/general/store', [
+                'brand_name' => 'yClothes Updated',
+                'store_location' => 'Jakarta',
+                'wa_number' => '628123456789',
+            ])
+            ->assertRedirect('/admin/configuration/general/store');
 
         $this->assertEquals('yClothes Updated', Setting::where('key', 'brand_name')->value('value'));
     }
 
-    public function test_admin_appearance_page(): void
+    public function test_old_theme_route_redirects_to_configuration(): void
     {
-        $this->actingAs($this->admin)->get('/admin/appearance')->assertStatus(200);
+        $this->actingAs($this->admin)
+            ->get('/admin/theme')
+            ->assertRedirect('/admin/configuration/general/design');
     }
 
-    public function test_admin_appearance_update(): void
+    public function test_old_integrations_route_redirects_to_configuration(): void
     {
-        $this->actingAs($this->admin)->post('/admin/appearance', [
-            'site_title' => 'yClothes Toko',
-            'hero_title' => 'Koleksi Baru<br>2026',
-            'cta_text' => 'Belanja Sekarang',
-        ])->assertRedirect('/admin/appearance');
-
-        $this->assertEquals('Koleksi Baru<br>2026', Setting::where('key', 'hero_title')->value('value'));
+        $this->actingAs($this->admin)
+            ->get('/admin/integrations')
+            ->assertRedirect('/admin/configuration/general/seo');
     }
 
-    public function test_admin_appearance_hero_title_xss_stripped(): void
+    public function test_admin_appearance_redirects_to_configuration(): void
     {
-        $this->actingAs($this->admin)->post('/admin/appearance', [
-            'hero_title' => 'Test <script>alert(1)</script>',
-        ]);
-
-        $saved = Setting::where('key', 'hero_title')->value('value');
-        $this->assertStringNotContainsString('<script>', $saved);
-        $this->assertEquals('Test alert(1)', $saved);
+        $this->actingAs($this->admin)
+            ->get('/admin/appearance')
+            ->assertRedirect('/admin/configuration/general/tracking');
     }
 
     public function test_admin_settings_requires_auth(): void

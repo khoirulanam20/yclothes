@@ -25,11 +25,20 @@ type Pricing = {
     subtotal: number; taxAmount: number; discountAmount: number;
     totalWeight: number; totalQty: number; couponCode?: string | null;
 };
+type PaymentMethodOption = {
+    id: string;
+    label: string;
+    type: 'gateway' | 'manual';
+    banks?: Bank[];
+};
 
 type Props = {
     items: CartItem[]; pricing: Pricing; cities: City[]; banks: Bank[];
-    midtransActive: boolean; customer?: { name: string; email: string; phone?: string | null } | null;
+    paymentMethods: PaymentMethodOption[];
+    customer?: { name: string; email: string; phone?: string | null } | null;
     addresses: Address[];
+    newsletterOptInEnabled?: boolean;
+    newsletterOptInLabel?: string;
 };
 
 const emptyWilayah = (): WilayahValue => ({
@@ -37,9 +46,22 @@ const emptyWilayah = (): WilayahValue => ({
     districtCode: '', districtName: '', villageCode: '', villageName: '', postalCode: '',
 });
 
-export default function Index({ items, pricing, cities, banks, midtransActive, customer, addresses }: Props) {
-    const defaultBankId = banks[0]?.id;
-    const defaultPaymentMethod = midtransActive ? 'midtrans' : defaultBankId ? `bank_${defaultBankId}` : '';
+function resolveDefaultPaymentMethod(options: PaymentMethodOption[]): string {
+    const first = options[0];
+    if (!first) return '';
+    if (first.id === 'bank_transfer' && first.banks?.[0]) {
+        return `bank_${first.banks[0].id}`;
+    }
+    return first.id;
+}
+
+export default function Index({
+    items, pricing, cities, paymentMethods, customer, addresses,
+    newsletterOptInEnabled = false, newsletterOptInLabel,
+}: Props) {
+    const defaultPaymentMethod = resolveDefaultPaymentMethod(paymentMethods);
+    const bankTransferOption = paymentMethods.find((m) => m.id === 'bank_transfer');
+    const bankList = bankTransferOption?.banks ?? [];
 
     const couponForm = useForm({
         coupon_code: pricing.couponCode ?? '',
@@ -63,6 +85,7 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
         shipping_city: cities[0]?.id ?? '',
         payment_method: defaultPaymentMethod,
         address_id: '' as number | '',
+        newsletter_opt_in: false,
     });
 
     const wilayahValue: WilayahValue = {
@@ -129,7 +152,9 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
 
     const selectedBankId = data.payment_method.startsWith('bank_')
         ? Number(data.payment_method.replace('bank_', ''))
-        : defaultBankId ?? 0;
+        : bankList[0]?.id ?? 0;
+
+    const isBankTransferSelected = data.payment_method.startsWith('bank_');
 
     return (
         <GuestLayout>
@@ -219,32 +244,52 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
 
                         <SectionCard title="Metode Pembayaran">
                             <div className="space-y-2">
-                                {midtransActive && (
-                                    <label className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50">
-                                        <input type="radio" name="pm" checked={data.payment_method === 'midtrans'} onChange={() => setData('payment_method', 'midtrans')} />
-                                        Midtrans (Online)
-                                    </label>
+                                {paymentMethods.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">Tidak ada metode pembayaran tersedia.</p>
                                 )}
-                                <label className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50">
-                                    <input
-                                        type="radio"
-                                        name="pm"
-                                        checked={data.payment_method.startsWith('bank_')}
-                                        onChange={() => setData('payment_method', `bank_${selectedBankId || defaultBankId}`)}
-                                    />
-                                    Transfer Bank
-                                </label>
-                                {data.payment_method.startsWith('bank_') && (
-                                    <select
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                        value={selectedBankId}
-                                        onChange={(e) => setData('payment_method', `bank_${Number(e.target.value)}`)}
-                                    >
-                                        {banks.map((b) => (
-                                            <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
-                                        ))}
-                                    </select>
-                                )}
+                                {paymentMethods.map((method) => {
+                                    if (method.id === 'bank_transfer') {
+                                        return (
+                                            <div key={method.id}>
+                                                <label className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50">
+                                                    <input
+                                                        type="radio"
+                                                        name="pm"
+                                                        checked={isBankTransferSelected}
+                                                        onChange={() => setData('payment_method', `bank_${selectedBankId || bankList[0]?.id}`)}
+                                                    />
+                                                    {method.label}
+                                                </label>
+                                                {isBankTransferSelected && bankList.length > 0 && (
+                                                    <select
+                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm mt-2"
+                                                        value={selectedBankId}
+                                                        onChange={(e) => setData('payment_method', `bank_${Number(e.target.value)}`)}
+                                                    >
+                                                        {bankList.map((b) => (
+                                                            <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <label
+                                            key={method.id}
+                                            className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50"
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="pm"
+                                                checked={data.payment_method === method.id}
+                                                onChange={() => setData('payment_method', method.id)}
+                                            />
+                                            {method.label}
+                                        </label>
+                                    );
+                                })}
                                 <FieldError message={errors.payment_method} />
                             </div>
                         </SectionCard>
@@ -297,7 +342,18 @@ export default function Index({ items, pricing, cities, banks, midtransActive, c
                                     </div>
                                 </div>
                             </div>
-                            <Button type="submit" className="w-full mt-4" disabled={processing}>Buat Pesanan</Button>
+                            {newsletterOptInEnabled && (
+                                <label className="flex items-start gap-2 text-sm mt-4 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-0.5 size-4 rounded border"
+                                        checked={Boolean(data.newsletter_opt_in)}
+                                        onChange={(e) => setData('newsletter_opt_in', e.target.checked)}
+                                    />
+                                    <span>{newsletterOptInLabel ?? 'Berlangganan newsletter untuk promo & update'}</span>
+                                </label>
+                            )}
+                            <Button type="submit" className="w-full mt-4" disabled={processing || paymentMethods.length === 0}>Buat Pesanan</Button>
                             <Button variant="outline" className="w-full mt-2" asChild>
                                 <Link href="/cart">Kembali ke Keranjang</Link>
                             </Button>

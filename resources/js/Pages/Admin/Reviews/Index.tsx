@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +41,7 @@ export default function Index({ reviews, status }: Props) {
     return (
         <AdminLayout title="Ulasan" breadcrumbs={[{ label: 'Ulasan' }]}>
             <Head title="Ulasan" />
+            <AdminContent>
             <AdminPageHeader title="Ulasan" />
             <div className="flex gap-2 mb-4">
                 {tabs.map((tab) => (
@@ -49,7 +51,8 @@ export default function Index({ reviews, status }: Props) {
                 ))}
             </div>
             <Card><CardContent className="p-0">
-                <Table>
+                <AdminTableScroll>
+                        <Table>
                     <TableHeader><TableRow><TableHead>Produk</TableHead><TableHead>Customer</TableHead><TableHead>Rating</TableHead><TableHead>Komentar</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {reviews.data.map((review) => (
@@ -68,8 +71,10 @@ export default function Index({ reviews, status }: Props) {
                         ))}
                     </TableBody>
                 </Table>
+                    </AdminTableScroll>
             </CardContent></Card>
             <PaginationLinks pagination={reviews} />
+            </AdminContent>
         </AdminLayout>
     );
 }

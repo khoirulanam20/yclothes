@@ -109,6 +109,7 @@ type Props = {
     warehouses: WarehouseOption[];
     inventoryRows: InventoryRow[];
     configurableWarning?: string | null;
+    weightUnitLabel?: string;
 };
 
 const TABS = [
@@ -135,6 +136,7 @@ export default function Edit({
     warehouses,
     inventoryRows,
     configurableWarning,
+    weightUnitLabel = 'gram',
 }: Props) {
     const [tab, setTab] = useState<TabId>('general');
     const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() =>
@@ -456,7 +458,7 @@ export default function Edit({
                         <div className={cn(tab !== 'shipping' && 'hidden', 'space-y-4')}>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <Label htmlFor="weight">Berat (gram)</Label>
+                                    <Label htmlFor="weight">Berat ({weightUnitLabel ?? 'gram'})</Label>
                                     <Input
                                         id="weight"
                                         type="number"

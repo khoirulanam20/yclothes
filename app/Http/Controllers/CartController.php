@@ -39,7 +39,7 @@ class CartController extends Controller
         $validated = $request->validate([
             'product_id' => 'nullable|integer|exists:products,id',
             'variant_id' => 'nullable|integer|exists:product_variants,id',
-            'qty' => 'nullable|integer|min:1|max:99',
+            'qty' => 'nullable|integer|min:1',
             'size' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:100',
         ]);
@@ -61,7 +61,7 @@ class CartController extends Controller
             $cart = $this->cartService->get();
 
             if (isset($cart[$itemKey])) {
-                $newQty = min(99, $cart[$itemKey]['qty'] + $qty);
+                $newQty = $cart[$itemKey]['qty'] + $qty;
                 if (! $this->inventoryService->canOrder($product, $variant, $newQty)) {
                     throw ValidationException::withMessages(['qty' => 'Stok tidak mencukupi untuk varian ini.']);
                 }
@@ -93,7 +93,7 @@ class CartController extends Controller
             $cart = $this->cartService->get();
 
             if (isset($cart[$itemKey])) {
-                $newQty = min(99, $cart[$itemKey]['qty'] + $qty);
+                $newQty = $cart[$itemKey]['qty'] + $qty;
                 if (! $this->inventoryService->canOrder($product, null, $newQty)) {
                     throw ValidationException::withMessages([
                         'qty' => 'Stok tidak mencukupi untuk produk ini.',
@@ -172,7 +172,7 @@ class CartController extends Controller
     {
         $validated = $request->validate([
             'key' => 'required|string|max:200',
-            'qty' => 'required|integer|min:1|max:99',
+            'qty' => 'required|integer|min:1',
         ]);
 
         $cart = $this->cartService->get();

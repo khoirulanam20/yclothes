@@ -1,12 +1,13 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminCheckboxRow, AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type ShippingCost = { id: number; cityName: string; cost: number; costPerKg?: number | null; isActive?: boolean };
 type Props = { cost?: ShippingCost };
@@ -33,25 +34,52 @@ export default function Form({ cost }: Props) {
     return (
         <AdminLayout
             title={isEdit ? 'Edit Ongkir' : 'Tambah Ongkir'}
-            breadcrumbs={[
-                { label: 'Ongkos Kirim', href: '/admin/shipping-costs' },
-                { label: isEdit ? 'Edit' : 'Tambah' },
-            ]}
+            breadcrumbs={configurationSectionBreadcrumbs('Ongkir', '/admin/shipping-costs', {
+                label: isEdit ? 'Edit' : 'Tambah',
+            })}
         >
             <Head title={isEdit ? 'Edit Ongkir' : 'Tambah Ongkir'} />
-            <AdminPageHeader
-                title={isEdit ? 'Edit Ongkir' : 'Tambah Ongkir'}
-                backHref="/admin/shipping-costs"
-            />
-            <Card className="max-w-xl"><CardContent className="p-6">
-                <form onSubmit={submit} className="space-y-4">
-                    <div><Label htmlFor="city_name">Nama Kota</Label><Input id="city_name" value={data.city_name} onChange={(e) => setData('city_name', e.target.value)} required /><FieldError message={errors.city_name} /></div>
-                    <div><Label htmlFor="cost">Ongkir Dasar</Label><Input id="cost" type="number" min={0} value={data.cost} onChange={(e) => setData('cost', Number(e.target.value))} required /></div>
-                    <div><Label htmlFor="cost_per_kg">Ongkir Per Kg (opsional)</Label><Input id="cost_per_kg" type="number" min={0} value={data.cost_per_kg} onChange={(e) => setData('cost_per_kg', e.target.value === '' ? '' : Number(e.target.value))} /></div>
-                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} /> Aktif</label>
-                    <div className="flex gap-2"><Button type="submit" disabled={processing}>Simpan</Button><Button variant="outline" asChild><Link href="/admin/shipping-costs">Batal</Link></Button></div>
+            <AdminContent>
+                <AdminPageHeader
+                    title={isEdit ? 'Edit Ongkir' : 'Tambah Ongkir'}
+                    backHref="/admin/shipping-costs"
+                />
+                <form onSubmit={submit}>
+                    <AdminFormCard
+                        contentClassName="space-y-5"
+                        footer={(
+                            <>
+                                <Button variant="outline" asChild>
+                                    <Link href="/admin/shipping-costs">Batal</Link>
+                                </Button>
+                                <Button type="submit" disabled={processing}>Simpan</Button>
+                            </>
+                        )}
+                    >
+                        <AdminFormGrid columns={2}>
+                            <div className="space-y-2">
+                                <Label htmlFor="city_name">Nama Kota</Label>
+                                <Input id="city_name" value={data.city_name} onChange={(e) => setData('city_name', e.target.value)} required />
+                                <FieldError message={errors.city_name} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cost">Ongkir Dasar</Label>
+                                <Input id="cost" type="number" min={0} value={data.cost} onChange={(e) => setData('cost', Number(e.target.value))} required />
+                            </div>
+                            <div className="space-y-2 md:col-span-2 xl:col-span-1">
+                                <Label htmlFor="cost_per_kg">Ongkir Per Kg (opsional)</Label>
+                                <Input id="cost_per_kg" type="number" min={0} value={data.cost_per_kg} onChange={(e) => setData('cost_per_kg', e.target.value === '' ? '' : Number(e.target.value))} />
+                            </div>
+                        </AdminFormGrid>
+                        <AdminCheckboxRow
+                            id="is_active"
+                            label="Aktif"
+                            checked={data.is_active}
+                            onChange={(checked) => setData('is_active', checked)}
+                        />
+                    </AdminFormCard>
                 </form>
-            </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

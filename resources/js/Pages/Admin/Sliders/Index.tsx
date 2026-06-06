@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
@@ -15,9 +16,11 @@ export default function Index({ sliders }: Props) {
     return (
         <AdminLayout title="Slider" breadcrumbs={[{ label: 'Slider' }]}>
             <Head title="Slider" />
+            <AdminContent>
             <AdminPageHeader title="Slider" createHref="/admin/sliders/create" />
             <Card><CardContent className="p-0">
-                <Table>
+                <AdminTableScroll>
+                        <Table>
                     <TableHeader><TableRow>
                         <TableHead>Gambar</TableHead><TableHead>Judul</TableHead><TableHead>Link</TableHead><TableHead>Aksi</TableHead>
                     </TableRow></TableHeader>
@@ -35,8 +38,10 @@ export default function Index({ sliders }: Props) {
                         ))}
                     </TableBody>
                 </Table>
+                    </AdminTableScroll>
             </CardContent></Card>
             <PaginationLinks pagination={sliders} />
+            </AdminContent>
         </AdminLayout>
     );
 }

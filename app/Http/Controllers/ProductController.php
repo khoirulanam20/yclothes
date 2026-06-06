@@ -92,6 +92,14 @@ class ProductController extends Controller
 
         $products = $query->paginate(12);
         $this->promotionEngine->decorateProducts($products);
+
+        if (setting('out_of_stock_behavior', 'show_label') === 'hide') {
+            $products->setCollection(
+                $products->getCollection()->filter(
+                    fn (Product $product) => ! $this->inventoryService->shouldHideFromCatalog($product),
+                )->values(),
+            );
+        }
         $roots = Category::tree();
         $activeCategory = null;
 
@@ -181,6 +189,8 @@ class ProductController extends Controller
             : collect();
 
         $productStock = $this->inventoryService->getAvailableStock($product);
+        $isPurchasable = $this->inventoryService->canOrder($product, null, 1);
+        $isOutOfStock = $this->inventoryService->isOutOfStock($product);
 
         $categoryPath = $product->category
             ? $this->categoryTree->breadcrumbPath($product->category)
@@ -205,6 +215,8 @@ class ProductController extends Controller
             'reviews' => ModelSerializer::collection($reviews, [ModelSerializer::class, 'review']),
             'inWishlist' => $inWishlist,
             'productStock' => $productStock,
+            'isPurchasable' => $isPurchasable,
+            'isOutOfStock' => $isOutOfStock,
             'variants' => $variants,
         ]);
     }

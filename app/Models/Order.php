@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 class Order extends Model
 {
     protected $fillable = [
-        'order_number', 'access_token', 'customer_id', 'customer_name', 'customer_phone', 'customer_email',
+        'order_number', 'access_token', 'customer_id', 'customer_name', 'customer_phone', 'customer_email', 'newsletter_opt_in',
         'shipping_address', 'province_code', 'province_name', 'regency_code', 'regency_name',
         'district_code', 'district_name', 'village_code', 'village_name', 'postal_code',
         'shipping_city', 'shipping_cost', 'shipping_method', 'total_price',
@@ -36,6 +36,7 @@ class Order extends Model
             'completed_at' => 'datetime',
             'inventory_decremented' => 'boolean',
             'is_replacement' => 'boolean',
+            'newsletter_opt_in' => 'boolean',
         ];
     }
 
@@ -92,7 +93,11 @@ class Order extends Model
         });
 
         static::created(function (Order $order) {
-            if ($order->payment_method === 'bank_transfer' && empty($order->unique_payment_amount)) {
+            if (
+                in_array($order->payment_method, ['bank_transfer', 'qris'], true)
+                && empty($order->unique_payment_amount)
+                && setting_bool('unique_payment_amount_enabled', true)
+            ) {
                 $order->update([
                     'unique_payment_amount' => generate_unique_payment_amount($order->grand_total, $order->id),
                 ]);

@@ -30,6 +30,7 @@ class CheckoutTest extends TestCase
             ->has('items', 1)
             ->has('cities')
             ->has('banks')
+            ->has('paymentMethods')
         );
     }
 

@@ -2,11 +2,9 @@
 
 use App\Http\Controllers\Admin\AdminRoleController as AdminAdminRoleController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Admin\ConfigurationController as AdminConfigurationController;
 use App\Http\Controllers\Admin\HomepageController as AdminHomepageController;
-use App\Http\Controllers\Admin\IntegrationController as AdminIntegrationController;
-use App\Http\Controllers\Admin\PromoBarController as AdminPromoBarController;
 use App\Http\Controllers\Admin\PromotionPopupController as AdminPromotionPopupController;
-use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AttributeFamilyController as AdminAttributeFamilyController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -49,6 +47,7 @@ use App\Http\Controllers\Customer\ProfileController as CustomerProfileController
 use App\Http\Controllers\Customer\ReturnRequestController as CustomerReturnRequestController;
 use App\Http\Controllers\Customer\ReviewController as CustomerReviewController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
+use App\Http\Controllers\DokuController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MidtransController;
@@ -70,6 +69,14 @@ Route::get('/promo/{slug}', [PromotionLandingController::class, 'show'])->name('
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
+Route::get('/sitemap.xml', function () {
+    $path = public_path('sitemap.xml');
+    if (! file_exists($path)) {
+        \Illuminate\Support\Facades\Artisan::call('sitemap:generate');
+    }
+
+    return response()->file($path, ['Content-Type' => 'application/xml']);
+})->name('sitemap');
 
 Route::prefix('api/wilayah')->name('wilayah.')->group(function () {
     Route::get('/provinces', [WilayahController::class, 'provinces'])->name('provinces');
@@ -144,10 +151,16 @@ Route::middleware(['order.access'])->group(function () {
     Route::post('/order/payment-finish/{order:order_number}', [CheckoutController::class, 'paymentFinish'])
         ->name('order.payment-finish')
         ->middleware('throttle:30,1');
+    Route::get('/order/doku-return/{order:order_number}', [DokuController::class, 'return'])
+        ->name('order.doku-return');
 });
 
 Route::post('/midtrans/notification', [MidtransController::class, 'notification'])
     ->name('midtrans.notification')
+    ->middleware('throttle:120,1');
+
+Route::post('/doku/notification', [DokuController::class, 'notification'])
+    ->name('doku.notification')
     ->middleware('throttle:120,1');
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -159,16 +172,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', DashboardController::class)->name('dashboard');
 
         Route::middleware('permission:settings.manage')->group(function () {
+            Route::get('/configuration', [AdminConfigurationController::class, 'index'])->name('configuration.index');
+            Route::get('/configuration/search', [AdminConfigurationController::class, 'search'])->name('configuration.search');
+            Route::post('/configuration/test-email', [AdminConfigurationController::class, 'testEmail'])->name('configuration.test-email');
+            Route::get('/configuration/{slug}', [AdminConfigurationController::class, 'edit'])->where('slug', '.*')->name('configuration.edit');
+            Route::post('/configuration/{slug}', [AdminConfigurationController::class, 'update'])->where('slug', '.*')->name('configuration.update');
+
             Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
             Route::post('/settings', [SettingController::class, 'update']);
-            Route::get('/theme', [AdminThemeController::class, 'edit'])->name('theme.edit');
-            Route::post('/theme', [AdminThemeController::class, 'update'])->name('theme.update');
-            Route::get('/integrations', [AdminIntegrationController::class, 'edit'])->name('integrations.edit');
-            Route::post('/integrations', [AdminIntegrationController::class, 'update'])->name('integrations.update');
-            Route::redirect('/appearance', '/admin/integrations')->name('appearance');
-            Route::post('/appearance', fn () => redirect('/admin/integrations'));
-            Route::get('/promo-bar', [AdminPromoBarController::class, 'edit'])->name('promo-bar.edit');
-            Route::post('/promo-bar', [AdminPromoBarController::class, 'update'])->name('promo-bar.update');
+            Route::redirect('/theme', '/admin/configuration/general/design')->name('theme.edit');
+            Route::post('/theme', fn () => redirect('/admin/configuration/general/design'));
+            Route::redirect('/integrations', '/admin/configuration/general/seo')->name('integrations.edit');
+            Route::post('/integrations', fn () => redirect('/admin/configuration/general/seo'));
+            Route::redirect('/appearance', '/admin/configuration/general/tracking')->name('appearance');
+            Route::post('/appearance', fn () => redirect('/admin/configuration/general/tracking'));
+            Route::redirect('/promo-bar', '/admin/configuration/general/header_offer')->name('promo-bar.edit');
+            Route::post('/promo-bar', fn () => redirect('/admin/configuration/general/header_offer'));
             Route::resource('payment-banks', PaymentBankController::class);
             Route::resource('shipping-costs', ShippingCostController::class);
             Route::resource('tax-rates', AdminTaxRateController::class);

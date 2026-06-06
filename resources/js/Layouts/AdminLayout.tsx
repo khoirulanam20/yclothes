@@ -23,7 +23,7 @@ export default function AdminLayout({
             <AdminSidebar />
             <SidebarInset>
                 <AdminTopBar breadcrumbs={breadcrumbs} />
-                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8">
                     {title && <h1 className="sr-only">{title}</h1>}
                     {children}
                 </main>

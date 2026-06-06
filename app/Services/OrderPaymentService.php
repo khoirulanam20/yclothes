@@ -14,14 +14,36 @@ class OrderPaymentService
             if ($order->payment_status !== 'paid') {
                 $this->markPaid($order, 'midtrans');
             }
-        } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'], true)) {
-            app(OrderWorkflowService::class)->transition(
-                $order,
-                'cancelled',
-                'Pembayaran Midtrans dibatalkan',
-                'system',
-            );
+
+            return;
         }
+
+        if (! in_array($transactionStatus, ['deny', 'expire', 'cancel'], true)) {
+            return;
+        }
+
+        if (! setting_bool('auto_cancel_on_payment_fail', true)) {
+            return;
+        }
+
+        $action = setting('payment_fail_action', 'cancel_order');
+
+        if ($action === 'keep_pending') {
+            return;
+        }
+
+        if ($action === 'mark_failed') {
+            $order->update(['payment_status' => 'failed']);
+
+            return;
+        }
+
+        app(OrderWorkflowService::class)->transition(
+            $order,
+            'cancelled',
+            'Pembayaran Midtrans dibatalkan',
+            'system',
+        );
     }
 
     public function markPaid(Order $order, string $source = 'admin'): Order
@@ -45,5 +67,45 @@ class OrderPaymentService
         }
 
         return $order->fresh();
+    }
+
+    public function applyDokuStatus(Order $order, string $status): void
+    {
+        $status = strtoupper($status);
+
+        if (in_array($status, ['SUCCESS', 'PAID', 'SETTLEMENT'], true)) {
+            if ($order->payment_status !== 'paid') {
+                $this->markPaid($order, 'doku');
+            }
+
+            return;
+        }
+
+        if (! in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED', 'CANCEL'], true)) {
+            return;
+        }
+
+        if (! setting_bool('auto_cancel_on_payment_fail', true)) {
+            return;
+        }
+
+        $action = setting('payment_fail_action', 'cancel_order');
+
+        if ($action === 'keep_pending') {
+            return;
+        }
+
+        if ($action === 'mark_failed') {
+            $order->update(['payment_status' => 'failed']);
+
+            return;
+        }
+
+        app(OrderWorkflowService::class)->transition(
+            $order,
+            'cancelled',
+            'Pembayaran DOKU gagal',
+            'system',
+        );
     }
 }

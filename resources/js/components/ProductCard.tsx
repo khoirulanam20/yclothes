@@ -18,6 +18,8 @@ export type ProductCardData = {
     catalogHasDiscount?: boolean;
     ratingAvg?: number;
     reviewCount?: number;
+    isOutOfStock?: boolean;
+    isPurchasable?: boolean;
 };
 
 export function ProductCard({ product, compact }: { product: ProductCardData; compact?: boolean }) {
@@ -53,6 +55,11 @@ export function ProductCard({ product, compact }: { product: ProductCardData; co
                         -{product.discountPercentage}%
                     </Badge>
                 ) : null}
+                {product.isOutOfStock && (
+                    <Badge className="absolute bottom-2 left-2 z-10 text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border-transparent">
+                        Habis
+                    </Badge>
+                )}
                 <img
                     src={product.imageUrl}
                     alt={product.name}

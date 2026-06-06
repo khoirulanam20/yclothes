@@ -33,6 +33,12 @@ type Order = {
     items: OrderItem[];
 };
 
+type QrisSettings = {
+    imageUrl?: string | null;
+    merchantName?: string | null;
+    instructions?: string | null;
+};
+
 type Props = {
     order: Order;
     timeline?: TimelineEntry[];
@@ -40,14 +46,17 @@ type Props = {
     canConfirmReceived?: boolean;
     canConfirmPayment?: boolean;
     banks?: Bank[];
+    qris?: QrisSettings | null;
     canReturn?: boolean;
     returnableItems?: { id: number; productName: string; qty: number }[];
     isAccountView?: boolean;
+    canReview?: boolean;
+    reviewsRequireLogin?: boolean;
 };
 
 export default function Show({
     order, timeline = [], reviews = [], canConfirmReceived, canConfirmPayment, banks = [],
-    canReturn, returnableItems = [], isAccountView,
+    qris, canReturn, returnableItems = [], isAccountView, canReview = false, reviewsRequireLogin = false,
 }: Props) {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -73,6 +82,8 @@ export default function Show({
     };
 
     const showTransferInstructions = order.paymentMethod === 'bank_transfer' && order.paymentStatus !== 'paid';
+    const showQrisInstructions = order.paymentMethod === 'qris' && order.paymentStatus !== 'paid';
+    const isQris = order.paymentMethod === 'qris';
 
     return (
         <GuestLayout>
@@ -86,7 +97,7 @@ export default function Show({
                                 <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
                             </Button>
                         )}
-                        {canConfirmPayment && banks.length > 0 && (
+                        {canConfirmPayment && (
                             <>
                                 <Button size="sm" onClick={() => setPaymentModalOpen(true)}>
                                     Konfirmasi Pembayaran
@@ -97,6 +108,8 @@ export default function Show({
                                     order={order}
                                     banks={banks}
                                     submitUrl={paymentSubmitUrl}
+                                    isQris={isQris}
+                                    qris={qris}
                                 />
                             </>
                         )}
@@ -180,6 +193,39 @@ export default function Show({
                     </div>
                 </SectionCard>
 
+                {showQrisInstructions && qris && (
+                    <SectionCard title="Instruksi QRIS" className="mb-4">
+                        {qris.merchantName && (
+                            <p className="text-sm font-medium mb-2">{qris.merchantName}</p>
+                        )}
+                        {qris.imageUrl && (
+                            <img
+                                src={qris.imageUrl}
+                                alt="QRIS"
+                                className="max-w-[220px] rounded border bg-white p-2 mb-3"
+                            />
+                        )}
+                        {order.uniquePaymentAmount && (
+                            <p className="text-sm font-semibold text-primary mb-2">
+                                Bayar tepat: <CopyAmount amount={order.uniquePaymentAmount} />
+                            </p>
+                        )}
+                        {qris.instructions && (
+                            <p className="text-sm text-muted-foreground mb-2">{qris.instructions}</p>
+                        )}
+                        {order.paymentConfirmationStatus === 'pending' && (
+                            <p className="text-sm text-muted-foreground mt-3">
+                                Konfirmasi pembayaran sedang menunggu verifikasi penjual.
+                            </p>
+                        )}
+                        {order.paymentConfirmationStatus === 'rejected' && canConfirmPayment && (
+                            <p className="text-sm text-muted-foreground mt-3">
+                                Konfirmasi sebelumnya ditolak. Silakan ajukan ulang via tombol di atas.
+                            </p>
+                        )}
+                    </SectionCard>
+                )}
+
                 {showTransferInstructions && (
                     <SectionCard title="Instruksi Transfer" className="mb-4">
                         <p className="text-sm">{order.bankName} — {order.bankAccountNumber}</p>
@@ -202,7 +248,7 @@ export default function Show({
                     </SectionCard>
                 )}
 
-                {order.orderStatus === 'completed' && isAccountView && (
+                {canReview && (
                     <SectionCard title="Rating Produk" className="mb-4">
                         <div className="space-y-4">
                             {order.items.map((item) => {
@@ -241,6 +287,11 @@ export default function Show({
                                 );
                             })}
                         </div>
+                        {reviewsRequireLogin && !isAccountView && (
+                            <p className="text-xs text-muted-foreground mt-3">
+                                <Link href="/account/login" className="underline">Login</Link> untuk menyimpan ulasan ke akun Anda.
+                            </p>
+                        )}
                     </SectionCard>
                 )}
             </PageContainer>

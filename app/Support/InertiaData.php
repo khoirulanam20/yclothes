@@ -122,6 +122,20 @@ class InertiaData
         return app(PromotionPopupService::class)->serialize($popup);
     }
 
+    public static function gdpr(): array
+    {
+        if (! setting_bool('gdpr_enabled')) {
+            return ['enabled' => false];
+        }
+
+        return [
+            'enabled' => true,
+            'message' => setting('gdpr_message', 'Situs ini menggunakan cookie untuk meningkatkan pengalaman Anda.'),
+            'policyUrl' => setting('gdpr_policy_url'),
+            'cookieLifetimeDays' => (int) setting('gdpr_cookie_lifetime_days', 365),
+        ];
+    }
+
     public static function flash(): array
     {
         return [

@@ -61,7 +61,46 @@ class OrderTest extends TestCase
     {
         $response = $this->get('/order/track');
         $response->assertStatus(200);
-        $response->assertSee('Lacak Pesanan');
+        $response->assertInertia(fn ($page) => $page
+            ->component('Guest/Order/Track')
+            ->where('requiresEmail', true)
+        );
+    }
+
+    public function test_order_track_page_hides_email_when_logged_in(): void
+    {
+        $customer = \App\Models\Customer::factory()->create();
+
+        $this->actingAs($customer, 'customer')
+            ->get('/order/track')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Order/Track')
+                ->where('requiresEmail', false)
+            );
+    }
+
+    public function test_logged_in_customer_tracks_order_by_number_only(): void
+    {
+        $customer = \App\Models\Customer::factory()->create();
+        $order = $this->createOrder();
+        $order->update(['customer_id' => $customer->id, 'customer_email' => $customer->email]);
+
+        $response = $this->actingAs($customer, 'customer')
+            ->post('/order/track', ['order_number' => $order->order_number]);
+
+        $response->assertRedirect(order_public_url('order.show', $order));
+    }
+
+    public function test_logged_in_customer_cannot_track_other_order(): void
+    {
+        $customer = \App\Models\Customer::factory()->create();
+        $order = $this->createOrder();
+
+        $this->actingAs($customer, 'customer')
+            ->post('/order/track', ['order_number' => $order->order_number])
+            ->assertRedirect('/order/track')
+            ->assertSessionHas('error');
     }
 
     public function test_order_search_by_number_and_email(): void

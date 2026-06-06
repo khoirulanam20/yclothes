@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +15,11 @@ export default function Index({ staff }: Props) {
     return (
         <AdminLayout title="Staff" breadcrumbs={[{ label: 'Staff' }]}>
             <Head title="Staff" />
+            <AdminContent>
             <AdminPageHeader title="Staff" createHref="/admin/staff/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{staff.map((s) => (
                         <TableRow key={s.id}>
                             <TableCell>{s.name}</TableCell><TableCell>{s.email}</TableCell>
@@ -27,7 +30,9 @@ export default function Index({ staff }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

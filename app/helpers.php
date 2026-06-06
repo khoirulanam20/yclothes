@@ -20,14 +20,59 @@ if (! function_exists('clear_settings_cache')) {
     }
 }
 
+if (! function_exists('setting_bool')) {
+    function setting_bool(string $key, bool $default = false): bool
+    {
+        $value = setting($key, $default ? '1' : '0');
+
+        return $value === '1' || $value === 1 || $value === true;
+    }
+}
+
 if (! function_exists('generate_order_number')) {
     function generate_order_number(): string
     {
+        $prefix = (string) setting('order_number_prefix', 'INV-');
+        $suffix = (string) setting('order_number_suffix', '');
+        $length = max(4, min(16, (int) setting('order_number_length', 8)));
+        $mode = (string) setting('order_number_mode', 'random');
+
+        if ($mode === 'sequential') {
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($prefix, $suffix, $length) {
+                $start = max(1, (int) setting('order_number_start', 1));
+                $counterSetting = Setting::lockForUpdate()->firstOrCreate(
+                    ['key' => 'order_number_counter'],
+                    ['value' => (string) ($start - 1)],
+                );
+
+                $next = max($start, (int) $counterSetting->value + 1);
+                $counterSetting->update(['value' => (string) $next]);
+                clear_settings_cache();
+
+                $padded = str_pad((string) $next, $length, '0', STR_PAD_LEFT);
+
+                return $prefix.$padded.$suffix;
+            });
+        }
+
         do {
-            $number = 'INV-'.strtoupper(\Illuminate\Support\Str::random(8));
+            $number = $prefix.strtoupper(\Illuminate\Support\Str::random($length)).$suffix;
         } while (\App\Models\Order::where('order_number', $number)->exists());
 
         return $number;
+    }
+}
+
+if (! function_exists('weight_unit_label')) {
+    function weight_unit_label(?string $unit = null): string
+    {
+        $unit ??= (string) setting('weight_unit', 'gram');
+
+        return match ($unit) {
+            'kg' => 'kg',
+            'lb' => 'lb',
+            default => 'gram',
+        };
     }
 }
 

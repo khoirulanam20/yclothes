@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
@@ -15,9 +16,11 @@ export default function Index({ items }: Props) {
     return (
         <AdminLayout title="Navigasi" breadcrumbs={[{ label: 'Navigasi' }]}>
             <Head title="Navigasi" />
+            <AdminContent>
             <AdminPageHeader title="Navigasi" createHref="/admin/navigation/create" />
             <Card><CardContent className="p-0">
-                <Table>
+                <AdminTableScroll>
+                        <Table>
                     <TableHeader><TableRow>
                         <TableHead>Menu</TableHead><TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead>
                     </TableRow></TableHeader>
@@ -37,7 +40,9 @@ export default function Index({ items }: Props) {
                         ))}
                     </TableBody>
                 </Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

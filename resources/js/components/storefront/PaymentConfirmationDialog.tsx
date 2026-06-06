@@ -18,9 +18,15 @@ type OrderInfo = {
     orderNumber: string;
     grandTotal: number;
     uniquePaymentAmount?: number | null;
+    paymentMethod?: string;
     bankName?: string | null;
     bankAccountNumber?: string | null;
     bankAccountName?: string | null;
+};
+type QrisSettings = {
+    imageUrl?: string | null;
+    merchantName?: string | null;
+    instructions?: string | null;
 };
 
 type Props = {
@@ -29,9 +35,13 @@ type Props = {
     order: OrderInfo;
     banks: Bank[];
     submitUrl: string;
+    isQris?: boolean;
+    qris?: QrisSettings | null;
 };
 
-export function PaymentConfirmationDialog({ open, onOpenChange, order, banks, submitUrl }: Props) {
+export function PaymentConfirmationDialog({
+    open, onOpenChange, order, banks, submitUrl, isQris = false, qris,
+}: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         payment_bank_id: banks[0]?.id ?? '',
         amount_claimed: order.uniquePaymentAmount ?? order.grandTotal,
@@ -61,29 +71,51 @@ export function PaymentConfirmationDialog({ open, onOpenChange, order, banks, su
                 </DialogHeader>
 
                 <div className="rounded-md border p-3 text-sm space-y-1 mb-2">
-                    <p>Transfer ke: <strong>{order.bankName}</strong> — {order.bankAccountNumber}</p>
-                    <p className="text-muted-foreground">a.n. {order.bankAccountName}</p>
-                    {order.uniquePaymentAmount && (
-                        <p className="text-primary font-semibold pt-1">
-                            Nominal unik:{' '}
-                            <CopyAmount amount={order.uniquePaymentAmount} />
-                        </p>
+                    {isQris && qris ? (
+                        <>
+                            {qris.merchantName && <p className="font-medium">{qris.merchantName}</p>}
+                            {qris.imageUrl && (
+                                <img src={qris.imageUrl} alt="QRIS" className="mx-auto max-w-[180px] rounded border bg-white p-2 my-2" />
+                            )}
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold pt-1">
+                                    Nominal unik:{' '}
+                                    <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                            {qris.instructions && (
+                                <p className="text-muted-foreground pt-1">{qris.instructions}</p>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <p>Transfer ke: <strong>{order.bankName}</strong> — {order.bankAccountNumber}</p>
+                            <p className="text-muted-foreground">a.n. {order.bankAccountName}</p>
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold pt-1">
+                                    Nominal unik:{' '}
+                                    <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
 
                 <form onSubmit={submit} className="space-y-3">
-                    <div>
-                        <Label>Rekening Tujuan</Label>
-                        <select
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                            value={data.payment_bank_id}
-                            onChange={(e) => setData('payment_bank_id', Number(e.target.value))}
-                        >
-                            {banks.map((b) => (
-                                <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {!isQris && banks.length > 0 && (
+                        <div>
+                            <Label>Rekening Tujuan</Label>
+                            <select
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                value={data.payment_bank_id}
+                                onChange={(e) => setData('payment_bank_id', Number(e.target.value))}
+                            >
+                                {banks.map((b) => (
+                                    <option key={b.id} value={b.id}>{b.bankName} — {b.accountNumber}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div>
                         <Label>Jumlah Dibayar</Label>
                         <Input

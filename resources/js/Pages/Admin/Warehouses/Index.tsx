@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,11 @@ export default function Index({ warehouses }: Props) {
     return (
         <AdminLayout title="Gudang" breadcrumbs={[{ label: 'Gudang' }]}>
             <Head title="Gudang" />
+            <AdminContent>
             <AdminPageHeader title="Gudang" createHref="/admin/warehouses/create" />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kota</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kota</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{warehouses.map((w) => (
                         <TableRow key={w.id}>
                             <TableCell>{w.name}</TableCell><TableCell>{w.city ?? '—'}</TableCell><TableCell>{w.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
@@ -25,7 +28,9 @@ export default function Index({ warehouses }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

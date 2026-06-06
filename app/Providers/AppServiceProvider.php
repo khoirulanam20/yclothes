@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Events\OrderStatusChanged;
 use App\Listeners\CompleteReturnOnReplacementOrderCompleted;
 use App\Listeners\SendOrderStatusEmail;
-use App\Models\Customer;
+use App\Services\MailSettingsService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Pagination\Paginator;
@@ -24,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        try {
+            app(MailSettingsService::class)->apply();
+        } catch (\Throwable) {
+            // settings table may not exist during migrate
+        }
 
         Event::listen(OrderStatusChanged::class, SendOrderStatusEmail::class);
         Event::listen(OrderStatusChanged::class, CompleteReturnOnReplacementOrderCompleted::class);

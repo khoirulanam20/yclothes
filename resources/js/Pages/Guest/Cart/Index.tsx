@@ -76,7 +76,6 @@ export default function Index({ items, pricing }: Props) {
                                                 <Input
                                                     type="number"
                                                     min={1}
-                                                    max={99}
                                                     value={item.qty}
                                                     onChange={(e) => updateQty(item.key, Number(e.target.value))}
                                                     className="w-16 h-8 text-sm"

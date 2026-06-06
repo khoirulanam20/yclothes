@@ -18,11 +18,70 @@ class InventoryService
             return true;
         }
 
-        if ($this->allowsBackorder($product, $variant)) {
+        if ($this->effectiveAllowBackorder($product, $variant)) {
             return true;
         }
 
         return $this->getAvailableStock($product, $variant) >= $qty;
+    }
+
+    public function outOfStockBehavior(): string
+    {
+        return (string) setting('out_of_stock_behavior', 'show_label');
+    }
+
+    public function effectiveAllowBackorder(Product $product, ?ProductVariant $variant = null): bool
+    {
+        if ($this->allowsBackorder($product, $variant)) {
+            return true;
+        }
+
+        return $this->outOfStockBehavior() === 'allow_backorder';
+    }
+
+    public function isOutOfStock(Product $product, ?ProductVariant $variant = null): bool
+    {
+        if (! $this->tracksStock($product, $variant)) {
+            return false;
+        }
+
+        return $this->getAvailableStock($product, $variant) <= 0
+            && ! $this->effectiveAllowBackorder($product, $variant);
+    }
+
+    public function shouldHideFromCatalog(Product $product): bool
+    {
+        if ($this->outOfStockBehavior() !== 'hide') {
+            return false;
+        }
+
+        if ($product->isConfigurable()) {
+            $variants = $product->relationLoaded('activeVariants')
+                ? $product->activeVariants
+                : $product->activeVariants()->get();
+
+            if ($variants->isEmpty()) {
+                return false;
+            }
+
+            foreach ($variants as $variant) {
+                if (! $this->tracksStock($product, $variant)) {
+                    return false;
+                }
+
+                if ($this->getAvailableStock($product, $variant) > 0 || $this->effectiveAllowBackorder($product, $variant)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if (! $product->track_stock) {
+            return false;
+        }
+
+        return $this->getAvailableStock($product) <= 0 && ! $this->effectiveAllowBackorder($product);
     }
 
     public function getAvailableStock(Product $product, ?ProductVariant $variant = null): int
@@ -338,7 +397,7 @@ class InventoryService
 
             $stock = $this->getAvailableStock($product, $variant);
             $qty = $item['qty'] ?? 1;
-            $allowsBackorder = $variant ? $variant->allow_backorder : $product->allow_backorder;
+            $allowsBackorder = $this->effectiveAllowBackorder($product, $variant);
             $name = $variant?->name ?? $product->name;
 
             if ($qty > $stock && $allowsBackorder) {

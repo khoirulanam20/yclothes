@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminHelpPanel } from '@/components/admin/AdminHelpPanel';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
@@ -15,12 +16,14 @@ export default function Index({ families }: Props) {
     return (
         <AdminLayout title="Keluarga Atribut" breadcrumbs={[{ label: 'Atribut' }, { label: 'Keluarga Atribut' }]}>
             <Head title="Keluarga Atribut" />
+            <AdminContent>
             <AdminPageHeader title="Keluarga Atribut" createHref="/admin/attribute-families/create" />
             <div className="mb-4">
                 <AdminHelpPanel section={attributeFamilyHelp} defaultOpen />
             </div>
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Atribut</TableHead><TableHead>Produk</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Atribut</TableHead><TableHead>Produk</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{families.map((f) => (
                         <TableRow key={f.id}>
                             <TableCell>{f.name}</TableCell><TableCell>{f.attributesCount ?? 0}</TableCell><TableCell>{f.productsCount ?? 0}</TableCell>
@@ -30,7 +33,9 @@ export default function Index({ families }: Props) {
                             </div></TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
+            </AdminContent>
         </AdminLayout>
     );
 }

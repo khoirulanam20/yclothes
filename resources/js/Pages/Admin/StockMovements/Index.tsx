@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export default function Index({ movements }: Props) {
     return (
         <AdminLayout title="Pergerakan Stok" breadcrumbs={[{ label: 'Pergerakan Stok' }]}>
             <Head title="Pergerakan Stok" />
+            <AdminContent>
             <AdminPageHeader
                 title="Pergerakan Stok"
                 actions={
@@ -35,7 +37,8 @@ export default function Index({ movements }: Props) {
                 }
             />
             <Card><CardContent className="p-0">
-                <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Tipe</TableHead><TableHead>Produk</TableHead><TableHead>Gudang</TableHead><TableHead>Qty</TableHead><TableHead>Alasan</TableHead><TableHead>Referensi</TableHead></TableRow></TableHeader>
+                <AdminTableScroll>
+                        <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Tipe</TableHead><TableHead>Produk</TableHead><TableHead>Gudang</TableHead><TableHead>Qty</TableHead><TableHead>Alasan</TableHead><TableHead>Referensi</TableHead></TableRow></TableHeader>
                     <TableBody>{movements.data.map((m) => (
                         <TableRow key={m.id}>
                             <TableCell className="text-sm">{m.createdAt ? new Date(m.createdAt).toLocaleString('id-ID') : '—'}</TableCell>
@@ -47,8 +50,10 @@ export default function Index({ movements }: Props) {
                             <TableCell>{m.orderNumber ? `#${m.orderNumber}` : '—'}</TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
+                    </AdminTableScroll>
             </CardContent></Card>
             <PaginationLinks pagination={movements} />
+            </AdminContent>
         </AdminLayout>
     );
 }

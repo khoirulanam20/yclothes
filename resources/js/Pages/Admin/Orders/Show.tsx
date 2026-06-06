@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRupiah } from '@/lib/utils';
-import { orderStatusLabels, paymentStatusLabels } from '@/lib/order-status';
+import { orderStatusLabels, paymentMethodLabels, paymentStatusLabels } from '@/lib/order-status';
 
 type PaymentConfirmation = {
     id: number; amountClaimed: number; transferDate?: string; senderName?: string;
@@ -150,6 +150,7 @@ export default function Show({ order, timeline = [], paymentConfirmations = [], 
                 <div className="space-y-6">
                     <Card><CardHeader><CardTitle>Status</CardTitle></CardHeader><CardContent className="space-y-3">
                         <div className="flex justify-between"><span>Pesanan</span><Badge>{orderStatusLabels[order.orderStatus] ?? order.orderStatus}</Badge></div>
+                        <div className="flex justify-between"><span>Metode</span><span className="text-sm">{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</span></div>
                         <div className="flex justify-between"><span>Pembayaran</span><Badge variant="outline">{paymentStatusLabels[order.paymentStatus] ?? order.paymentStatus}</Badge></div>
                         {(order.courier || order.trackingNumber) && (
                             <div className="text-sm space-y-1 pt-1 border-t">

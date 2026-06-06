@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,9 +70,10 @@ export default function Dashboard({
     return (
         <AdminLayout title="Dasbor" breadcrumbs={[{ label: 'Dasbor' }]}>
             <Head title="Dasbor" />
+            <AdminContent>
             <AdminPageHeader title="Dasbor" />
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard label="Total Pesanan" value={orderCount} />
                 <StatCard label="Pending" value={pendingCount} />
                 <StatCard label="Total Produk" value={productCount} />
@@ -87,26 +89,28 @@ export default function Dashboard({
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Produk</TableHead>
-                                    <TableHead>Gudang</TableHead>
-                                    <TableHead className="text-right">Stok</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {lowStockItems.slice(0, 10).map((item, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell>{item.product.name}</TableCell>
-                                        <TableCell>{item.warehouse?.name ?? '—'}</TableCell>
-                                        <TableCell className="text-right font-bold text-destructive">
-                                            {item.stock}
-                                        </TableCell>
+                        <AdminTableScroll>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Produk</TableHead>
+                                        <TableHead>Gudang</TableHead>
+                                        <TableHead className="text-right">Stok</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {lowStockItems.slice(0, 10).map((item, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell>{item.product.name}</TableCell>
+                                            <TableCell>{item.warehouse?.name ?? '—'}</TableCell>
+                                            <TableCell className="text-right font-bold text-destructive">
+                                                {item.stock}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </AdminTableScroll>
                     </CardContent>
                 </Card>
             )}
@@ -116,39 +120,41 @@ export default function Dashboard({
                     <CardTitle>Produk Terbaru</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nama</TableHead>
-                                <TableHead>Kategori</TableHead>
-                                <TableHead>Harga</TableHead>
-                                <TableHead>Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {latestProducts.map((product) => (
-                                <TableRow key={product.id}>
-                                    <TableCell>
-                                        <Link
-                                            href={`/admin/products/${product.id}/edit`}
-                                            className="font-medium hover:underline"
-                                        >
-                                            {product.name}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>{product.category?.name ?? '—'}</TableCell>
-                                    <TableCell>{formatRupiah(product.finalPrice)}</TableCell>
-                                    <TableCell>
-                                        {product.badge ? (
-                                            <Badge variant="secondary">{product.badge}</Badge>
-                                        ) : (
-                                            '—'
-                                        )}
-                                    </TableCell>
+                    <AdminTableScroll>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nama</TableHead>
+                                    <TableHead>Kategori</TableHead>
+                                    <TableHead>Harga</TableHead>
+                                    <TableHead>Status</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {latestProducts.map((product) => (
+                                    <TableRow key={product.id}>
+                                        <TableCell>
+                                            <Link
+                                                href={`/admin/products/${product.id}/edit`}
+                                                className="font-medium hover:underline"
+                                            >
+                                                {product.name}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>{product.category?.name ?? '—'}</TableCell>
+                                        <TableCell>{formatRupiah(product.finalPrice)}</TableCell>
+                                        <TableCell>
+                                            {product.badge ? (
+                                                <Badge variant="secondary">{product.badge}</Badge>
+                                            ) : (
+                                                '—'
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </AdminTableScroll>
                 </CardContent>
             </Card>
 
@@ -160,37 +166,39 @@ export default function Dashboard({
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>No. Pesanan</TableHead>
-                                <TableHead>Pemesan</TableHead>
-                                <TableHead>Total</TableHead>
-                                <TableHead>Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {latestOrders.map((order) => (
-                                <TableRow key={order.id}>
-                                    <TableCell>
-                                        <Link
-                                            href={`/admin/orders/${order.id}`}
-                                            className="font-semibold hover:underline"
-                                        >
-                                            {order.orderNumber}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>{order.customerName}</TableCell>
-                                    <TableCell>{formatRupiah(order.grandTotal)}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">
-                                            {orderStatusLabels[order.orderStatus] ?? order.orderStatus}
-                                        </Badge>
-                                    </TableCell>
+                    <AdminTableScroll>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>No. Pesanan</TableHead>
+                                    <TableHead>Pemesan</TableHead>
+                                    <TableHead>Total</TableHead>
+                                    <TableHead>Status</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {latestOrders.map((order) => (
+                                    <TableRow key={order.id}>
+                                        <TableCell>
+                                            <Link
+                                                href={`/admin/orders/${order.id}`}
+                                                className="font-semibold hover:underline"
+                                            >
+                                                {order.orderNumber}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>{order.customerName}</TableCell>
+                                        <TableCell>{formatRupiah(order.grandTotal)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">
+                                                {orderStatusLabels[order.orderStatus] ?? order.orderStatus}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </AdminTableScroll>
                 </CardContent>
             </Card>
 
@@ -203,38 +211,41 @@ export default function Dashboard({
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Waktu</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentActivities.map((log) => (
-                                    <TableRow key={log.id}>
-                                        <TableCell className="text-muted-foreground text-sm">
-                                            {log.createdAt
-                                                ? new Date(log.createdAt).toLocaleString('id-ID', {
-                                                      day: 'numeric',
-                                                      month: 'short',
-                                                      hour: '2-digit',
-                                                      minute: '2-digit',
-                                                  })
-                                                : '—'}
-                                        </TableCell>
-                                        <TableCell className="text-sm">{log.user?.name ?? '—'}</TableCell>
-                                        <TableCell>
-                                            <code className="text-xs">{log.action.slice(0, 40)}</code>
-                                        </TableCell>
+                        <AdminTableScroll>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Waktu</TableHead>
+                                        <TableHead>User</TableHead>
+                                        <TableHead>Action</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentActivities.map((log) => (
+                                        <TableRow key={log.id}>
+                                            <TableCell className="text-muted-foreground text-sm">
+                                                {log.createdAt
+                                                    ? new Date(log.createdAt).toLocaleString('id-ID', {
+                                                          day: 'numeric',
+                                                          month: 'short',
+                                                          hour: '2-digit',
+                                                          minute: '2-digit',
+                                                      })
+                                                    : '—'}
+                                            </TableCell>
+                                            <TableCell className="text-sm">{log.user?.name ?? '—'}</TableCell>
+                                            <TableCell>
+                                                <code className="text-xs">{log.action.slice(0, 40)}</code>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </AdminTableScroll>
                     </CardContent>
                 </Card>
             )}
+            </AdminContent>
         </AdminLayout>
     );
 }
