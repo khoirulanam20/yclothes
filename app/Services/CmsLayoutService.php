@@ -84,7 +84,8 @@ class CmsLayoutService
 
             foreach ($fields as $field) {
                 if (isset($block['props'][$field]) && is_string($block['props'][$field])) {
-                    $block['props'][$field] = HtmlSanitizer::clean($block['props'][$field]) ?? '';
+                    $clean = HtmlSanitizer::clean($block['props'][$field]) ?? '';
+                    $block['props'][$field] = HtmlSanitizer::normalizeStorageUrls($clean) ?? '';
                 }
             }
 
@@ -107,6 +108,32 @@ class CmsLayoutService
         $this->validateLayout($layout);
 
         return $this->sanitizeLayout($layout);
+    }
+
+    public function normalizeLayoutForRender(?array $layout): ?array
+    {
+        if (! is_array($layout) || ! isset($layout['content']) || ! is_array($layout['content'])) {
+            return $layout;
+        }
+
+        $layout['content'] = array_map(function (array $block): array {
+            $type = $block['type'] ?? '';
+            $fields = self::HTML_BLOCK_FIELDS[$type] ?? null;
+
+            if ($fields === null) {
+                return $block;
+            }
+
+            foreach ($fields as $field) {
+                if (isset($block['props'][$field]) && is_string($block['props'][$field])) {
+                    $block['props'][$field] = HtmlSanitizer::normalizeStorageUrls($block['props'][$field]) ?? '';
+                }
+            }
+
+            return $block;
+        }, $layout['content']);
+
+        return $layout;
     }
 
     public function buildFromLegacy(CmsPage $page): array

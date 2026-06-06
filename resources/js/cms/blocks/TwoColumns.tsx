@@ -1,4 +1,5 @@
 import { cmsHtmlField } from '@/cms/fields/cmsHtmlField';
+import { CmsHtmlContent } from '@/cms/CmsHtmlContent';
 
 export type TwoColumnsProps = {
     leftHtml: string;
@@ -8,8 +9,8 @@ export type TwoColumnsProps = {
 export function TwoColumnsBlock({ leftHtml, rightHtml }: TwoColumnsProps) {
     return (
         <div className="container mx-auto px-4 py-4 grid md:grid-cols-2 gap-8">
-            <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: leftHtml }} />
-            <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: rightHtml }} />
+            <CmsHtmlContent html={leftHtml} emptyLabel="Kolom kiri" bare />
+            <CmsHtmlContent html={rightHtml} emptyLabel="Kolom kanan" bare />
         </div>
     );
 }

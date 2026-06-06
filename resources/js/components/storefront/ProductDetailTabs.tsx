@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { type ReactNode, useState } from 'react';
+import { normalizeCmsHtml } from '@/cms/normalizeCmsHtml';
 import { cn } from '@/lib/utils';
 
 type Category = {
@@ -91,13 +92,14 @@ export function ProductDetailTabs({
 
                 {description ? (
                     <div>
-                        <div
-                            className={cn(
-                                'cms-content relative',
-                                !expanded && isLong && 'max-h-48 overflow-hidden',
-                            )}
-                        >
-                            <div dangerouslySetInnerHTML={{ __html: description }} />
+                        <div className="relative">
+                            <div
+                                className={cn(
+                                    'cms-content max-w-none',
+                                    !expanded && isLong && 'max-h-48 overflow-hidden',
+                                )}
+                                dangerouslySetInnerHTML={{ __html: normalizeCmsHtml(description) }}
+                            />
                             {!expanded && isLong && (
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" />
                             )}

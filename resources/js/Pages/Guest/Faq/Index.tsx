@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { CmsHtmlContent } from '@/cms/CmsHtmlContent';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -25,10 +26,7 @@ export default function Index({ faqCategories }: Props) {
                                                 {item.question}
                                             </AccordionTrigger>
                                             <AccordionContent>
-                                                <div
-                                                    className="prose prose-sm text-muted-foreground"
-                                                    dangerouslySetInnerHTML={{ __html: item.answer }}
-                                                />
+                                                <CmsHtmlContent html={item.answer} bare className="text-muted-foreground" />
                                             </AccordionContent>
                                         </AccordionItem>
                                     ))}

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { CmsHtmlContent } from '@/cms/CmsHtmlContent';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
@@ -40,12 +41,7 @@ export default function Show({ post }: Props) {
                             {post.author && `${post.author} · `}
                             {post.publishedAt && new Date(post.publishedAt).toLocaleDateString('id-ID')}
                         </p>
-                        {post.content && (
-                            <div
-                                className="prose prose-neutral max-w-none prose-sm"
-                                dangerouslySetInnerHTML={{ __html: post.content }}
-                            />
-                        )}
+                        {post.content && <CmsHtmlContent html={post.content} bare className="text-sm" />}
                         <Button variant="ghost" size="sm" className="mt-6" asChild>
                             <Link href="/blog">← Kembali ke Blog</Link>
                         </Button>

@@ -178,6 +178,46 @@ class CmsBuilderTest extends TestCase
         $this->assertDatabaseMissing('cms_pages', ['slug' => 'invalid-block']);
     }
 
+    public function test_builder_save_normalizes_storage_urls_in_html(): void
+    {
+        $layout = json_encode([
+            'root' => ['props' => ['showBreadcrumb' => true, 'pageTitle' => 'About']],
+            'content' => [
+                [
+                    'type' => 'RichText',
+                    'props' => [
+                        'id' => 'content-1',
+                        'html' => '<p><img src="../../../storage/editor/test.jpg" alt=""></p>',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post('/admin/cms-pages/builder', [
+                'title' => 'About Test',
+                'slug' => 'about-test-url',
+                'status' => 'published',
+                'layout_json' => $layout,
+            ])
+            ->assertRedirect();
+
+        $page = CmsPage::where('slug', 'about-test-url')->firstOrFail();
+        $html = $page->layout_json['content'][0]['props']['html'] ?? '';
+
+        $this->assertStringContainsString('src="/storage/editor/test.jpg"', $html);
+
+        $this->get('/page/about-test-url')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Cms/Show')
+                ->where(
+                    'page.layoutJson.content.0.props.html',
+                    fn (string $html) => str_contains($html, '/storage/editor/test.jpg'),
+                )
+            );
+    }
+
     public function test_builder_accepts_multi_block_layout(): void
     {
         $layout = json_encode([

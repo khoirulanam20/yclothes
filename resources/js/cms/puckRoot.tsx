@@ -14,7 +14,7 @@ function shouldShowBreadcrumb(value: string | boolean | undefined): boolean {
 
 export function CmsPageRoot({ children, showBreadcrumb, pageTitle }: RootProps) {
     return (
-        <div className="cms-page">
+        <div className="cms-page pb-8">
             {shouldShowBreadcrumb(showBreadcrumb) && pageTitle ? (
                 <PageContainer>
                     <Breadcrumb

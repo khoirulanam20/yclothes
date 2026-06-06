@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\CmsPage;
 use App\Services\CmsLayoutService;
+use App\Services\HtmlSanitizer;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -33,7 +34,7 @@ class ModelSerializer
             'id' => $product->id,
             'name' => $product->name,
             'slug' => $product->slug,
-            'description' => $product->description,
+            'description' => HtmlSanitizer::normalizeStorageUrls($product->description),
             'price' => $product->price,
             'salePrice' => $product->sale_price,
             'finalPrice' => $product->final_price,
@@ -212,18 +213,20 @@ class ModelSerializer
 
     public static function cmsPage(CmsPage $page): array
     {
+        $layoutService = app(CmsLayoutService::class);
+
         return [
             'id' => $page->id,
             'title' => $page->title,
             'slug' => $page->slug,
             'content' => $page->content,
-            'layoutJson' => $page->layout_json,
+            'layoutJson' => $layoutService->normalizeLayoutForRender($page->layout_json),
             'layoutVersion' => $page->layout_version,
             'bannerUrl' => $page->banner_url,
             'metaTitle' => $page->meta_title,
             'metaDescription' => $page->meta_description,
             'status' => $page->status,
-            'hasLayout' => app(CmsLayoutService::class)->hasRenderableContent($page->layout_json),
+            'hasLayout' => $layoutService->hasRenderableContent($page->layout_json),
         ];
     }
 

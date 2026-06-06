@@ -175,6 +175,34 @@
     @apply my-4 max-w-full rounded-lg;
 }
 
+.cms-content :where(u) {
+    @apply underline;
+}
+
+.cms-content :where(s, strike, del) {
+    @apply line-through;
+}
+
+.cms-content :where(em, i) {
+    @apply italic;
+}
+
+.cms-content :where(sub) {
+    @apply align-sub text-xs;
+}
+
+.cms-content :where(sup) {
+    @apply align-super text-xs;
+}
+
+.cms-content :where(hr) {
+    @apply my-6 border-border;
+}
+
+.cms-content :where(div) {
+    @apply mb-4 leading-relaxed;
+}
+
 @layer utilities {
     .store-card {
         box-shadow: var(--shadow-card);

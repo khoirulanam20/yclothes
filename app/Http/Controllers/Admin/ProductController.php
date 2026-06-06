@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Warehouse;
 use App\Services\CategoryTreeService;
+use App\Services\HtmlSanitizer;
 use App\Services\InventoryService;
 use App\Services\ProductAttributeService;
 use App\Services\ProductDuplicateService;
@@ -184,6 +185,10 @@ class ProductController extends Controller
         $validated['sale_price_ends_at'] = $request->input('sale_price_ends_at') ?: null;
 
         $this->normalizeBadgeFields($validated);
+
+        if (array_key_exists('description', $validated)) {
+            $validated['description'] = HtmlSanitizer::prepareRichText($validated['description']);
+        }
 
         unset($validated['existing_images'], $validated['new_images'], $validated['remove_images'], $validated['inventories']);
 

@@ -1,6 +1,7 @@
 import { Pencil, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CmsHtmlContent } from '@/cms/CmsHtmlContent';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -13,17 +14,6 @@ type Props = {
     modalMinHeight?: number;
 };
 
-function stripHtml(html: string): string {
-    if (!html.trim()) {
-        return '';
-    }
-
-    return html
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
 export function CmsHtmlEditorField({
     value,
     onChange,
@@ -33,7 +23,6 @@ export function CmsHtmlEditorField({
 }: Props) {
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState(value);
-    const preview = stripHtml(value);
 
     useEffect(() => {
         if (open) {
@@ -128,12 +117,8 @@ export function CmsHtmlEditorField({
     return (
         <>
             <div className="space-y-2">
-                <div className="min-h-16 rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                    {preview ? (
-                        <p className="line-clamp-3">{preview}</p>
-                    ) : (
-                        <p className="italic">Belum ada konten.</p>
-                    )}
+                <div className="max-h-48 overflow-hidden rounded-md border bg-background px-3 py-2">
+                    <CmsHtmlContent html={value} bare emptyLabel="Belum ada konten." />
                 </div>
                 <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>
                     <Pencil className="mr-2 h-4 w-4" />

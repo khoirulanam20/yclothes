@@ -1,26 +1,12 @@
 import { cmsHtmlField } from '@/cms/fields/cmsHtmlField';
+import { CmsHtmlContent } from '@/cms/CmsHtmlContent';
 
 export type RichTextProps = {
     html: string;
 };
 
 export function RichTextBlock({ html }: RichTextProps) {
-    if (!html) {
-        return (
-            <div className="container mx-auto px-4 py-4">
-                <div className="rounded-lg border border-dashed bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
-                    Tambahkan konten
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div
-            className="prose prose-neutral max-w-none container mx-auto px-4 py-4"
-            dangerouslySetInnerHTML={{ __html: html }}
-        />
-    );
+    return <CmsHtmlContent html={html} />;
 }
 
 export const richTextFields = {
