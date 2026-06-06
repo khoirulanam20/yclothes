@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\AdminNotification;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
 use App\Models\ReturnPolicy;
 use App\Models\ReturnRequest;
 use App\Models\ReturnRequestItem;
@@ -293,7 +292,7 @@ class ReturnService
 
         $order = $request->order;
         $refundAmount = $request->items->sum(fn ($i) => ($i->orderItem?->product_price ?? 0) * $i->qty);
-        $order->update([
+        $order->updateTrusted([
             'refund_status' => 'partial',
             'refunded_amount' => min($order->refunded_amount + $refundAmount, $order->grand_total),
         ]);
@@ -326,7 +325,7 @@ class ReturnService
         $request->load('items.orderItem', 'order');
         $original = $request->order;
 
-        $order = Order::create([
+        $order = Order::createTrusted([
             'order_number' => generate_order_number(),
             'customer_id' => $original->customer_id,
             'customer_name' => $original->customer_name,

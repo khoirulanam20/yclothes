@@ -223,16 +223,19 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                 return;
             }
 
-            router.put(
-                url,
-                {
-                    variants: variantsPayload.map(({ new_images: _files, inventories_json: _json, ...rest }) => rest),
-                },
-                {
-                    preserveScroll: true,
-                    onError: (errs) => setSaveErrors(errs),
-                },
-            );
+            await new Promise<void>((resolve) => {
+                router.put(
+                    url,
+                    {
+                        variants: variantsPayload.map(({ new_images: _files, inventories_json: _json, ...rest }) => rest),
+                    },
+                    {
+                        preserveScroll: true,
+                        onError: (errs) => setSaveErrors(errs),
+                        onFinish: () => resolve(),
+                    },
+                );
+            });
         } finally {
             setSubmitting(false);
         }

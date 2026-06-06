@@ -10,7 +10,7 @@ class SendOrderStatusEmail
 {
     public function handle(OrderStatusChanged $event): void
     {
-        if (empty($event->order->customer_email)) {
+        if (! $event->notifyCustomer || empty($event->order->customer_email)) {
             return;
         }
 

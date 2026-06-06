@@ -33,7 +33,7 @@ class OrderPaymentService
         }
 
         if ($action === 'mark_failed') {
-            $order->update(['payment_status' => 'failed']);
+            $order->updateTrusted(['payment_status' => 'failed']);
 
             return;
         }
@@ -54,7 +54,7 @@ class OrderPaymentService
 
         $workflow = app(OrderWorkflowService::class);
 
-        $order->update([
+        $order->updateTrusted([
             'payment_status' => 'paid',
             'paid_at' => now(),
             'payment_confirmation_status' => 'approved',
@@ -106,7 +106,7 @@ class OrderPaymentService
         }
 
         if ($action === 'mark_failed') {
-            $order->update(['payment_status' => 'failed']);
+            $order->updateTrusted(['payment_status' => 'failed']);
 
             return;
         }

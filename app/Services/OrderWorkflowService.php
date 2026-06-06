@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Events\OrderStatusChanged;
+use App\Mail\AdminNewOrderMail;
+use App\Mail\AdminPaymentSubmittedMail;
 use App\Models\AdminNotification;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -14,15 +17,15 @@ class OrderWorkflowService
 {
     /** @var array<string, list<string>> */
     private const TRANSITIONS = [
-        'pending' => ['awaiting_verification', 'confirmed', 'cancelled'],
-        'awaiting_verification' => ['confirmed', 'cancelled', 'pending'],
-        'confirmed' => ['processed', 'cancelled'],
-        'processed' => ['shipped', 'cancelled'],
-        'shipped' => ['delivered', 'cancelled'],
-        'delivered' => ['completed', 'cancelled', 'return'],
-        'completed' => ['return'],
-        'return' => ['completed'],
-        'cancelled' => [],
+        OrderStatus::Pending->value => ['awaiting_verification', 'confirmed', 'cancelled'],
+        OrderStatus::AwaitingVerification->value => ['confirmed', 'cancelled', 'pending'],
+        OrderStatus::Confirmed->value => ['processed', 'cancelled'],
+        OrderStatus::Processed->value => ['shipped', 'cancelled'],
+        OrderStatus::Shipped->value => ['delivered', 'cancelled'],
+        OrderStatus::Delivered->value => ['completed', 'cancelled', 'return'],
+        OrderStatus::Completed->value => ['return'],
+        OrderStatus::Return->value => ['completed'],
+        OrderStatus::Cancelled->value => [],
     ];
 
     public function canTransition(string $from, string $to): bool
@@ -51,15 +54,19 @@ class OrderWorkflowService
 
         $payload = array_merge(['order_status' => $toStatus], $extra);
 
-        if ($toStatus === 'delivered' && ! $order->delivered_at) {
+        if ($toStatus === OrderStatus::Delivered->value && ! $order->delivered_at) {
             $payload['delivered_at'] = now();
         }
 
-        if ($toStatus === 'completed' && ! $order->completed_at) {
+        if ($toStatus === OrderStatus::Completed->value && ! $order->completed_at) {
             $payload['completed_at'] = now();
         }
 
-        $order->update($payload);
+        $order->updateTrusted($payload);
+
+        if ($toStatus === 'cancelled' && $fromStatus !== 'cancelled') {
+            app(InventoryService::class)->releaseForOrder($order->fresh(), $note ?? 'Pesanan dibatalkan');
+        }
 
         if ($fromStatus !== $toStatus) {
             OrderStatusHistory::create([
@@ -72,7 +79,7 @@ class OrderWorkflowService
                 'notify_customer' => $notifyCustomer,
             ]);
 
-            event(new OrderStatusChanged($order->fresh(), $fromStatus, $toStatus));
+            event(new OrderStatusChanged($order->fresh(), $fromStatus, $toStatus, $notifyCustomer));
         }
 
         return $order->fresh();
@@ -99,7 +106,7 @@ class OrderWorkflowService
             ['order_id' => $order->id, 'order_number' => $order->order_number],
         );
 
-        $this->mailAdmins(new \App\Mail\AdminNewOrderMail($order));
+        $this->mailAdmins(new AdminNewOrderMail($order));
     }
 
     public function notifyAdminPaymentSubmitted(Order $order): void
@@ -111,7 +118,7 @@ class OrderWorkflowService
             ['order_id' => $order->id, 'order_number' => $order->order_number],
         );
 
-        $this->mailAdmins(new \App\Mail\AdminPaymentSubmittedMail($order));
+        $this->mailAdmins(new AdminPaymentSubmittedMail($order));
     }
 
     private function mailAdmins(object $mailable): void

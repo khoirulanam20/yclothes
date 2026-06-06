@@ -2,22 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Order extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'order_number', 'access_token', 'customer_id', 'customer_name', 'customer_phone', 'customer_email', 'newsletter_opt_in',
+        'order_number', 'customer_id', 'customer_name', 'customer_phone', 'customer_email', 'newsletter_opt_in',
         'shipping_address', 'province_code', 'province_name', 'regency_code', 'regency_name',
         'district_code', 'district_name', 'village_code', 'village_name', 'postal_code',
         'shipping_city', 'shipping_cost', 'shipping_method', 'total_price',
         'tax_amount', 'discount_amount', 'coupon_code', 'grand_total', 'unique_payment_amount',
-        'payment_method', 'payment_status', 'payment_confirmation_status', 'payment_due_at', 'paid_at',
-        'delivered_at', 'completed_at', 'bank_name', 'bank_account_number', 'bank_account_name',
-        'order_status', 'inventory_decremented', 'is_replacement', 'source_return_request_id',
+        'payment_method', 'payment_due_at', 'delivered_at', 'completed_at',
+        'bank_name', 'bank_account_number', 'bank_account_name',
+        'is_replacement', 'source_return_request_id',
         'courier', 'courier_service', 'tracking_number', 'notes',
-        'refund_status', 'refunded_amount',
     ];
 
     protected function casts(): array
@@ -114,6 +116,22 @@ class Order extends Model
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function createTrusted(array $attributes): static
+    {
+        return static::forceCreate($attributes);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateTrusted(array $attributes): bool
+    {
+        return $this->forceFill($attributes)->save();
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Order $order) {
@@ -128,7 +146,7 @@ class Order extends Model
                 && empty($order->unique_payment_amount)
                 && setting_bool('unique_payment_amount_enabled', true)
             ) {
-                $order->update([
+                $order->updateTrusted([
                     'unique_payment_amount' => generate_unique_payment_amount($order->grand_total, $order->id),
                 ]);
             }

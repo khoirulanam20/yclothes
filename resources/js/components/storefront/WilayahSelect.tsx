@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
+import { FetchError, fetchJson } from '@/lib/fetchJson';
 
 type WilayahOption = { id: string; name: string };
 
@@ -22,9 +23,15 @@ type Props = {
 };
 
 async function fetchWilayah(path: string): Promise<WilayahOption[]> {
-    const res = await fetch(`/api/wilayah/${path}`);
-    if (!res.ok) return [];
-    return res.json();
+    try {
+        return await fetchJson<WilayahOption[]>(`/api/wilayah/${path}`);
+    } catch (error) {
+        if (error instanceof FetchError) {
+            return [];
+        }
+
+        throw error;
+    }
 }
 
 export function WilayahSelect({ value, onChange, errors }: Props) {

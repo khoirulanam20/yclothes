@@ -1,8 +1,4 @@
-function getCsrfToken(): string {
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
+import { getCsrfToken } from '@/lib/csrf';
 
 export type ToggleWishlistResult = {
     success: boolean;

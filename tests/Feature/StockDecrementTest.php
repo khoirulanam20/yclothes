@@ -25,7 +25,7 @@ class StockDecrementTest extends TestCase
         $this->seed();
     }
 
-    public function test_payment_does_not_decrement_stock(): void
+    public function test_checkout_reserves_stock_without_payment(): void
     {
         $product = Product::first();
         $product->update(['track_stock' => true]);
@@ -43,11 +43,11 @@ class StockDecrementTest extends TestCase
         $this->actingAs($admin)->post(route('admin.orders.payment', $order));
 
         $inventory->refresh();
-        $this->assertEquals(10, $inventory->stock);
-        $this->assertFalse($order->fresh()->inventory_decremented);
+        $this->assertEquals(9, $inventory->stock);
+        $this->assertTrue($order->fresh()->inventory_decremented);
     }
 
-    public function test_stock_decrements_when_customer_confirms_received(): void
+    public function test_stock_reserved_at_checkout_and_confirm_received_is_idempotent(): void
     {
         $product = Product::first();
         $product->update(['track_stock' => true]);
@@ -60,7 +60,9 @@ class StockDecrementTest extends TestCase
         ]);
 
         $order = $this->createOrderWithProduct($product);
-        $order->update(['order_status' => 'shipped', 'payment_status' => 'paid']);
+        $this->assertEquals(9, $inventory->fresh()->stock);
+
+        $order->updateTrusted(['order_status' => 'shipped', 'payment_status' => 'paid']);
         grant_order_access($order);
 
         $this->post(route('order.confirm-received', $order));
@@ -73,7 +75,7 @@ class StockDecrementTest extends TestCase
     public function test_admin_cannot_mark_order_delivered_or_completed_via_status(): void
     {
         $order = $this->createOrderWithProduct(Product::first());
-        $order->update(['order_status' => 'shipped', 'payment_status' => 'paid']);
+        $order->updateTrusted(['order_status' => 'shipped', 'payment_status' => 'paid']);
 
         $admin = User::where('is_admin', true)->first();
 
@@ -83,7 +85,7 @@ class StockDecrementTest extends TestCase
 
         $this->assertEquals('shipped', $order->fresh()->order_status);
 
-        $order->update(['order_status' => 'delivered']);
+        $order->updateTrusted(['order_status' => 'delivered']);
 
         $this->actingAs($admin)
             ->post(route('admin.orders.status', $order), ['order_status' => 'completed'])
@@ -96,7 +98,7 @@ class StockDecrementTest extends TestCase
     {
         $customer = Customer::factory()->create();
         $order = $this->createOrderWithProduct(Product::first());
-        $order->update([
+        $order->updateTrusted([
             'customer_id' => $customer->id,
             'customer_email' => $customer->email,
             'order_status' => 'shipped',
@@ -127,7 +129,7 @@ class StockDecrementTest extends TestCase
         ]);
 
         $order = $this->createOrderWithProduct($product);
-        $order->update(['order_status' => 'completed', 'payment_status' => 'paid']);
+        $order->updateTrusted(['order_status' => 'completed', 'payment_status' => 'paid']);
 
         $service = app(InventoryService::class);
         $service->decrementForOrder($order);
@@ -137,7 +139,7 @@ class StockDecrementTest extends TestCase
         $this->assertEquals(9, $inventory->stock);
     }
 
-    public function test_midtrans_settlement_does_not_decrement_stock(): void
+    public function test_midtrans_settlement_does_not_decrement_stock_again(): void
     {
         $product = Product::first();
         $product->update(['track_stock' => true]);
@@ -150,13 +152,13 @@ class StockDecrementTest extends TestCase
         ]);
 
         $order = $this->createOrderWithProduct($product);
-        $order->update(['payment_method' => 'midtrans']);
+        $order->updateTrusted(['payment_method' => 'midtrans']);
 
         app(OrderPaymentService::class)->applyMidtransStatus($order, 'settlement');
 
         $inventory->refresh();
-        $this->assertEquals(5, $inventory->stock);
-        $this->assertFalse($order->fresh()->inventory_decremented);
+        $this->assertEquals(4, $inventory->stock);
+        $this->assertTrue($order->fresh()->inventory_decremented);
     }
 
     private function createOrderWithProduct(Product $product): Order

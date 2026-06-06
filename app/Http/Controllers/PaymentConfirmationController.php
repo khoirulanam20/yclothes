@@ -105,7 +105,7 @@ class PaymentConfirmationController extends Controller
             'status' => 'pending',
         ]);
 
-        $order->update(['payment_confirmation_status' => 'pending']);
+        $order->updateTrusted(['payment_confirmation_status' => 'pending']);
 
         if ($order->order_status === 'pending') {
             $this->orderWorkflow->transition(

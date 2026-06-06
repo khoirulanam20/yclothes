@@ -106,7 +106,7 @@ class OrderController extends Controller
             'admin_note' => $validated['admin_note'],
         ]);
 
-        $paymentConfirmation->order->update(['payment_confirmation_status' => 'rejected']);
+        $paymentConfirmation->order->updateTrusted(['payment_confirmation_status' => 'rejected']);
 
         if ($paymentConfirmation->order->order_status === 'awaiting_verification') {
             $this->orderWorkflow->transition(

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BadgePreset;
 use App\Enums\ProductType;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,8 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'category_id', 'attribute_family_id', 'type', 'sku', 'name', 'slug',
         'description', 'short_description', 'price', 'sale_price',
@@ -19,7 +22,6 @@ class Product extends Model
         'is_featured', 'is_active', 'track_stock', 'allow_backorder',
         'is_returnable', 'return_window_days', 'warranty_days',
         'meta_title', 'meta_description', 'meta_keywords',
-        'views', 'rating_avg', 'review_count',
     ];
 
     protected function casts(): array
@@ -109,6 +111,7 @@ class Product extends Model
     {
         if ($value === null || $value === '' || (is_array($value) && empty($value))) {
             $this->attributes['colors'] = null;
+
             return;
         }
 
@@ -116,6 +119,7 @@ class Product extends Model
             if (is_string($c)) {
                 return ['hex' => $c, 'name' => $c];
             }
+
             return ['hex' => $c['hex'] ?? '', 'name' => $c['name'] ?? $c['hex'] ?? ''];
         }, is_string($value) ? json_decode($value, true) : $value);
 

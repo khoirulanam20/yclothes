@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ReturnPolicy;
-use App\Models\Review;
+use App\Models\ReturnRequest;
 use App\Services\ReturnService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class ReturnRequestController extends Controller
 
     public function create(Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'createReturn', $order);
         abort_unless(in_array($order->order_status, ['delivered', 'completed', 'return'], true), 403);
 
         $order->load('items.product');
@@ -53,7 +53,7 @@ class ReturnRequestController extends Controller
 
     public function store(Request $request, Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'createReturn', $order);
 
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -93,9 +93,9 @@ class ReturnRequestController extends Controller
         ]);
     }
 
-    public function show(\App\Models\ReturnRequest $returnRequest)
+    public function show(ReturnRequest $returnRequest)
     {
-        abort_unless($returnRequest->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'view', $returnRequest);
 
         $returnRequest->load(['items.orderItem', 'media', 'shipment', 'order', 'replacementOrder']);
 
@@ -104,9 +104,9 @@ class ReturnRequestController extends Controller
         ]);
     }
 
-    public function submitShipment(Request $request, \App\Models\ReturnRequest $returnRequest)
+    public function submitShipment(Request $request, ReturnRequest $returnRequest)
     {
-        abort_unless($returnRequest->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'view', $returnRequest);
         abort_unless($returnRequest->status === 'awaiting_return_shipment', 403);
 
         $validated = $request->validate([

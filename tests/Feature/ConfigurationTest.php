@@ -180,6 +180,8 @@ class ConfigurationTest extends TestCase
 
     public function test_send_test_email_uses_dedicated_route(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $this->actingAs($this->admin)
             ->from('/admin/configuration/general/email')
             ->post('/admin/configuration/test-email', ['email' => 'test@example.com'])

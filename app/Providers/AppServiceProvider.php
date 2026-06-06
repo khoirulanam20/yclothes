@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\OrderStatusChanged;
 use App\Listeners\CompleteReturnOnReplacementOrderCompleted;
 use App\Listeners\SendOrderStatusEmail;
+use App\Models\Customer;
 use App\Services\MailSettingsService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;

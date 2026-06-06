@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\PaymentBank;
 use App\Models\Product;
@@ -69,7 +70,7 @@ class OrderTest extends TestCase
 
     public function test_order_track_page_hides_email_when_logged_in(): void
     {
-        $customer = \App\Models\Customer::factory()->create();
+        $customer = Customer::factory()->create();
 
         $this->actingAs($customer, 'customer')
             ->get('/order/track')
@@ -82,9 +83,9 @@ class OrderTest extends TestCase
 
     public function test_logged_in_customer_tracks_order_by_number_only(): void
     {
-        $customer = \App\Models\Customer::factory()->create();
+        $customer = Customer::factory()->create();
         $order = $this->createOrder();
-        $order->update(['customer_id' => $customer->id, 'customer_email' => $customer->email]);
+        $order->updateTrusted(['customer_id' => $customer->id, 'customer_email' => $customer->email]);
 
         $response = $this->actingAs($customer, 'customer')
             ->post('/order/track', ['order_number' => $order->order_number]);
@@ -94,7 +95,7 @@ class OrderTest extends TestCase
 
     public function test_logged_in_customer_cannot_track_other_order(): void
     {
-        $customer = \App\Models\Customer::factory()->create();
+        $customer = Customer::factory()->create();
         $order = $this->createOrder();
 
         $this->actingAs($customer, 'customer')
@@ -163,7 +164,7 @@ class OrderTest extends TestCase
     public function test_payment_finish_ignores_fake_client_status(): void
     {
         $order = $this->createOrder();
-        $order->update(['payment_method' => 'midtrans']);
+        $order->updateTrusted(['payment_method' => 'midtrans']);
 
         $this->postJson(
             route('order.payment-finish', ['order' => $order->order_number, 'token' => $order->access_token]),

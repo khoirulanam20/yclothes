@@ -1,4 +1,1 @@
-export function FieldError({ message }: { message?: string }) {
-    if (!message) return null;
-    return <p className="text-sm text-destructive mt-1">{message}</p>;
-}
+export { FieldError } from '@/components/common/FieldError';

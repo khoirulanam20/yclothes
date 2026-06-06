@@ -24,7 +24,7 @@ class DokuNotificationTest extends TestCase
 
     public function test_doku_notification_with_valid_signature_marks_paid(): void
     {
-        $order = Order::create([
+        $order = Order::createTrusted([
             'order_number' => 'INV-DOKU001',
             'access_token' => 'token-doku',
             'customer_name' => 'Test',
@@ -57,7 +57,7 @@ class DokuNotificationTest extends TestCase
 
     public function test_doku_notification_rejects_invalid_signature(): void
     {
-        $order = Order::create([
+        $order = Order::createTrusted([
             'order_number' => 'INV-DOKU002',
             'access_token' => 'token-doku2',
             'customer_name' => 'Test',

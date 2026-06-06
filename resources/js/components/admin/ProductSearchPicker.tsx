@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatRupiah } from '@/lib/utils';
+import { FetchError, fetchJson } from '@/lib/fetchJson';
 
 export type SearchProduct = {
     id: number;
@@ -35,23 +36,27 @@ export function ProductSearchPicker({
     const [searching, setSearching] = useState(false);
     const [open, setOpen] = useState(false);
 
+    const [searchError, setSearchError] = useState<string | null>(null);
+
     const search = useCallback(async (value: string) => {
         if (!value.trim()) {
             setResults([]);
+            setSearchError(null);
             return;
         }
 
         setSearching(true);
+        setSearchError(null);
         try {
             const params = new URLSearchParams({ q: value });
             if (excludeProductId) {
                 params.set('exclude', String(excludeProductId));
             }
-            const response = await fetch(`${searchUrl}?${params.toString()}`, {
-                headers: { Accept: 'application/json' },
-            });
-            const data = await response.json();
+            const data = await fetchJson<{ products?: SearchProduct[] }>(`${searchUrl}?${params.toString()}`);
             setResults(data.products ?? []);
+        } catch (error) {
+            setResults([]);
+            setSearchError(error instanceof FetchError ? error.message : 'Gagal mencari produk.');
         } finally {
             setSearching(false);
         }
@@ -88,6 +93,7 @@ export function ProductSearchPicker({
                         }}
                     />
                     {searching && <p className="text-xs text-muted-foreground">Mencari...</p>}
+                    {searchError && <p className="text-xs text-destructive">{searchError}</p>}
                     {results.length > 0 && (
                         <div className="max-h-40 overflow-y-auto rounded-md border">
                             {results.map((product) => (

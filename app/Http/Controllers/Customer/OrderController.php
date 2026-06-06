@@ -30,7 +30,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'view', $order);
         grant_order_access($order);
 
         app(ReturnService::class)->syncOrderReturnStatus($order);
@@ -41,7 +41,7 @@ class OrderController extends Controller
 
     public function confirmPayment(Request $request, Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'confirmPayment', $order);
 
         grant_order_access($order);
 
@@ -50,14 +50,14 @@ class OrderController extends Controller
 
     public function confirmReceived(Request $request, Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'confirmReceived', $order);
 
         return app(GuestOrderController::class)->confirmReceived($request, $order, app(OrderWorkflowService::class));
     }
 
     public function storeReview(Request $request, Order $order)
     {
-        abort_unless($order->customer_id === Auth::guard('customer')->id(), 403);
+        $this->authorizeForUser(Auth::guard('customer')->user(), 'review', $order);
 
         return app(GuestOrderController::class)->storeReview($request, $order);
     }

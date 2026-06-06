@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Product;
@@ -49,6 +50,94 @@ class InventoryService
         }
 
         return $this->getAvailableStock($product, $variant) >= $qty;
+    }
+
+    /**
+     * @param  array<int, array{product: Product, variant: ProductVariant|null, qty: int, product_name?: string}>  $lines
+     */
+    public function assertStockAvailableWithLock(array $lines): void
+    {
+        foreach ($lines as $line) {
+            $product = $line['product'];
+            $variant = $line['variant'] ?? null;
+            $qty = $line['qty'];
+
+            if (! $this->tracksStock($product, $variant)) {
+                continue;
+            }
+
+            if ($this->effectiveAllowBackorder($product, $variant)) {
+                continue;
+            }
+
+            $this->lockInventoriesFor($product, $variant);
+
+            if (! $this->canOrder($product, $variant, $qty)) {
+                throw new InsufficientStockException(
+                    $line['product_name'] ?? $product->name,
+                );
+            }
+        }
+    }
+
+    public function reserveForOrder(Order $order, string $reason = 'Reservasi checkout'): void
+    {
+        $this->decrementForOrder($order, $reason);
+    }
+
+    public function releaseForOrder(Order $order, string $reason = 'Pesanan dibatalkan'): void
+    {
+        if (! $order->inventory_decremented) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('reference_type', Order::class)
+            ->where('reference_id', $order->id)
+            ->where('type', 'out')
+            ->get();
+
+        foreach ($movements as $movement) {
+            if ($movement->warehouse_id) {
+                Inventory::query()
+                    ->where('product_id', $movement->product_id)
+                    ->where('warehouse_id', $movement->warehouse_id)
+                    ->when(
+                        $movement->product_variant_id,
+                        fn ($query) => $query->where('product_variant_id', $movement->product_variant_id),
+                        fn ($query) => $query->whereNull('product_variant_id'),
+                    )
+                    ->increment('stock', $movement->quantity);
+            }
+
+            StockMovement::create([
+                'product_id' => $movement->product_id,
+                'warehouse_id' => $movement->warehouse_id,
+                'product_variant_id' => $movement->product_variant_id,
+                'type' => 'in',
+                'quantity' => $movement->quantity,
+                'reference_type' => Order::class,
+                'reference_id' => $order->id,
+                'reason' => $reason,
+                'created_at' => now(),
+            ]);
+        }
+
+        $order->updateTrusted(['inventory_decremented' => false]);
+    }
+
+    private function lockInventoriesFor(Product $product, ?ProductVariant $variant): void
+    {
+        $query = Inventory::query()->lockForUpdate();
+
+        if ($variant) {
+            $query->where('product_variant_id', $variant->id);
+        } else {
+            $query->where('product_id', $product->id)
+                ->whereNull('product_variant_id');
+        }
+
+        $query->get();
     }
 
     public function outOfStockBehavior(): string
@@ -229,7 +318,7 @@ class InventoryService
             }
         }
 
-        $order->update(['inventory_decremented' => true]);
+        $order->updateTrusted(['inventory_decremented' => true]);
     }
 
     /** @deprecated Use decrementForOrder() */

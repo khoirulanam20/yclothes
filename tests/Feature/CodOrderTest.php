@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
-use App\Models\PaymentBank;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShippingCost;
@@ -49,7 +48,7 @@ class CodOrderTest extends TestCase
     public function test_admin_can_ship_cod_without_payment(): void
     {
         $order = $this->createCodOrder();
-        $order->update(['order_status' => 'processed']);
+        $order->updateTrusted(['order_status' => 'processed']);
         $admin = User::where('is_admin', true)->first();
 
         $this->actingAs($admin)
@@ -66,7 +65,7 @@ class CodOrderTest extends TestCase
     public function test_buyer_confirm_received_marks_cod_paid_and_completed(): void
     {
         $order = $this->createCodOrder();
-        $order->update(['order_status' => 'shipped']);
+        $order->updateTrusted(['order_status' => 'shipped']);
         grant_order_access($order);
 
         $this->post(route('order.confirm-received', $order))
@@ -80,7 +79,7 @@ class CodOrderTest extends TestCase
     public function test_cod_orders_are_not_auto_expired(): void
     {
         $order = $this->createCodOrder();
-        $order->update([
+        $order->updateTrusted([
             'order_status' => 'pending',
             'payment_due_at' => now()->subHour(),
         ]);

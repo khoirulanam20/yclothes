@@ -62,7 +62,9 @@ class ReturnReplacementTest extends TestCase
         $this->assertEquals('REP123456', $replacement->tracking_number);
 
         grant_order_access($replacement);
-        $this->post(route('order.confirm-received', $replacement));
+        $customer = Customer::first();
+        $this->actingAs($customer, 'customer')
+            ->post(route('customer.orders.confirm-received', $replacement));
 
         $replacement->refresh();
         $returnRequest->refresh();
@@ -170,7 +172,7 @@ class ReturnReplacementTest extends TestCase
      */
     private function createCompletedOrder(Customer $customer, array $lines): Order
     {
-        $order = Order::create([
+        $order = Order::createTrusted([
             'order_number' => 'INV-RETURN-'.uniqid(),
             'access_token' => 'test-token-'.uniqid(),
             'customer_id' => $customer->id,

@@ -14,5 +14,6 @@ class OrderStatusChanged
         public Order $order,
         public string $fromStatus,
         public string $toStatus,
+        public bool $notifyCustomer = true,
     ) {}
 }
