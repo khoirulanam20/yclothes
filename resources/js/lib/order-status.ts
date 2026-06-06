@@ -27,6 +27,8 @@ export const paymentMethodLabels: Record<string, string> = {
     qris: 'QRIS',
     midtrans: 'Midtrans',
     doku: 'DOKU',
+    cod: 'Bayar di Tempat (COD)',
+    replacement: 'Pesanan Pengganti',
 };
 
 export const paymentStatusLabels: Record<string, string> = {

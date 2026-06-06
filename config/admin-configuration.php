@@ -291,13 +291,23 @@ return [
             ['name' => 'payment_qris_enabled', 'title' => 'QRIS (Manual)', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'payment_midtrans_enabled', 'title' => 'Midtrans', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'payment_doku_enabled', 'title' => 'DOKU Checkout', 'type' => 'boolean', 'default' => '0'],
+            ['name' => 'payment_cod_enabled', 'title' => 'Bayar di Tempat (COD) — Segera Hadir', 'type' => 'boolean', 'default' => '0'],
+        ],
+    ],
+    [
+        'key' => 'payment.cod',
+        'name' => 'COD',
+        'info' => 'Fitur COD sedang dalam pengembangan. Di checkout ditampilkan sebagai "Segera Hadir" dan belum bisa dipilih. Aktifkan toggle di atas setelah flow kurir & konfirmasi pembayaran siap.',
+        'sort' => 2,
+        'fields' => [
+            ['name' => 'cod_instructions', 'title' => 'Instruksi COD', 'type' => 'textarea', 'default' => 'Bayar tunai saat kurir mengantar pesanan. Pastikan nominal sesuai total pesanan.', 'validation' => 'nullable|string|max:1000'],
         ],
     ],
     [
         'key' => 'payment.qris',
         'name' => 'QRIS',
         'info' => 'Upload gambar QRIS statis untuk pembayaran manual.',
-        'sort' => 2,
+        'sort' => 3,
         'fields' => [
             ['name' => 'qris_image', 'title' => 'Gambar QRIS', 'type' => 'image', 'disk' => 'public', 'path' => 'payments', 'validation' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048'],
             ['name' => 'qris_merchant_name', 'title' => 'Nama Merchant', 'type' => 'text', 'validation' => 'nullable|string|max:255'],
@@ -308,15 +318,15 @@ return [
         'key' => 'payment.banks',
         'name' => 'Rekening Transfer',
         'info' => 'Kelola rekening bank untuk transfer manual.',
-        'sort' => 3,
+        'sort' => 4,
         'type' => 'link',
         'href' => '/admin/payment-banks',
     ],
     [
         'key' => 'payment.midtrans',
         'name' => 'Midtrans',
-        'info' => 'Konfigurasi payment gateway Midtrans.',
-        'sort' => 4,
+        'info' => 'Konfigurasi payment gateway Midtrans. URL webhook dan callback tampil di bawah setelah membuka section ini.',
+        'sort' => 5,
         'fields' => [
             ['name' => 'midtrans_active', 'title' => 'Aktifkan Midtrans', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'midtrans_merchant_id', 'title' => 'Merchant ID', 'type' => 'text', 'validation' => 'nullable|string|max:100'],
@@ -328,8 +338,8 @@ return [
     [
         'key' => 'payment.doku',
         'name' => 'DOKU',
-        'info' => 'Konfigurasi DOKU Checkout. URL notifikasi: {APP_URL}/doku/notification',
-        'sort' => 5,
+        'info' => 'Konfigurasi DOKU Checkout. URL webhook dan callback tampil di bawah setelah membuka section ini.',
+        'sort' => 6,
         'fields' => [
             ['name' => 'doku_client_id', 'title' => 'Client ID', 'type' => 'text', 'validation' => 'nullable|string|max:255'],
             ['name' => 'doku_secret_key', 'title' => 'Secret Key', 'type' => 'password', 'validation' => 'nullable|string|max:255'],
@@ -340,7 +350,7 @@ return [
         'key' => 'payment.timeout',
         'name' => 'Batas Waktu Pembayaran',
         'info' => 'Timeout dan auto-batal pesanan belum bayar.',
-        'sort' => 6,
+        'sort' => 7,
         'fields' => [
             ['name' => 'payment_timeout_hours', 'title' => 'Batas Waktu (jam)', 'type' => 'number', 'default' => '24', 'validation' => 'nullable|integer|min:1|max:168'],
             ['name' => 'auto_cancel_unpaid_orders', 'title' => 'Auto-batal Pesanan Expired', 'type' => 'boolean', 'default' => '1'],
@@ -351,7 +361,7 @@ return [
         'key' => 'payment.failure',
         'name' => 'Pembayaran Gagal & Double',
         'info' => 'Handler kegagalan pembayaran dan transaksi duplikat.',
-        'sort' => 7,
+        'sort' => 8,
         'fields' => [
             ['name' => 'auto_cancel_on_payment_fail', 'title' => 'Auto-batal Saat Pembayaran Gagal', 'type' => 'boolean', 'default' => '1'],
             [

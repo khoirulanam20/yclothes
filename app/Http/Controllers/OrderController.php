@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\PaymentBank;
 use App\Models\Review;
 use App\Services\InventoryService;
+use App\Services\OrderPaymentService;
 use App\Services\OrderWorkflowService;
 use App\Services\PaymentMethodService;
 use App\Services\ReturnService;
@@ -106,12 +107,18 @@ class OrderController extends Controller
             && app(PaymentMethodService::class)->usesManualConfirmation($order->payment_method)
             && $order->payment_status !== 'paid'
             && in_array($order->payment_confirmation_status, ['none', 'rejected'], true);
+        $canConfirmReceived = in_array($order->order_status, ['shipped', 'delivered'], true)
+            && (
+                $isAccountView
+                || ! $order->customer_id
+                || ($customer && $order->customer_id === $customer->id)
+            );
 
         return [
             'order' => ModelSerializer::order($order, true),
             'timeline' => ModelSerializer::collection($order->statusHistories, [ModelSerializer::class, 'orderStatusHistory']),
             'reviews' => $reviews->map(fn ($r) => ModelSerializer::review($r))->values()->all(),
-            'canConfirmReceived' => in_array($order->order_status, ['shipped', 'delivered'], true),
+            'canConfirmReceived' => $canConfirmReceived,
             'canConfirmPayment' => $canConfirmPayment,
             'banks' => $canConfirmPayment
                 ? ModelSerializer::collection(
@@ -134,6 +141,9 @@ class OrderController extends Controller
             'canReview' => $canReview,
             'reviewsRequireLogin' => $reviewsRequireLogin,
             'qris' => $order->payment_method === 'qris' ? app(PaymentMethodService::class)->qrisSettings() : null,
+            'codInstructions' => $order->payment_method === 'cod' && $order->payment_status !== 'paid'
+                ? app(PaymentMethodService::class)->codSettings()['instructions']
+                : null,
         ];
     }
 
@@ -144,12 +154,20 @@ class OrderController extends Controller
         }
 
         $customer = Auth::guard('customer')->user();
-        if ($customer && $order->customer_id && $order->customer_id !== $customer->id) {
-            abort(403);
+
+        if ($order->customer_id) {
+            if (! $customer || $order->customer_id !== $customer->id) {
+                abort(403, 'Hanya pembeli yang dapat mengonfirmasi pesanan diterima.');
+            }
         }
 
         $actorType = $customer ? 'customer' : 'guest';
         $actorId = $customer?->id;
+
+        if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
+            app(OrderPaymentService::class)->markPaid($order, 'cod');
+            $order = $order->fresh();
+        }
 
         if ($order->order_status === 'shipped') {
             $workflow->transition(

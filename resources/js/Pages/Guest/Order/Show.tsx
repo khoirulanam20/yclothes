@@ -52,11 +52,13 @@ type Props = {
     isAccountView?: boolean;
     canReview?: boolean;
     reviewsRequireLogin?: boolean;
+    codInstructions?: string | null;
 };
 
 export default function Show({
     order, timeline = [], reviews = [], canConfirmReceived, canConfirmPayment, banks = [],
     qris, canReturn, returnableItems = [], isAccountView, canReview = false, reviewsRequireLogin = false,
+    codInstructions,
 }: Props) {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -83,6 +85,7 @@ export default function Show({
 
     const showTransferInstructions = order.paymentMethod === 'bank_transfer' && order.paymentStatus !== 'paid';
     const showQrisInstructions = order.paymentMethod === 'qris' && order.paymentStatus !== 'paid';
+    const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
 
     return (
@@ -223,6 +226,15 @@ export default function Show({
                                 Konfirmasi sebelumnya ditolak. Silakan ajukan ulang via tombol di atas.
                             </p>
                         )}
+                    </SectionCard>
+                )}
+
+                {showCodInstructions && (
+                    <SectionCard title="Bayar di Tempat (COD)" className="mb-4">
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">{codInstructions}</p>
+                        <p className="text-sm font-semibold text-primary mt-3">
+                            Total bayar saat terima: {formatRupiah(order.grandTotal)}
+                        </p>
                     </SectionCard>
                 )}
 

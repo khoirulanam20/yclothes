@@ -60,13 +60,23 @@ class OrderPaymentService
             'payment_confirmation_status' => 'approved',
         ]);
 
-        $workflow->transition($order->fresh(), 'confirmed', "Pembayaran dikonfirmasi ({$source})", $source === 'admin' ? 'admin' : 'system');
+        $fresh = $order->fresh();
 
-        if ($order->customer_email) {
-            Mail::to($order->customer_email)->queue(new OrderInvoiceMail($order->fresh(['items'])));
+        if (in_array($fresh->order_status, ['pending', 'awaiting_verification'], true)) {
+            $workflow->transition(
+                $fresh,
+                'confirmed',
+                "Pembayaran dikonfirmasi ({$source})",
+                $source === 'admin' ? 'admin' : 'system',
+            );
+            $fresh = $fresh->fresh();
         }
 
-        return $order->fresh();
+        if ($fresh->customer_email) {
+            Mail::to($fresh->customer_email)->queue(new OrderInvoiceMail($fresh->fresh(['items'])));
+        }
+
+        return $fresh;
     }
 
     public function applyDokuStatus(Order $order, string $status): void

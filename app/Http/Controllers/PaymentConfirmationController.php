@@ -18,6 +18,11 @@ class PaymentConfirmationController extends Controller
 
     public function create(Order $order)
     {
+        if (app(PaymentMethodService::class)->isCod($order->payment_method)) {
+            return redirect()->to($this->redirectUrl($order))
+                ->with('info', 'Pesanan COD dibayar saat barang diterima.');
+        }
+
         if ($order->payment_status === 'paid') {
             return redirect()->to($this->redirectUrl($order))
                 ->with('info', 'Pembayaran sudah dikonfirmasi.');
@@ -40,6 +45,10 @@ class PaymentConfirmationController extends Controller
 
     public function store(Request $request, Order $order)
     {
+        if (app(PaymentMethodService::class)->isCod($order->payment_method)) {
+            return back()->with('error', 'Pesanan COD tidak memerlukan konfirmasi pembayaran di awal.');
+        }
+
         if ($order->payment_status === 'paid') {
             return back()->with('error', 'Pembayaran sudah dikonfirmasi.');
         }

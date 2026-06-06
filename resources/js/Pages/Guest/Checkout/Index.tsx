@@ -28,13 +28,15 @@ type Pricing = {
 type PaymentMethodOption = {
     id: string;
     label: string;
-    type: 'gateway' | 'manual';
+    type: 'gateway' | 'manual' | 'cod';
     banks?: Bank[];
+    comingSoon?: boolean;
 };
 
 type Props = {
     items: CartItem[]; pricing: Pricing; cities: City[]; banks: Bank[];
     paymentMethods: PaymentMethodOption[];
+    paymentMethodsComingSoon?: PaymentMethodOption[];
     customer?: { name: string; email: string; phone?: string | null } | null;
     addresses: Address[];
     newsletterOptInEnabled?: boolean;
@@ -56,7 +58,7 @@ function resolveDefaultPaymentMethod(options: PaymentMethodOption[]): string {
 }
 
 export default function Index({
-    items, pricing, cities, paymentMethods, customer, addresses,
+    items, pricing, cities, paymentMethods, paymentMethodsComingSoon = [], customer, addresses,
     newsletterOptInEnabled = false, newsletterOptInLabel,
 }: Props) {
     const defaultPaymentMethod = resolveDefaultPaymentMethod(paymentMethods);
@@ -247,6 +249,18 @@ export default function Index({
                                 {paymentMethods.length === 0 && (
                                     <p className="text-sm text-muted-foreground">Tidak ada metode pembayaran tersedia.</p>
                                 )}
+                                {paymentMethodsComingSoon.map((method) => (
+                                    <div
+                                        key={method.id}
+                                        className="flex items-center justify-between gap-2 text-sm p-2 rounded border border-dashed bg-muted/30 opacity-70 cursor-not-allowed"
+                                        aria-disabled
+                                    >
+                                        <span className="text-muted-foreground">{method.label}</span>
+                                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                            Segera Hadir
+                                        </span>
+                                    </div>
+                                ))}
                                 {paymentMethods.map((method) => {
                                     if (method.id === 'bank_transfer') {
                                         return (

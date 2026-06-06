@@ -40,6 +40,7 @@ class ConfigurationController extends Controller
 
         return Inertia::render('Admin/Configuration/Edit', [
             'section' => $section,
+            'appUrl' => config('app.url'),
         ]);
     }
 

@@ -14,6 +14,7 @@ import { buildConfigurationFieldGroups } from '@/lib/configuration-form-layout';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { PromoBarPreview } from '@/components/admin/PromoBarPreview';
+import { PaymentGatewayUrlsCard } from '@/components/admin/PaymentGatewayUrlsCard';
 import type { SharedPageProps } from '@/types';
 
 type Section = {
@@ -26,6 +27,7 @@ type Section = {
 
 type Props = {
     section: Section;
+    appUrl?: string;
 };
 
 function buildInitialData(fields: ConfigField[]): Record<string, unknown> {
@@ -40,7 +42,7 @@ function buildInitialData(fields: ConfigField[]): Record<string, unknown> {
     return data;
 }
 
-export default function Edit({ section }: Props) {
+export default function Edit({ section, appUrl = '' }: Props) {
     const { theme } = usePage<SharedPageProps>().props;
     const initial = buildInitialData(section.fields) as Record<string, string | number | boolean | File | null>;
     const { data, setData, post, processing, errors } = useForm(initial);
@@ -109,6 +111,12 @@ export default function Edit({ section }: Props) {
                         contentClassName="space-y-8"
                         footer={saveFooter}
                     >
+                        {(section.key === 'payment.midtrans' || section.key === 'payment.doku') && appUrl && (
+                            <PaymentGatewayUrlsCard
+                                appUrl={appUrl}
+                                gateway={section.key === 'payment.midtrans' ? 'midtrans' : 'doku'}
+                            />
+                        )}
                         {fieldGroups.map((group, index) => (
                             <section
                                 key={group.title ?? `group-${index}`}

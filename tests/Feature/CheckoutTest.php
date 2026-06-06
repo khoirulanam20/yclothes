@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\PaymentBank;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\ShippingCost;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -32,6 +33,24 @@ class CheckoutTest extends TestCase
             ->has('banks')
             ->has('paymentMethods')
         );
+    }
+
+    public function test_checkout_shows_cod_coming_soon_when_disabled(): void
+    {
+        Setting::updateOrCreate(['key' => 'payment_cod_enabled'], ['value' => '0']);
+        clear_settings_cache();
+
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
+
+        $this->get('/checkout')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Guest/Checkout/Index')
+                ->where('paymentMethodsComingSoon', fn ($methods) => collect($methods)->contains(
+                    fn ($m) => ($m['id'] ?? null) === 'cod' && ($m['comingSoon'] ?? false) === true
+                ))
+            );
     }
 
     public function test_checkout_redirects_when_cart_empty(): void

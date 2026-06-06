@@ -70,6 +70,50 @@ class StockDecrementTest extends TestCase
         $this->assertTrue($order->fresh()->inventory_decremented);
     }
 
+    public function test_admin_cannot_mark_order_delivered_or_completed_via_status(): void
+    {
+        $order = $this->createOrderWithProduct(Product::first());
+        $order->update(['order_status' => 'shipped', 'payment_status' => 'paid']);
+
+        $admin = User::where('is_admin', true)->first();
+
+        $this->actingAs($admin)
+            ->post(route('admin.orders.status', $order), ['order_status' => 'delivered'])
+            ->assertSessionHasErrors('order_status');
+
+        $this->assertEquals('shipped', $order->fresh()->order_status);
+
+        $order->update(['order_status' => 'delivered']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.orders.status', $order), ['order_status' => 'completed'])
+            ->assertSessionHasErrors('order_status');
+
+        $this->assertEquals('delivered', $order->fresh()->order_status);
+    }
+
+    public function test_customer_with_account_must_login_to_confirm_received(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = $this->createOrderWithProduct(Product::first());
+        $order->update([
+            'customer_id' => $customer->id,
+            'customer_email' => $customer->email,
+            'order_status' => 'shipped',
+            'payment_status' => 'paid',
+        ]);
+        grant_order_access($order);
+
+        $this->post(route('order.confirm-received', $order))
+            ->assertForbidden();
+
+        $this->actingAs($customer, 'customer')
+            ->post(route('customer.orders.confirm-received', $order))
+            ->assertRedirect();
+
+        $this->assertEquals('completed', $order->fresh()->order_status);
+    }
+
     public function test_stock_decrement_is_idempotent(): void
     {
         $product = Product::first();

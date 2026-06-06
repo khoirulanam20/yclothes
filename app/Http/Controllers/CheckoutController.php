@@ -49,6 +49,9 @@ class CheckoutController extends Controller
 
         $pricing = $this->cartPricing->build();
         $totalWeight = $pricing['total_weight'];
+        $hasPhysical = collect($pricing['items'])->contains(
+            fn (array $row) => $row['product']->type?->value !== 'digital',
+        );
 
         $cities = ShippingCost::where('is_active', true)->orderBy('city_name')->get()->map(function ($city) use ($totalWeight, $pricing) {
             $city->calculated_cost = app(CartPricingService::class)
@@ -57,7 +60,8 @@ class CheckoutController extends Controller
             return $city;
         });
         $banks = PaymentBank::where('is_active', true)->get();
-        $paymentMethodOptions = $this->paymentMethods->availableForCheckout();
+        $paymentMethodOptions = $this->paymentMethods->availableForCheckout($hasPhysical);
+        $paymentMethodsComingSoon = $this->paymentMethods->comingSoonForCheckout($hasPhysical);
 
         $customer = Auth::guard('customer')->user();
         $addresses = $customer
@@ -74,6 +78,7 @@ class CheckoutController extends Controller
             'cities' => $cities->map(fn ($city) => ModelSerializer::shippingCity($city, $city->calculated_cost))->values()->all(),
             'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
             'paymentMethods' => $paymentMethodOptions,
+            'paymentMethodsComingSoon' => $paymentMethodsComingSoon,
             'customer' => $customer ? ModelSerializer::customer($customer) : null,
             'addresses' => $addresses,
             'newsletterOptInEnabled' => setting_bool('newsletter_opt_in_enabled'),
@@ -118,7 +123,11 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang kosong');
         }
 
-        $allowedPaymentMethods = $this->paymentMethods->allowedCheckoutValues();
+        $previewPricing = $this->cartPricing->build();
+        $hasPhysicalProducts = collect($previewPricing['items'])->contains(
+            fn (array $row) => $row['product']->type?->value !== 'digital',
+        );
+        $allowedPaymentMethods = $this->paymentMethods->allowedCheckoutValues($hasPhysicalProducts);
 
         if ($allowedPaymentMethods === []) {
             return back()->with('error', 'Tidak ada metode pembayaran yang tersedia. Hubungi penjual.');
@@ -286,6 +295,12 @@ class CheckoutController extends Controller
             $orderData['payment_method'] = 'doku';
         } elseif ($validated['payment_method'] === 'midtrans') {
             $orderData['payment_method'] = 'midtrans';
+        } elseif ($validated['payment_method'] === 'cod') {
+            if (! $hasPhysical) {
+                return back()->with('error', 'COD hanya tersedia untuk produk fisik.');
+            }
+            $orderData['payment_method'] = 'cod';
+            $orderData['payment_due_at'] = null;
         }
 
         $order = Order::create($orderData);
@@ -302,6 +317,16 @@ class CheckoutController extends Controller
 
         $this->orderWorkflow->recordInitialStatus($order);
         $this->orderWorkflow->notifyAdminNewOrder($order->fresh());
+
+        if ($order->payment_method === 'cod') {
+            $this->orderWorkflow->transition(
+                $order,
+                'confirmed',
+                'Pesanan COD — bayar saat barang diterima',
+                'system',
+            );
+            $order = $order->fresh();
+        }
 
         if ($order->customer_email) {
             try {
@@ -328,8 +353,14 @@ class CheckoutController extends Controller
                     $items,
                     ['name' => $order->customer_name, 'phone' => $order->customer_phone, 'email' => $order->customer_email],
                 );
+                $midtransConfig = MidtransService::resolveConfig();
 
-                return view('order.midtrans', compact('snapToken', 'order'));
+                return view('order.midtrans', [
+                    'snapToken' => $snapToken,
+                    'order' => $order,
+                    'midtransClientKey' => $midtransConfig['client_key'],
+                    'midtransIsProduction' => $midtransConfig['is_production'],
+                ]);
             } catch (\Exception $e) {
                 report($e);
 

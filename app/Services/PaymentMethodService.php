@@ -27,6 +27,11 @@ class PaymentMethodService
         return setting_bool('payment_doku_enabled');
     }
 
+    public function isCodEnabled(): bool
+    {
+        return setting_bool('payment_cod_enabled');
+    }
+
     public function isBankTransferAvailable(): bool
     {
         return $this->isBankTransferEnabled()
@@ -48,8 +53,23 @@ class PaymentMethodService
         return $this->isDokuEnabled() && DokuService::hasCredentials();
     }
 
+    public function isCodAvailable(bool $hasPhysicalProducts = true): bool
+    {
+        return $this->isCodEnabled() && $hasPhysicalProducts;
+    }
+
+    public function isCod(string $paymentMethod): bool
+    {
+        return $paymentMethod === 'cod';
+    }
+
+    public function isDeferredPayment(string $paymentMethod): bool
+    {
+        return $this->isCod($paymentMethod);
+    }
+
     /** @return list<string> */
-    public function allowedCheckoutValues(): array
+    public function allowedCheckoutValues(bool $hasPhysicalProducts = true): array
     {
         $methods = [];
 
@@ -71,11 +91,15 @@ class PaymentMethodService
             $methods[] = 'doku';
         }
 
+        if ($this->isCodAvailable($hasPhysicalProducts)) {
+            $methods[] = 'cod';
+        }
+
         return $methods;
     }
 
     /** @return list<array{id: string, label: string, type: string, banks?: list<array<string, mixed>>}> */
-    public function availableForCheckout(): array
+    public function availableForCheckout(bool $hasPhysicalProducts = true): array
     {
         $options = [];
 
@@ -103,6 +127,14 @@ class PaymentMethodService
             ];
         }
 
+        if ($this->isCodAvailable($hasPhysicalProducts)) {
+            $options[] = [
+                'id' => 'cod',
+                'label' => 'Bayar di Tempat (COD)',
+                'type' => 'cod',
+            ];
+        }
+
         if ($this->isMidtransAvailable()) {
             $options[] = [
                 'id' => 'midtrans',
@@ -122,12 +154,34 @@ class PaymentMethodService
         return $options;
     }
 
+    /** @return list<array{id: string, label: string, type: string, comingSoon: true}> */
+    public function comingSoonForCheckout(bool $hasPhysicalProducts = true): array
+    {
+        if ($this->isCodEnabled() || ! $hasPhysicalProducts) {
+            return [];
+        }
+
+        return [[
+            'id' => 'cod',
+            'label' => 'Bayar di Tempat (COD)',
+            'type' => 'cod',
+            'comingSoon' => true,
+        ]];
+    }
+
     public function qrisSettings(): array
     {
         return [
             'imageUrl' => storage_url(setting('qris_image')),
             'merchantName' => setting('qris_merchant_name'),
             'instructions' => setting('qris_instructions', 'Scan QRIS di bawah, bayar sesuai nominal, lalu konfirmasi pembayaran.'),
+        ];
+    }
+
+    public function codSettings(): array
+    {
+        return [
+            'instructions' => setting('cod_instructions', 'Bayar tunai saat kurir mengantar pesanan. Pastikan nominal sesuai total pesanan.'),
         ];
     }
 

@@ -19,8 +19,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key="{{ config('midtrans.client_key') }}"></script>
+<script src="{{ ($midtransIsProduction ?? false) ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
+        data-client-key="{{ $midtransClientKey }}"></script>
 <script>
 document.getElementById('pay-button').onclick = function () {
     const successUrl = @json(order_public_url('order.success', $order));

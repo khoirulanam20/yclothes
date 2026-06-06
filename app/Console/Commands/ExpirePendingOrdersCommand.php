@@ -22,6 +22,7 @@ class ExpirePendingOrdersCommand extends Command
 
         $orders = Order::where('payment_status', 'pending')
             ->where('order_status', 'pending')
+            ->where('payment_method', '!=', 'cod')
             ->whereNotNull('payment_due_at')
             ->where('payment_due_at', '<', now())
             ->get();
