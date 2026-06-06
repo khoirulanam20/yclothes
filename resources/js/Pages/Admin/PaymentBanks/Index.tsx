@@ -1,9 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
@@ -19,15 +19,17 @@ export default function Index({ banks }: Props) {
             <AdminPageHeader title="Rekening Bank" backHref={CONFIGURATION_HREF} createHref="/admin/payment-banks/create" />
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
-                        <Table><TableHeader><TableRow><TableHead>Bank</TableHead><TableHead>No. Rekening</TableHead><TableHead>Atas Nama</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Bank</TableHead><TableHead>No. Rekening</TableHead><TableHead>Atas Nama</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>{banks.map((b) => (
                         <TableRow key={b.id}>
                             <TableCell>{b.bankName}</TableCell><TableCell>{b.accountNumber}</TableCell><TableCell>{b.accountName}</TableCell>
                             <TableCell>{b.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
-                            <TableCell><div className="flex gap-1">
-                                <Button variant="outline" size="sm" asChild><Link href={`/admin/payment-banks/${b.id}/edit`}>Edit</Link></Button>
-                                <DeleteRecordButton href={`/admin/payment-banks/${b.id}`} name={b.bankName} />
-                            </div></TableCell>
+                            <TableCell className="text-right">
+                                <AdminTableActions>
+                                    <AdminEditAction href={`/admin/payment-banks/${b.id}/edit`} />
+                                    <DeleteRecordButton href={`/admin/payment-banks/${b.id}`} name={b.bankName} />
+                                </AdminTableActions>
+                            </TableCell>
                         </TableRow>
                     ))}</TableBody></Table>
                     </AdminTableScroll>

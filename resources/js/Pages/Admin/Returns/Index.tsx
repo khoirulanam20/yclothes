@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminTableActions, AdminViewAction } from '@/components/admin/AdminTableActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,9 @@ export default function Index({ returns }: Props) {
                                 <p className="text-sm text-muted-foreground">#{r.orderNumber}</p>
                                 <Badge className="mt-1">{returnStatusLabels[r.status] ?? r.status}</Badge>
                             </div>
-                            <Button size="sm" asChild><Link href={`/admin/returns/${r.id}`}>Detail</Link></Button>
+                            <AdminTableActions>
+                                <AdminViewAction href={`/admin/returns/${r.id}`} />
+                            </AdminTableActions>
                         </CardContent>
                     </Card>
                 ))}

@@ -52,6 +52,14 @@ export type GdprSettings = {
     cookieLifetimeDays?: number;
 };
 
+export type AdminBadges = {
+    orders: number;
+    returns: number;
+    reviews: number;
+    lowStock: number;
+    notificationsUnread: number;
+};
+
 export type SharedPageProps = {
     auth: {
         customer: { id: number; name: string; email: string; emailVerified: boolean } | null;
@@ -64,6 +72,7 @@ export type SharedPageProps = {
     categories: CategoryNav[];
     promotionPopup?: PromotionPopupData | null;
     gdpr?: GdprSettings;
+    adminBadges?: AdminBadges | null;
 };
 
 declare module '@inertiajs/core' {

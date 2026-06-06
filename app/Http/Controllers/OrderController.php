@@ -235,7 +235,7 @@ class OrderController extends Controller
 
         $autoApprove = setting_bool('auto_approve_reviews');
 
-        Review::create([
+        $review = Review::create([
             'product_id' => $item->product_id,
             'customer_id' => $customer?->id,
             'order_id' => $order->id,
@@ -245,6 +245,9 @@ class OrderController extends Controller
             'is_approved' => $autoApprove,
             'created_at' => now(),
         ]);
+
+        $item->loadMissing('product');
+        Review::notifyAdminIfPending($review, $item->product->name);
 
         return back()->with('success', $autoApprove
             ? 'Review berhasil dikirim.'

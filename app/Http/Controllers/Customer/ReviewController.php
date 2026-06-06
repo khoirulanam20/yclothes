@@ -58,7 +58,7 @@ class ReviewController extends Controller
 
         $autoApprove = setting_bool('auto_approve_reviews');
 
-        Review::create([
+        $review = Review::create([
             'product_id' => $product->id,
             'customer_id' => $customer->id,
             'order_id' => $order->id,
@@ -68,6 +68,8 @@ class ReviewController extends Controller
             'is_approved' => $autoApprove,
             'created_at' => now(),
         ]);
+
+        Review::notifyAdminIfPending($review, $product->name);
 
         return redirect()->route('products.show', $product->slug)
             ->with('success', $autoApprove

@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminApproveAction, AdminRejectAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,13 +15,13 @@ type Review = {
     product?: { id: number; name: string } | null; isApproved?: boolean;
 };
 
-type Props = { reviews: Paginated<Review>; status: string };
+type Props = { reviews: Paginated<Review>; status: string; pendingCount?: number };
 
-export default function Index({ reviews, status }: Props) {
+export default function Index({ reviews, status, pendingCount = 0 }: Props) {
     const confirm = useAdminConfirm();
 
     const tabs = [
-        { key: 'pending', label: 'Pending', href: '/admin/reviews?status=pending' },
+        { key: 'pending', label: pendingCount > 0 ? `Pending (${pendingCount})` : 'Pending', href: '/admin/reviews?status=pending' },
         { key: 'approved', label: 'Disetujui', href: '/admin/reviews?status=approved' },
     ];
 
@@ -53,7 +54,7 @@ export default function Index({ reviews, status }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table>
-                    <TableHeader><TableRow><TableHead>Produk</TableHead><TableHead>Customer</TableHead><TableHead>Rating</TableHead><TableHead>Komentar</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>Produk</TableHead><TableHead>Customer</TableHead><TableHead>Rating</TableHead><TableHead>Komentar</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {reviews.data.map((review) => (
                             <TableRow key={review.id}>
@@ -61,12 +62,14 @@ export default function Index({ reviews, status }: Props) {
                                 <TableCell>{review.customerName}</TableCell>
                                 <TableCell><Badge>{review.rating}★</Badge></TableCell>
                                 <TableCell className="max-w-xs truncate">{review.comment}</TableCell>
-                                <TableCell><div className="flex gap-1">
-                                    {status === 'pending' && <>
-                                        <Button size="sm" onClick={() => router.post(`/admin/reviews/${review.id}/approve`, {}, { preserveScroll: true })}>Setujui</Button>
-                                        <Button size="sm" variant="destructive" onClick={() => rejectReview(review)}>Tolak</Button>
-                                    </>}
-                                </div></TableCell>
+                                <TableCell className="text-right">
+                                    {status === 'pending' && (
+                                        <AdminTableActions>
+                                            <AdminApproveAction onClick={() => router.post(`/admin/reviews/${review.id}/approve`, {}, { preserveScroll: true })} />
+                                            <AdminRejectAction onClick={() => void rejectReview(review)} />
+                                        </AdminTableActions>
+                                    )}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

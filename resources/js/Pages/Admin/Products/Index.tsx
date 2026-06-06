@@ -1,11 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminDuplicateAction, AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRupiah } from '@/lib/utils';
@@ -52,7 +52,7 @@ export default function Index({ products }: Props) {
                                         <TableHead>Kategori</TableHead>
                                         <TableHead>Harga</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead>Aksi</TableHead>
+                                        <TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -77,16 +77,12 @@ export default function Index({ products }: Props) {
                                                     {p.isActive ? 'Aktif' : 'Draft'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={`/admin/products/${p.id}/edit`}>Edit</Link>
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" onClick={() => duplicate(p.id)}>
-                                                        Duplikat
-                                                    </Button>
+                                            <TableCell className="text-right">
+                                                <AdminTableActions>
+                                                    <AdminEditAction href={`/admin/products/${p.id}/edit`} />
+                                                    <AdminDuplicateAction onClick={() => duplicate(p.id)} />
                                                     <DeleteRecordButton href={`/admin/products/${p.id}`} name={p.name} />
-                                                </div>
+                                                </AdminTableActions>
                                             </TableCell>
                                         </TableRow>
                                     ))}

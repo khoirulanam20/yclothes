@@ -1,10 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminSubAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
@@ -48,7 +48,7 @@ export default function Index({ categories }: Props) {
                                         <TableHead>Urutan</TableHead>
                                         <TableHead>Produk</TableHead>
                                         <TableHead>Sub</TableHead>
-                                        <TableHead>Aksi</TableHead>
+                                        <TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -74,21 +74,12 @@ export default function Index({ categories }: Props) {
                                                     '—'
                                                 )}
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-1">
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={`/admin/categories/create?parent_id=${cat.id}`}>
-                                                            Sub
-                                                        </Link>
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={`/admin/categories/${cat.id}/edit`}>Edit</Link>
-                                                    </Button>
-                                                    <DeleteRecordButton
-                                                        href={`/admin/categories/${cat.id}`}
-                                                        name={cat.name}
-                                                    />
-                                                </div>
+                                            <TableCell className="text-right">
+                                                <AdminTableActions>
+                                                    <AdminSubAction href={`/admin/categories/create?parent_id=${cat.id}`} />
+                                                    <AdminEditAction href={`/admin/categories/${cat.id}/edit`} />
+                                                    <DeleteRecordButton href={`/admin/categories/${cat.id}`} name={cat.name} />
+                                                </AdminTableActions>
                                             </TableCell>
                                         </TableRow>
                                     ))}

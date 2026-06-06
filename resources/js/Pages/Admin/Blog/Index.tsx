@@ -1,11 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
@@ -46,7 +46,7 @@ export default function Index({ posts }: Props) {
                                 <TableHead>Slug</TableHead>
                                 <TableHead>Penulis</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Aksi</TableHead>
+                                <TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -62,16 +62,11 @@ export default function Index({ posts }: Props) {
                                             {post.status ?? 'draft'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/blog-posts/${post.id}/edit`}>Edit</Link>
-                                            </Button>
-                                            <DeleteRecordButton
-                                                href={`/admin/blog-posts/${post.id}`}
-                                                name={post.title}
-                                            />
-                                        </div>
+                                    <TableCell className="text-right">
+                                        <AdminTableActions>
+                                            <AdminEditAction href={`/admin/blog-posts/${post.id}/edit`} />
+                                            <DeleteRecordButton href={`/admin/blog-posts/${post.id}`} name={post.title} />
+                                        </AdminTableActions>
                                     </TableCell>
                                 </TableRow>
                             ))}

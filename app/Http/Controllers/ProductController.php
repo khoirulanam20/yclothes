@@ -6,13 +6,13 @@ use App\Models\Attribute;
 use App\Enums\ProductType;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductRelation;
 use App\Models\Review;
 use App\Models\Wishlist;
 use App\Services\CategoryTreeService;
 use App\Services\FlashSaleService;
 use App\Services\InventoryService;
 use App\Services\PromotionEngine;
+use App\Services\ProductRelationService;
 use App\Support\ModelSerializer;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -24,6 +24,7 @@ class ProductController extends Controller
         private PromotionEngine $promotionEngine,
         private CategoryTreeService $categoryTree,
         private FlashSaleService $flashSaleService,
+        private ProductRelationService $relationService,
     ) {}
     public function index()
     {
@@ -139,22 +140,29 @@ class ProductController extends Controller
         $this->promotionEngine->decorateProduct($product);
         $product->increment('views');
 
-        $relatedProducts = ProductRelation::where('product_id', $product->id)
-            ->where('type', 'related')
-            ->with('relatedProduct')
-            ->get()
-            ->pluck('relatedProduct')
-            ->filter();
+        $relatedProducts = $this->relationService->resolveForStorefront(
+            $product,
+            ProductRelationService::TYPE_RELATED,
+            4,
+        );
 
         if ($relatedProducts->isEmpty()) {
             $relatedProducts = Product::where('category_id', $product->category_id)
                 ->where('id', '!=', $product->id)
+                ->where('is_active', true)
                 ->inRandomOrder()
                 ->take(4)
                 ->get();
         }
 
+        $upSellProducts = $this->relationService->resolveForStorefront(
+            $product,
+            ProductRelationService::TYPE_UP_SELL,
+            4,
+        );
+
         $this->promotionEngine->decorateProducts($relatedProducts);
+        $this->promotionEngine->decorateProducts($upSellProducts);
 
         $reviews = Review::with('customer')
             ->where('product_id', $product->id)
@@ -170,23 +178,16 @@ class ProductController extends Controller
                 ->exists();
         }
 
-        $variantsJson = $product->isConfigurable()
+        $variants = $product->isConfigurable()
             ? $product->activeVariants->map(function ($variant) use ($product) {
-                return [
-                    'id' => $variant->id,
-                    'sku' => $variant->sku,
-                    'name' => $variant->name,
-                    'price' => $variant->final_price,
-                    'image_url' => $variant->image_url ?: $product->image_url,
+                return array_merge(ModelSerializer::variant($variant, $product), [
                     'size' => $variant->attributes['size'] ?? null,
                     'color' => $variant->attributes['color'] ?? null,
-                    'color_hex' => $variant->attributes['color_hex'] ?? null,
-                    'stock' => $this->inventoryService->getAvailableStock($product, $variant),
-                    'track_stock' => $variant->track_stock || $product->track_stock,
-                    'allow_backorder' => $variant->allow_backorder || $product->allow_backorder,
-                ];
-            })->values()
-            : collect();
+                    'colorHex' => $variant->attributes['color_hex'] ?? null,
+                    'trackStock' => $variant->track_stock || $product->track_stock,
+                ]);
+            })->values()->all()
+            : [];
 
         $productStock = $this->inventoryService->getAvailableStock($product);
         $isPurchasable = $this->inventoryService->canOrder($product, null, 1);
@@ -196,22 +197,11 @@ class ProductController extends Controller
             ? $this->categoryTree->breadcrumbPath($product->category)
             : [];
 
-        $variants = $variantsJson->map(fn ($v) => [
-            'id' => $v['id'],
-            'sku' => $v['sku'],
-            'price' => $v['price'],
-            'imageUrl' => $v['image_url'],
-            'size' => $v['size'],
-            'color' => $v['color'],
-            'colorHex' => $v['color_hex'],
-            'stock' => $v['stock'],
-            'trackStock' => $v['track_stock'],
-        ])->values()->all();
-
         return Inertia::render('Guest/Products/Show', [
             'product' => ModelSerializer::product($product, true),
             'categoryPath' => $categoryPath,
             'relatedProducts' => ModelSerializer::collection($relatedProducts, [ModelSerializer::class, 'product']),
+            'upSellProducts' => ModelSerializer::collection($upSellProducts, [ModelSerializer::class, 'product']),
             'reviews' => ModelSerializer::collection($reviews, [ModelSerializer::class, 'review']),
             'inWishlist' => $inWishlist,
             'productStock' => $productStock,

@@ -170,6 +170,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(['auth', 'admin', 'admin.activity'])->group(function () {
         Route::get('/', DashboardController::class)->name('dashboard');
+        Route::get('/notifications', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markRead'])->name('notifications.read');
 
         Route::middleware('permission:settings.manage')->group(function () {
             Route::get('/configuration', [AdminConfigurationController::class, 'index'])->name('configuration.index');
@@ -235,6 +238,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('categories', AdminCategoryController::class);
             Route::resource('attribute-families', AdminAttributeFamilyController::class);
             Route::resource('attributes', AdminAttributeController::class);
+            Route::get('products/search', [AdminProductController::class, 'search'])->name('products.search');
             Route::resource('products', AdminProductController::class);
             Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
             Route::put('products/{product}/variants', [AdminProductVariantController::class, 'update'])->name('products.variants.update');

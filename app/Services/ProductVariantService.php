@@ -9,9 +9,12 @@ use Illuminate\Support\Str;
 
 class ProductVariantService
 {
+    public function __construct(private ProductImageService $imageService) {}
+
     public function syncFromProduct(Product $product): void
     {
         if ($product->type !== ProductType::Configurable) {
+            $product->variants()->get()->each(fn (ProductVariant $variant) => $this->deleteVariant($variant));
             $product->variants()->delete();
 
             return;
@@ -72,9 +75,17 @@ class ProductVariantService
             $attrs = $variant->attributes ?? [];
             $key = ($attrs['size'] ?? '').'|'.($attrs['color'] ?? '');
             if (! in_array($key, $activeKeys, true)) {
+                $this->deleteVariant($variant);
                 $variant->delete();
             }
         });
+    }
+
+    private function deleteVariant(ProductVariant $variant): void
+    {
+        foreach ($variant->resolved_image_paths as $path) {
+            $this->imageService->deletePath($path);
+        }
     }
 
     private function uniqueSku(string $base): string

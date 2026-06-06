@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { ProductCard, type ProductCardData } from '@/components/ProductCard';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
@@ -14,8 +14,10 @@ import { guestToast } from '@/lib/guestToast';
 import { cn, contrastTextColor, formatRupiah } from '@/lib/utils';
 
 type Variant = {
-    id: number; sku: string; price: number; imageUrl?: string; size?: string | null;
-    color?: string | null; colorHex?: string | null; stock: number; trackStock?: boolean;
+    id: number; sku: string; price: number; finalPrice: number;
+    imageUrl?: string; imagesUrl?: string[]; ownImagesUrl?: string[];
+    size?: string | null; color?: string | null; colorHex?: string | null;
+    stock: number; trackStock?: boolean; isPurchasable?: boolean; isOutOfStock?: boolean;
 };
 type Review = { id: number; rating: number; comment: string; customerName: string; createdAt?: string };
 type Product = ProductCardData & {
@@ -25,15 +27,46 @@ type Product = ProductCardData & {
 };
 type BreadcrumbItem = { label: string; href: string };
 type Props = {
-    product: Product; relatedProducts: ProductCardData[]; reviews: Review[];
+    product: Product; relatedProducts: ProductCardData[]; upSellProducts?: ProductCardData[];
+    reviews: Review[];
     inWishlist: boolean; productStock: number; variants: Variant[];
     isPurchasable?: boolean; isOutOfStock?: boolean;
     categoryPath?: BreadcrumbItem[];
 };
 
-export default function Show({ product, relatedProducts, reviews, inWishlist: initialInWishlist, productStock, variants, isPurchasable = true, isOutOfStock = false, categoryPath = [] }: Props) {
-    const images = product.imagesUrl?.length ? product.imagesUrl : [product.imageUrl];
-    const [activeImage, setActiveImage] = useState(images[0]);
+function resolveDisplayImages(variant: Variant | undefined, product: Product): string[] {
+    if (variant?.ownImagesUrl?.length) {
+        return variant.ownImagesUrl;
+    }
+
+    if (variant?.imagesUrl?.length) {
+        return variant.imagesUrl;
+    }
+
+    if (variant?.imageUrl) {
+        return [variant.imageUrl];
+    }
+
+    if (product.imagesUrl?.length) {
+        return product.imagesUrl;
+    }
+
+    return product.imageUrl ? [product.imageUrl] : [];
+}
+
+export default function Show({
+    product,
+    relatedProducts,
+    upSellProducts = [],
+    reviews,
+    inWishlist: initialInWishlist,
+    productStock,
+    variants,
+    isPurchasable: defaultPurchasable = true,
+    isOutOfStock: defaultOutOfStock = false,
+    categoryPath = [],
+}: Props) {
+    const [activeImage, setActiveImage] = useState('');
     const [inWishlist, setInWishlist] = useState(initialInWishlist);
     const [wishlistLoading, setWishlistLoading] = useState(false);
 
@@ -44,6 +77,42 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
         size: '',
         color: '',
     });
+
+    const selectedVariant = useMemo(
+        () => variants.find((variant) => variant.id === Number(data.variant_id)),
+        [variants, data.variant_id],
+    );
+
+    const displayImages = useMemo(
+        () => resolveDisplayImages(selectedVariant, product),
+        [selectedVariant, product],
+    );
+
+    const displayStock = selectedVariant?.stock ?? productStock;
+    const displayPrice = selectedVariant?.finalPrice ?? product.finalPrice;
+    const displayPurchasable = selectedVariant?.isPurchasable ?? defaultPurchasable;
+    const displayOutOfStock = selectedVariant?.isOutOfStock ?? defaultOutOfStock;
+    const trackStock = selectedVariant?.trackStock ?? product.trackStock ?? true;
+
+    useEffect(() => {
+        if (displayImages[0]) {
+            setActiveImage(displayImages[0]);
+        }
+    }, [displayImages]);
+
+    useEffect(() => {
+        if (trackStock && displayStock > 0 && data.qty > displayStock) {
+            setData('qty', displayStock);
+        }
+    }, [displayStock, data.qty, setData, trackStock]);
+
+    const handleVariantChange = (variantId: number) => {
+        setData((current) => ({
+            ...current,
+            variant_id: variantId,
+            qty: 1,
+        }));
+    };
 
     const addToCart = () => post('/cart/add', { preserveScroll: true });
 
@@ -88,13 +157,13 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                     <div className="grid lg:grid-cols-2 gap-0">
                         <div className="p-4 space-y-3">
                             <img
-                                src={activeImage}
+                                src={activeImage || displayImages[0]}
                                 alt={product.name}
                                 className="w-full rounded-lg aspect-square object-cover bg-muted"
                             />
-                            {images.length > 1 && (
+                            {displayImages.length > 1 && (
                                 <div className="flex gap-2 overflow-x-auto">
-                                    {images.map((url, i) => (
+                                    {displayImages.map((url, i) => (
                                         <button
                                             key={i}
                                             type="button"
@@ -135,9 +204,9 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                             ) : null}
                             <div className="flex items-baseline gap-2 mt-3">
                                 <span className="text-2xl font-bold text-primary">
-                                    {formatRupiah(product.finalPrice)}
+                                    {formatRupiah(displayPrice)}
                                 </span>
-                                {product.salePrice && (
+                                {product.salePrice && !selectedVariant?.price && (
                                     <span className="text-sm line-through text-muted-foreground">
                                         {formatRupiah(product.price)}
                                     </span>
@@ -156,7 +225,7 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                                         <select
                                             className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm mt-1"
                                             value={data.variant_id}
-                                            onChange={(e) => setData('variant_id', Number(e.target.value))}
+                                            onChange={(e) => handleVariantChange(Number(e.target.value))}
                                         >
                                             {variants.map((v) => (
                                                 <option key={v.id} value={v.id}>
@@ -172,18 +241,25 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                                         id="qty"
                                         type="number"
                                         min={1}
+                                        max={trackStock && displayStock > 0 ? displayStock : undefined}
                                         value={data.qty}
                                         onChange={(e) => setData('qty', Number(e.target.value))}
                                         className="w-24 h-9 mt-1"
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Stok: {productStock}
-                                    {isOutOfStock && <span className="ml-2 text-destructive font-medium">Habis</span>}
+                                    Stok: {displayStock}
+                                    {displayOutOfStock && (
+                                        <span className="ml-2 text-destructive font-medium">Habis</span>
+                                    )}
                                 </p>
                                 <div className="flex gap-2 pt-1">
-                                    <Button onClick={addToCart} disabled={processing || !isPurchasable} className="flex-1">
-                                        {isPurchasable ? '+ Keranjang' : 'Stok Habis'}
+                                    <Button
+                                        onClick={addToCart}
+                                        disabled={processing || !displayPurchasable}
+                                        className="flex-1"
+                                    >
+                                        {displayPurchasable ? '+ Keranjang' : 'Stok Habis'}
                                     </Button>
                                     <Button variant="outline" onClick={handleToggleWishlist} disabled={wishlistLoading}>
                                         {inWishlist ? '♥' : '♡'}
@@ -205,6 +281,16 @@ export default function Show({ product, relatedProducts, reviews, inWishlist: in
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-1">{r.comment}</p>
                                 </div>
+                            ))}
+                        </div>
+                    </SectionCard>
+                )}
+
+                {upSellProducts.length > 0 && (
+                    <SectionCard title="Produk Up-Sell" className="mb-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {upSellProducts.map((p) => (
+                                <ProductCard key={p.id} product={p} />
                             ))}
                         </div>
                     </SectionCard>

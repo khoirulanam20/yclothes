@@ -36,6 +36,20 @@ class Review extends Model
         return $this->belongsTo(Order::class);
     }
 
+    public static function notifyAdminIfPending(self $review, string $productName): void
+    {
+        if ($review->is_approved) {
+            return;
+        }
+
+        AdminNotification::notify(
+            'review_submitted',
+            'Ulasan Baru Menunggu Persetujuan',
+            $productName,
+            ['review_id' => $review->id, 'product_id' => $review->product_id],
+        );
+    }
+
     public static function recalculateProductRating(int $productId): void
     {
         $stats = static::where('product_id', $productId)

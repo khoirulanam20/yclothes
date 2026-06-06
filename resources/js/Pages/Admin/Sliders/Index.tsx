@@ -1,10 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -22,7 +22,7 @@ export default function Index({ sliders }: Props) {
                 <AdminTableScroll>
                         <Table>
                     <TableHeader><TableRow>
-                        <TableHead>Gambar</TableHead><TableHead>Judul</TableHead><TableHead>Link</TableHead><TableHead>Aksi</TableHead>
+                        <TableHead>Gambar</TableHead><TableHead>Judul</TableHead><TableHead>Link</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                         {sliders.data.map((s) => (
@@ -30,10 +30,12 @@ export default function Index({ sliders }: Props) {
                                 <TableCell><img src={s.imageUrl} alt="" className="h-12 rounded" /></TableCell>
                                 <TableCell>{s.title ?? '—'}</TableCell>
                                 <TableCell className="max-w-[200px] truncate">{s.linkUrl ?? '—'}</TableCell>
-                                <TableCell><div className="flex gap-1">
-                                    <Button variant="outline" size="sm" asChild><Link href={`/admin/sliders/${s.id}/edit`}>Edit</Link></Button>
-                                    <DeleteRecordButton href={`/admin/sliders/${s.id}`} name={s.title ?? 'Slider'} />
-                                </div></TableCell>
+                                <TableCell className="text-right">
+                                    <AdminTableActions>
+                                        <AdminEditAction href={`/admin/sliders/${s.id}/edit`} />
+                                        <DeleteRecordButton href={`/admin/sliders/${s.id}`} name={s.title ?? 'Slider'} />
+                                    </AdminTableActions>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

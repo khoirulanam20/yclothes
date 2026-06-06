@@ -75,7 +75,7 @@ export default function Dashboard({
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard label="Total Pesanan" value={orderCount} />
-                <StatCard label="Pending" value={pendingCount} />
+                <StatCard label="Perlu Tindakan" value={pendingCount} />
                 <StatCard label="Total Produk" value={productCount} />
                 <StatCard label="Total Kategori" value={categoryCount} />
             </div>

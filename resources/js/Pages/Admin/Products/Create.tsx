@@ -46,6 +46,10 @@ export default function Create({ attributeFamilyOptions, productTypes }: Props) 
 
                 <AdminHelpPanel section={productCreateHelp} defaultOpen />
 
+                <p className="mb-4 text-sm text-muted-foreground">
+                    Relasi produk (terkait, up-sell, cross-sell) dapat diatur setelah produk dibuat di halaman edit.
+                </p>
+
                 <form onSubmit={submit}>
                     <AdminFormCard
                         footer={(

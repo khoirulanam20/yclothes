@@ -8,16 +8,16 @@ use App\Http\Controllers\Controller;
 use App\Models\AttributeFamily;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductRelation;
 use App\Models\Warehouse;
 use App\Services\CategoryTreeService;
 use App\Services\InventoryService;
 use App\Services\ProductAttributeService;
 use App\Services\ProductDuplicateService;
+use App\Services\ProductImageService;
+use App\Services\ProductRelationService;
 use App\Services\ProductVariantService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -30,6 +30,8 @@ class ProductController extends Controller
         private CategoryTreeService $categoryTree,
         private ProductDuplicateService $duplicateService,
         private InventoryService $inventoryService,
+        private ProductImageService $imageService,
+        private ProductRelationService $relationService,
     ) {}
 
     public function index()
@@ -82,7 +84,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load(['category', 'attributeFamily', 'attributeValues.attribute', 'variants', 'relations']);
+        $product->load(['category', 'attributeFamily', 'attributeValues.attribute', 'variants', 'relations.relatedProduct']);
 
         $familyId = $product->attribute_family_id;
 
@@ -148,23 +150,28 @@ class ProductController extends Controller
             'meta_keywords' => 'nullable|max:255',
             'related_products' => 'nullable|array',
             'related_products.*' => 'integer|exists:products,id',
+            'up_sell_products' => 'nullable|array',
+            'up_sell_products.*' => 'integer|exists:products,id',
+            'cross_sell_products' => 'nullable|array',
+            'cross_sell_products.*' => 'integer|exists:products,id',
         ], $this->attributeService->validationRules($familyId ? (int) $familyId : null)));
 
         if ($request->hasFile('image')) {
-            if ($product->image && ! Str::startsWith($product->image, 'http')) {
-                Storage::disk('public')->delete($product->image);
-            }
+            $this->imageService->deletePath($product->image);
             $validated['image'] = $request->file('image')->store('products', 'public');
         } elseif ($request->boolean('remove_image')) {
-            if ($product->image && ! Str::startsWith($product->image, 'http')) {
-                Storage::disk('public')->delete($product->image);
-            }
+            $this->imageService->deletePath($product->image);
             $validated['image'] = '';
         } else {
             unset($validated['image']);
         }
 
-        $validated['images'] = $this->mergeGalleryImages($request, $product);
+        $validated['images'] = $this->imageService->mergeGallery(
+            $request->input('existing_images', $product->images ?? []),
+            $request->input('remove_images', []),
+            $request->file('new_images') ?? [],
+            'products/gallery',
+        );
         $validated['weight'] = (int) ($request->weight ?? 0);
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_active'] = $request->boolean('is_active');
@@ -184,7 +191,12 @@ class ProductController extends Controller
         $this->attributeService->syncFromRequest($product, $request);
         $this->attributeService->syncLegacyVariantColumns($product->fresh());
         $this->variantService->syncFromProduct($product->fresh());
-        $this->syncRelations($product, $request->input('related_products', []));
+        $this->relationService->syncAll(
+            $product,
+            $request->input('related_products', []),
+            $request->input('up_sell_products', []),
+            $request->input('cross_sell_products', []),
+        );
 
         if (
             $product->type === ProductType::Simple
@@ -214,13 +226,40 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        if ($product->image && ! Str::startsWith($product->image, 'http')) {
-            Storage::disk('public')->delete($product->image);
-        }
-        $this->deleteGalleryImages($product);
+        $this->imageService->deletePath($product->image);
+        $this->imageService->deleteGallery($product->images);
         $product->delete();
 
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus');
+    }
+
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+        $exclude = (int) $request->get('exclude', 0);
+
+        $products = Product::query()
+            ->when($exclude > 0, fn ($query) => $query->where('id', '!=', $exclude))
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($inner) use ($q) {
+                    $inner->where('name', 'like', "%{$q}%")
+                        ->orWhere('sku', 'like', "%{$q}%");
+                });
+            })
+            ->orderBy('name')
+            ->take(30)
+            ->get(['id', 'name', 'sku', 'price', 'sale_price', 'image']);
+
+        return response()->json([
+            'products' => $products->map(fn (Product $product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => (int) $product->price,
+                'salePrice' => $product->sale_price !== null ? (int) $product->sale_price : null,
+                'imageUrl' => $product->image_url,
+            ])->values()->all(),
+        ]);
     }
 
     private function attributeFamilyOptions(): array
@@ -251,42 +290,6 @@ class ProductController extends Controller
         $codes = $this->attributeService->familyAttributes($familyId)->pluck('code');
 
         return $codes->contains('size') || $codes->contains('color');
-    }
-
-    private function mergeGalleryImages(Request $request, Product $product): array
-    {
-        $existing = $request->input('existing_images', $product->images ?? []);
-        $remove = $request->input('remove_images', []);
-
-        $kept = collect($existing)
-            ->filter(fn ($path) => $path && ! in_array($path, $remove, true))
-            ->values();
-
-        foreach ($remove as $path) {
-            if ($path && ! Str::startsWith($path, 'http') && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
-        }
-
-        if ($request->hasFile('new_images')) {
-            foreach ($request->file('new_images') as $file) {
-                $kept->push($file->store('products/gallery', 'public'));
-            }
-        }
-
-        return $kept->values()->all();
-    }
-
-    private function deleteGalleryImages(Product $product): void
-    {
-        if (! $product->images) {
-            return;
-        }
-        foreach ($product->images as $path) {
-            if (! Str::startsWith($path, 'http')) {
-                Storage::disk('public')->delete($path);
-            }
-        }
     }
 
     private function warehouseOptions(): array
@@ -321,21 +324,5 @@ class ProductController extends Controller
 
         $validated['badge'] = $validated['badge'] ?: $preset->defaultLabel();
         $validated['badge_color'] = $validated['badge_color'] ?: $preset->defaultColor();
-    }
-
-    private function syncRelations(Product $product, array $relatedIds): void
-    {
-        $product->relations()->where('type', 'related')->delete();
-
-        foreach (array_unique($relatedIds) as $relatedId) {
-            if ((int) $relatedId === $product->id) {
-                continue;
-            }
-            ProductRelation::create([
-                'product_id' => $product->id,
-                'related_product_id' => $relatedId,
-                'type' => 'related',
-            ]);
-        }
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\NavigationItem;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\AdminBadgeService;
 use App\Services\CartService;
 use App\Services\CategoryTreeService;
 use App\Services\PromotionPopupService;
@@ -142,5 +143,21 @@ class InertiaData
             'success' => session('success'),
             'error' => session('error'),
         ];
+    }
+
+    /** @return array{orders: int, returns: int, reviews: int, lowStock: int, notificationsUnread: int}|null */
+    public static function adminBadges(): ?array
+    {
+        $request = request();
+        if (! $request->is('admin*') || $request->routeIs('admin.login')) {
+            return null;
+        }
+
+        $admin = Auth::guard('web')->user();
+        if (! $admin || ! $admin->canAccessAdmin()) {
+            return null;
+        }
+
+        return app(AdminBadgeService::class)->countsForAdmin($admin);
     }
 }

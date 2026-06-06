@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdminNotification;
 use App\Models\Order;
 use App\Models\PaymentConfirmation;
+use App\Services\AdminBadgeService;
 use App\Services\OrderPaymentService;
 use App\Services\OrderWorkflowService;
 use App\Services\PaymentMethodService;
@@ -29,7 +29,7 @@ class OrderController extends Controller
 
         return Inertia::render('Admin/Orders/Index', [
             'orders' => ModelSerializer::paginated($orders, [ModelSerializer::class, 'orderSummary']),
-            'pendingPaymentConfirmations' => PaymentConfirmation::where('status', 'pending')->count(),
+            'awaitingActionCount' => app(AdminBadgeService::class)->ordersAwaitingActionCount(),
         ]);
     }
 
@@ -203,15 +203,6 @@ class OrderController extends Controller
         );
 
         return back()->with('success', 'Pengiriman berhasil dicatat.');
-    }
-
-    public function notifications()
-    {
-        $notifications = AdminNotification::latest()->limit(20)->get();
-
-        return response()->json(
-            ModelSerializer::collection($notifications, [ModelSerializer::class, 'adminNotification']),
-        );
     }
 
     /**

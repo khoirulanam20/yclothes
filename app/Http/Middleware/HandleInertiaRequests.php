@@ -27,6 +27,7 @@ class HandleInertiaRequests extends Middleware
             'categories' => InertiaData::categories(),
             'promotionPopup' => InertiaData::promotionPopup(),
             'gdpr' => InertiaData::gdpr(),
+            'adminBadges' => InertiaData::adminBadges(),
         ];
     }
 }

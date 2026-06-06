@@ -7,13 +7,13 @@ use App\Models\ProductAttributeValue;
 use App\Models\ProductRelation;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductDuplicateService
 {
     public function __construct(
         private ProductVariantService $variantService,
+        private ProductImageService $imageService,
     ) {}
 
     public function duplicate(Product $product): Product
@@ -33,8 +33,8 @@ class ProductDuplicateService
             $copy->slug = $this->uniqueSlug($product->slug);
             $copy->sku = $this->uniqueSku($product->sku ?? 'SKU-'.$product->id);
             $copy->is_active = false;
-            $copy->image = $this->copyFile($product->image, 'products');
-            $copy->images = $this->copyGallery($product->images);
+            $copy->image = $this->imageService->copyPath($product->image, 'products');
+            $copy->images = $this->imageService->copyGallery($product->images, 'products/gallery');
             $copy->save();
 
             foreach ($product->attributeValues as $value) {
@@ -49,9 +49,11 @@ class ProductDuplicateService
                 $newVariant = $variant->replicate(['sku']);
                 $newVariant->parent_product_id = $copy->id;
                 $newVariant->sku = $this->uniqueSku($variant->sku.'-copy');
-                $newVariant->image = $variant->image
-                    ? $this->copyFile($variant->image, 'products/variants')
-                    : null;
+                $newVariant->images = $this->imageService->copyGallery(
+                    $variant->resolved_image_paths,
+                    'products/variants/gallery',
+                );
+                $newVariant->image = $this->imageService->primaryPath($newVariant->images, null);
                 $newVariant->save();
             }
 
@@ -95,34 +97,5 @@ class ProductDuplicateService
         }
 
         return $sku;
-    }
-
-    private function copyFile(?string $path, string $directory): ?string
-    {
-        if (! $path || Str::startsWith($path, 'http')) {
-            return $path;
-        }
-
-        if (! Storage::disk('public')->exists($path)) {
-            return $path;
-        }
-
-        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
-        $newPath = $directory.'/'.Str::uuid().'.'.$extension;
-        Storage::disk('public')->copy($path, $newPath);
-
-        return $newPath;
-    }
-
-    private function copyGallery(?array $images): ?array
-    {
-        if (! $images) {
-            return null;
-        }
-
-        return array_values(array_filter(array_map(
-            fn ($path) => $this->copyFile($path, 'products/gallery'),
-            $images
-        )));
     }
 }

@@ -23,11 +23,14 @@ import {
     Users,
 } from 'lucide-react';
 
+export type AdminBadgeKey = 'orders' | 'returns' | 'reviews' | 'lowStock';
+
 export type AdminNavItem = {
     label: string;
     href: string;
     icon: LucideIcon;
     permission?: string | string[];
+    badgeKey?: AdminBadgeKey;
 };
 
 export type AdminNavGroup = {
@@ -54,18 +57,21 @@ export const adminNavGroups: AdminNavGroup[] = [
                 href: '/admin/orders',
                 icon: ShoppingBag,
                 permission: ['orders.view', 'orders.manage'],
+                badgeKey: 'orders',
             },
             {
                 label: 'Retur',
                 href: '/admin/returns',
                 icon: ArrowLeftRight,
                 permission: 'orders.manage',
+                badgeKey: 'returns',
             },
             {
                 label: 'Ulasan',
                 href: '/admin/reviews',
                 icon: Star,
                 permission: ['products.view', 'products.manage'],
+                badgeKey: 'reviews',
             },
         ],
     },
@@ -116,7 +122,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: Boxes,
         collapsible: true,
         items: [
-            { label: 'Stok', href: '/admin/inventories', icon: Boxes, permission: 'inventory.manage' },
+            { label: 'Stok', href: '/admin/inventories', icon: Boxes, permission: 'inventory.manage', badgeKey: 'lowStock' },
             { label: 'Gudang', href: '/admin/warehouses', icon: Building2, permission: 'inventory.manage' },
             {
                 label: 'Pergerakan Stok',
@@ -179,6 +185,10 @@ export function isNavItemActive(url: string, item: AdminNavItem): boolean {
 
 export function isNavGroupActive(url: string, group: AdminNavGroup): boolean {
     return group.items.some((item) => isNavItemActive(url, item));
+}
+
+export function formatBadgeCount(count: number): string {
+    return count > 99 ? '99+' : String(count);
 }
 
 export function groupNavItems(

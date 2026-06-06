@@ -107,6 +107,193 @@ class ConfigurableProductTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_upload_variant_gallery(): void
+    {
+        $admin = User::where('is_admin', true)->first();
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+
+        $response = $this->actingAs($admin)->put(route('admin.products.variants.update', $product), [
+            'variants' => [
+                [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'new_images' => [
+                        UploadedFile::fake()->image('variant-1.jpg'),
+                        UploadedFile::fake()->image('variant-2.jpg'),
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $variant->refresh();
+
+        $this->assertCount(2, $variant->images);
+        $this->assertSame($variant->images[0], $variant->image);
+        Storage::disk('public')->assertExists($variant->images[0]);
+        Storage::disk('public')->assertExists($variant->images[1]);
+    }
+
+    public function test_admin_can_remove_variant_gallery_image(): void
+    {
+        $admin = User::where('is_admin', true)->first();
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+
+        $pathOne = UploadedFile::fake()->image('one.jpg')->store('products/variants/gallery', 'public');
+        $pathTwo = UploadedFile::fake()->image('two.jpg')->store('products/variants/gallery', 'public');
+        $variant->update([
+            'images' => [$pathOne, $pathTwo],
+            'image' => $pathOne,
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('admin.products.variants.update', $product), [
+            'variants' => [
+                [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'existing_images' => [$pathOne],
+                    'remove_images' => [$pathTwo],
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $variant->refresh();
+
+        $this->assertSame([$pathOne], $variant->images);
+        Storage::disk('public')->assertMissing($pathTwo);
+    }
+
+    public function test_admin_can_append_second_variant_gallery_image(): void
+    {
+        $admin = User::where('is_admin', true)->first();
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+
+        $pathOne = UploadedFile::fake()->image('one.jpg')->store('products/variants/gallery', 'public');
+        $variant->update([
+            'images' => [$pathOne],
+            'image' => $pathOne,
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('admin.products.variants.update', $product), [
+            'variants' => [
+                [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'existing_images' => [$pathOne],
+                    'new_images' => [
+                        UploadedFile::fake()->image('two.jpg'),
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $variant->refresh();
+
+        $this->assertCount(2, $variant->images);
+        $this->assertSame($pathOne, $variant->images[0]);
+        Storage::disk('public')->assertExists($variant->images[1]);
+    }
+
+    public function test_storefront_includes_variant_gallery_urls(): void
+    {
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+        $variant->update([
+            'images' => ['products/variants/gallery/a.jpg', 'products/variants/gallery/b.jpg'],
+            'image' => 'products/variants/gallery/a.jpg',
+        ]);
+
+        Storage::disk('public')->put('products/variants/gallery/a.jpg', 'a');
+        Storage::disk('public')->put('products/variants/gallery/b.jpg', 'b');
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Guest/Products/Show')
+            ->has('variants', 4)
+            ->where('variants.0.imagesUrl', fn ($urls) => count($urls) === 2)
+        );
+    }
+
+    public function test_legacy_variant_single_image_exposes_gallery_urls(): void
+    {
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+        $variant->update([
+            'image' => 'products/variants/legacy.jpg',
+            'images' => null,
+        ]);
+
+        Storage::disk('public')->put('products/variants/legacy.jpg', 'legacy');
+
+        $variant->refresh();
+
+        $this->assertSame(['products/variants/legacy.jpg'], $variant->resolved_image_paths);
+        $this->assertCount(1, $variant->images_url);
+        $this->assertCount(1, $variant->own_images_url);
+    }
+
+    public function test_variant_images_not_wiped_when_save_without_image_changes(): void
+    {
+        $admin = User::where('is_admin', true)->first();
+        $product = $this->createConfigurableProduct();
+        $variant = $product->variants()->first();
+
+        $path = UploadedFile::fake()->image('keep.jpg')->store('products/variants/gallery', 'public');
+        $variant->update([
+            'images' => [$path],
+            'image' => $path,
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('admin.products.variants.update', $product), [
+            'variants' => [
+                [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'price' => 120000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $variant->refresh();
+
+        $this->assertSame([$path], $variant->images);
+        Storage::disk('public')->assertExists($path);
+    }
+
+    public function test_storefront_variant_includes_own_images_stock_and_purchasability(): void
+    {
+        $product = $this->createConfigurableProduct();
+        $product->update(['is_active' => true]);
+        $variant = $product->variants()->first();
+        $variant->update([
+            'images' => ['products/variants/gallery/a.jpg'],
+            'image' => 'products/variants/gallery/a.jpg',
+            'price' => 150000,
+        ]);
+
+        Storage::disk('public')->put('products/variants/gallery/a.jpg', 'a');
+
+        $response = $this->get(route('products.show', $product->slug));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Guest/Products/Show')
+            ->where('variants.0.ownImagesUrl', fn ($urls) => count($urls) === 1)
+            ->where('variants.0.finalPrice', 150000)
+            ->has('variants.0.stock')
+            ->has('variants.0.isPurchasable')
+            ->has('variants.0.isOutOfStock')
+        );
+    }
+
     private function createConfigurableProduct(): Product
     {
         $category = Category::first();

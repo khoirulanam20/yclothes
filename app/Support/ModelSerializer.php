@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\InventoryService;
+use App\Services\ProductRelationService;
 use App\Models\Review;
 use App\Models\Slider;
 use App\Models\StockMovement;
@@ -68,12 +69,13 @@ class ModelSerializer
 
     public static function variant(ProductVariant $variant, ?Product $product = null): array
     {
+        $inventoryService = app(InventoryService::class);
         $stock = $variant->stock;
         if ($product) {
-            $stock = app(InventoryService::class)->getAvailableStock($product, $variant);
+            $stock = $inventoryService->getAvailableStock($product, $variant);
         }
 
-        return [
+        $data = [
             'id' => $variant->id,
             'sku' => $variant->sku,
             'name' => $variant->name,
@@ -81,9 +83,19 @@ class ModelSerializer
             'stock' => $stock,
             'finalPrice' => $variant->final_price,
             'imageUrl' => $variant->image_url,
+            'imagesUrl' => $variant->images_url,
+            'ownImagesUrl' => $variant->own_images_url,
             'attributes' => $variant->attributes,
             'isActive' => $variant->is_active,
         ];
+
+        if ($product) {
+            $data['isPurchasable'] = $inventoryService->canOrder($product, $variant, 1);
+            $data['isOutOfStock'] = $inventoryService->isOutOfStock($product, $variant);
+            $data['trackStock'] = $variant->track_stock || $product->track_stock;
+        }
+
+        return $data;
     }
 
     public static function adminVariant(Product $product, ProductVariant $variant): array
@@ -91,6 +103,7 @@ class ModelSerializer
         $inventoryService = app(InventoryService::class);
 
         return array_merge(self::variant($variant, $product), [
+            'imagesPaths' => $variant->resolved_image_paths,
             'inventories' => $inventoryService->inventoryRowsFor($product, $variant->id),
         ]);
     }
@@ -132,7 +145,8 @@ class ModelSerializer
 
     public static function adminProduct(Product $product): array
     {
-        $product->loadMissing(['variants', 'relations']);
+        $product->loadMissing(['variants', 'relations.relatedProduct']);
+        $relationService = app(ProductRelationService::class);
 
         return array_merge(self::product($product, true), [
             'sku' => $product->sku,
@@ -155,7 +169,12 @@ class ModelSerializer
             'imagesPaths' => $product->images ?? [],
             'badgePreset' => $product->badge_preset?->value ?? 'none',
             'variants' => $product->variants->map(fn ($v) => self::adminVariant($product, $v))->values()->all(),
-            'relatedProductIds' => $product->relations->where('type', 'related')->pluck('related_product_id')->values()->all(),
+            'relatedProductIds' => $product->relations->where('type', ProductRelationService::TYPE_RELATED)->pluck('related_product_id')->values()->all(),
+            'upSellProductIds' => $product->relations->where('type', ProductRelationService::TYPE_UP_SELL)->pluck('related_product_id')->values()->all(),
+            'crossSellProductIds' => $product->relations->where('type', ProductRelationService::TYPE_CROSS_SELL)->pluck('related_product_id')->values()->all(),
+            'relatedProducts' => $relationService->summariesForAdmin($product, ProductRelationService::TYPE_RELATED),
+            'upSellProducts' => $relationService->summariesForAdmin($product, ProductRelationService::TYPE_UP_SELL),
+            'crossSellProducts' => $relationService->summariesForAdmin($product, ProductRelationService::TYPE_CROSS_SELL),
         ]);
     }
 

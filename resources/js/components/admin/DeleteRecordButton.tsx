@@ -1,11 +1,10 @@
 import { router } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
 import { useAdminConfirm } from '@/hooks/use-admin-confirm';
+import { AdminDeleteAction } from '@/components/admin/AdminTableActions';
 
 export function DeleteRecordButton({
     href,
     name,
-    variant = 'destructive',
     description,
 }: {
     href: string;
@@ -29,9 +28,5 @@ export function DeleteRecordButton({
         }
     };
 
-    return (
-        <Button type="button" variant={variant} size="sm" onClick={handleDelete}>
-            Hapus
-        </Button>
-    );
+    return <AdminDeleteAction onClick={() => void handleDelete()} />;
 }

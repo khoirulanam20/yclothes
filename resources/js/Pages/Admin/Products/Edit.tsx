@@ -1,9 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent, useMemo, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { AdminContent, AdminFormCard } from '@/components/admin/AdminContent';
 import { AdminHelpPanel } from '@/components/admin/AdminHelpPanel';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
+import { ProductRelationSection } from '@/components/admin/ProductRelationSection';
+import { type SelectedProduct } from '@/components/admin/ProductSearchPicker';
 import { ProductAttributeFields, type AttributeDefinition } from '@/components/admin/ProductAttributeFields';
 import { ProductBadgeField, type BadgePresetValue } from '@/components/admin/ProductBadgeField';
 import {
@@ -20,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
 import { productVariantHelp } from '@/lib/admin-help-content';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +58,12 @@ type Product = {
     metaDescription?: string | null;
     metaKeywords?: string | null;
     variants?: VariantRow[];
+    relatedProductIds?: number[];
+    upSellProductIds?: number[];
+    crossSellProductIds?: number[];
+    relatedProducts?: SelectedProduct[];
+    upSellProducts?: SelectedProduct[];
+    crossSellProducts?: SelectedProduct[];
 };
 
 type Option = { id: number; name: string };
@@ -95,6 +103,9 @@ type ProductFormData = {
     meta_title: string;
     meta_description: string;
     meta_keywords: string;
+    related_products: number[];
+    up_sell_products: number[];
+    cross_sell_products: number[];
     attributes: Record<string, string | number | boolean | string[] | { hex: string; name: string }[] | null>;
 };
 
@@ -120,6 +131,7 @@ const TABS = [
     { id: 'price', label: 'Harga' },
     { id: 'shipping', label: 'Pengiriman & Stok' },
     { id: 'settings', label: 'Pengaturan' },
+    { id: 'relations', label: 'Relasi' },
     { id: 'variants', label: 'Varian' },
 ] as const;
 
@@ -146,6 +158,15 @@ export default function Edit({
         })),
     );
     const [removedGallery, setRemovedGallery] = useState<string[]>([]);
+    const [relatedProducts, setRelatedProducts] = useState<SelectedProduct[]>(
+        () => product.relatedProducts ?? [],
+    );
+    const [upSellProducts, setUpSellProducts] = useState<SelectedProduct[]>(
+        () => product.upSellProducts ?? [],
+    );
+    const [crossSellProducts, setCrossSellProducts] = useState<SelectedProduct[]>(
+        () => product.crossSellProducts ?? [],
+    );
 
     const initialAttributes = useMemo(() => {
         const attrs: Record<string, unknown> = {};
@@ -188,6 +209,9 @@ export default function Edit({
         meta_title: product.metaTitle ?? '',
         meta_description: product.metaDescription ?? '',
         meta_keywords: product.metaKeywords ?? '',
+        related_products: product.relatedProductIds ?? [],
+        up_sell_products: product.upSellProductIds ?? [],
+        cross_sell_products: product.crossSellProductIds ?? [],
         attributes: initialAttributes as ProductFormData['attributes'],
     });
 
@@ -204,6 +228,9 @@ export default function Edit({
             existing_images: existingImages,
             new_images: newImages,
             remove_images: removedGallery,
+            related_products: relatedProducts.map((item) => item.id),
+            up_sell_products: upSellProducts.map((item) => item.id),
+            cross_sell_products: crossSellProducts.map((item) => item.id),
             inventories: inventoryRowsToPayload(d.inventories),
         }));
 
@@ -220,7 +247,7 @@ export default function Edit({
     const addGallery = (files: FileList | null) => {
         if (!files) return;
         const added = Array.from(files).map((file) => ({
-            path: `new-${file.name}-${file.lastModified}`,
+            path: `new-${crypto.randomUUID()}`,
             url: '',
             file,
         }));
@@ -243,7 +270,15 @@ export default function Edit({
             ]}
         >
             <Head title={`Edit ${product.name}`} />
-            <AdminPageHeader title={`Edit: ${product.name}`} backHref="/admin/products" />
+            <AdminContent>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <AdminPageHeader title={`Edit: ${product.name}`} backHref="/admin/products" />
+                    {tab !== 'variants' && (
+                        <Button type="submit" form="product-edit-form" disabled={processing}>
+                            Simpan Produk
+                        </Button>
+                    )}
+                </div>
 
             {configurableWarning && (
                 <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -251,7 +286,8 @@ export default function Edit({
                 </div>
             )}
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
                 {visibleTabs.map((t) => (
                     <Button
                         key={t.id}
@@ -265,9 +301,8 @@ export default function Edit({
                 ))}
             </div>
 
-            <Card>
-                <CardContent className="p-6">
-                    <form onSubmit={submit} className="space-y-4">
+            <AdminFormCard>
+                    <form id="product-edit-form" onSubmit={submit} className="space-y-4">
                         <div className={cn(tab !== 'general' && 'hidden')}>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
@@ -587,6 +622,30 @@ export default function Edit({
                             </div>
                         </div>
 
+                        <div className={cn(tab !== 'relations' && 'hidden', 'space-y-4')}>
+                            <ProductRelationSection
+                                title="Produk Terkait"
+                                description="Selain produk yang sedang dilihat pelanggan, mereka akan disajikan dengan produk terkait."
+                                selected={relatedProducts}
+                                onChange={setRelatedProducts}
+                                excludeProductId={product.id}
+                            />
+                            <ProductRelationSection
+                                title="Produk Up-Sell"
+                                description="Pelanggan disajikan alternatif premium atau berkualitas lebih tinggi dari produk ini."
+                                selected={upSellProducts}
+                                onChange={setUpSellProducts}
+                                excludeProductId={product.id}
+                            />
+                            <ProductRelationSection
+                                title="Produk Cross-Sell"
+                                description="Produk pelengkap yang ditampilkan di keranjang belanja."
+                                selected={crossSellProducts}
+                                onChange={setCrossSellProducts}
+                                excludeProductId={product.id}
+                            />
+                        </div>
+
                         {tab !== 'variants' && (
                             <div className="flex gap-2 border-t pt-4">
                                 <Button type="submit" disabled={processing}>
@@ -600,7 +659,7 @@ export default function Edit({
                     </form>
 
                     {tab === 'variants' && data.type === 'configurable' && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 border-t pt-4">
                             <AdminHelpPanel section={productVariantHelp} />
                             <ProductVariantGrid
                                 productId={product.id}
@@ -608,15 +667,16 @@ export default function Edit({
                                 warehouses={warehouses}
                                 trackStock={data.track_stock}
                             />
-                            <div className="flex gap-2 border-t pt-4">
+                            <div className="flex gap-2">
                                 <Button variant="outline" asChild>
                                     <Link href="/admin/products">Kembali</Link>
                                 </Button>
                             </div>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+            </AdminFormCard>
+            </div>
+            </AdminContent>
         </AdminLayout>
     );
 }

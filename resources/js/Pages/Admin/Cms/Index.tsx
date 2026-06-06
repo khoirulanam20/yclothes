@@ -1,11 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminBuilderAction, AdminPreviewAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
@@ -45,7 +45,7 @@ export default function Index({ pages }: Props) {
                                 <TableHead>Slug</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Layout</TableHead>
-                                <TableHead>Aksi</TableHead>
+                                <TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -65,21 +65,12 @@ export default function Index({ pages }: Props) {
                                             {page.hasLayout ? 'Puck' : 'Kosong'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-1">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/cms-pages/${page.id}/builder`}>Builder</Link>
-                                            </Button>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/cms-pages/${page.id}/preview`} target="_blank">
-                                                    Preview
-                                                </Link>
-                                            </Button>
-                                            <DeleteRecordButton
-                                                href={`/admin/cms-pages/${page.id}`}
-                                                name={page.title}
-                                            />
-                                        </div>
+                                    <TableCell className="text-right">
+                                        <AdminTableActions>
+                                            <AdminBuilderAction href={`/admin/cms-pages/${page.id}/builder`} />
+                                            <AdminPreviewAction href={`/admin/cms-pages/${page.id}/preview`} />
+                                            <DeleteRecordButton href={`/admin/cms-pages/${page.id}`} name={page.title} />
+                                        </AdminTableActions>
                                     </TableCell>
                                 </TableRow>
                             ))}

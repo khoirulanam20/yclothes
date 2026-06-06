@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
+use App\Services\AdminBadgeService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class ReviewController extends Controller
         return Inertia::render('Admin/Reviews/Index', [
             'reviews' => ModelSerializer::paginated($reviews, [ModelSerializer::class, 'review']),
             'status' => $status,
+            'pendingCount' => app(AdminBadgeService::class)->pendingReviewsCount(),
         ]);
     }
 

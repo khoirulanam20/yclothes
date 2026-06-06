@@ -8,6 +8,7 @@ use App\Services\CartItemResolver;
 use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\InventoryService;
+use App\Services\ProductRelationService;
 use App\Services\PromotionEngine;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
@@ -22,15 +23,26 @@ class CartController extends Controller
         private PromotionEngine $promotionEngine,
         private InventoryService $inventoryService,
         private CartItemResolver $cartItemResolver,
+        private ProductRelationService $relationService,
     ) {}
 
     public function index()
     {
         $pricing = $this->cartPricing->build();
+        $productIds = collect($pricing['items'])
+            ->map(fn (array $item) => $item['product']->id ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $crossSellProducts = $this->relationService->resolveCrossSellForCart($productIds, 4);
+        $this->promotionEngine->decorateProducts($crossSellProducts);
 
         return Inertia::render('Guest/Cart/Index', [
             'items' => array_map(fn ($r) => ModelSerializer::cartRow($r), $pricing['items']),
             'pricing' => ModelSerializer::cartPricing($pricing),
+            'crossSellProducts' => ModelSerializer::collection($crossSellProducts, [ModelSerializer::class, 'product']),
         ]);
     }
 

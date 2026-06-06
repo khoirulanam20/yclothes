@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ProductCard, type ProductCardData } from '@/components/ProductCard';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
@@ -16,9 +17,9 @@ type Pricing = {
     couponCode?: string | null; totalQty: number;
 };
 
-type Props = { items: CartItem[]; pricing: Pricing };
+type Props = { items: CartItem[]; pricing: Pricing; crossSellProducts?: ProductCardData[] };
 
-export default function Index({ items, pricing }: Props) {
+export default function Index({ items, pricing, crossSellProducts = [] }: Props) {
     const couponForm = useForm({
         coupon_code: pricing.couponCode ?? '',
         redirect: 'cart' as const,
@@ -91,6 +92,15 @@ export default function Index({ items, pricing }: Props) {
                                     </div>
                                 </SectionCard>
                             ))}
+                            {crossSellProducts.length > 0 && (
+                                <SectionCard title="Produk Cross-Sell" className="mt-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {crossSellProducts.map((product) => (
+                                            <ProductCard key={product.id} product={product} />
+                                        ))}
+                                    </div>
+                                </SectionCard>
+                            )}
                         </div>
 
                         <div className="lg:sticky lg:top-36 lg:self-start">

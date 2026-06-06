@@ -1,10 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -22,7 +22,7 @@ export default function Index({ items }: Props) {
                 <AdminTableScroll>
                         <Table>
                     <TableHeader><TableRow>
-                        <TableHead>Menu</TableHead><TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead>
+                        <TableHead>Menu</TableHead><TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                         {items.map((item) => (
@@ -32,10 +32,12 @@ export default function Index({ items }: Props) {
                                 <TableCell className="max-w-[200px] truncate">{item.url}</TableCell>
                                 <TableCell>{item.sortOrder ?? 0}</TableCell>
                                 <TableCell>{item.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
-                                <TableCell><div className="flex gap-1">
-                                    <Button variant="outline" size="sm" asChild><Link href={`/admin/navigation/${item.id}/edit`}>Edit</Link></Button>
-                                    <DeleteRecordButton href={`/admin/navigation/${item.id}`} name={item.label} />
-                                </div></TableCell>
+                                <TableCell className="text-right">
+                                    <AdminTableActions>
+                                        <AdminEditAction href={`/admin/navigation/${item.id}/edit`} />
+                                        <DeleteRecordButton href={`/admin/navigation/${item.id}`} name={item.label} />
+                                    </AdminTableActions>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

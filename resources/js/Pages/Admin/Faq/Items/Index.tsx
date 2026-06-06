@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,17 +22,19 @@ export default function Index({ category, items }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table>
-                    <TableHeader><TableRow><TableHead>Pertanyaan</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>Pertanyaan</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {items.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell>{item.question}</TableCell>
                                 <TableCell>{item.sortOrder ?? 0}</TableCell>
                                 <TableCell>{item.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
-                                <TableCell><div className="flex gap-1">
-                                    <Button variant="outline" size="sm" asChild><Link href={`/admin/faq-categories/${category.id}/items/${item.id}/edit`}>Edit</Link></Button>
-                                    <DeleteRecordButton href={`/admin/faq-categories/${category.id}/items/${item.id}`} name={item.question} />
-                                </div></TableCell>
+                                <TableCell className="text-right">
+                                    <AdminTableActions>
+                                        <AdminEditAction href={`/admin/faq-categories/${category.id}/items/${item.id}/edit`} />
+                                        <DeleteRecordButton href={`/admin/faq-categories/${category.id}/items/${item.id}`} name={item.question} />
+                                    </AdminTableActions>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

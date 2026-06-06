@@ -3,6 +3,7 @@ import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Button } from '@/components/ui/button';
@@ -129,7 +130,7 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                                     <TableHead>Gudang</TableHead>
                                     <TableHead>Stok</TableHead>
                                     <TableHead>Threshold</TableHead>
-                                    <TableHead>Aksi</TableHead>
+                                    <TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -155,16 +156,14 @@ export default function Index({ inventories, recentMovements, warehouses, filter
                                             {inv.stock}
                                         </TableCell>
                                         <TableCell>{inv.lowStockThreshold ?? 5}</TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-1">
-                                                <Button variant="outline" size="sm" asChild>
-                                                    <Link href={`/admin/inventories/${inv.id}/edit`}>Edit</Link>
-                                                </Button>
+                                        <TableCell className="text-right">
+                                            <AdminTableActions>
+                                                <AdminEditAction href={`/admin/inventories/${inv.id}/edit`} />
                                                 <DeleteRecordButton
                                                     href={`/admin/inventories/${inv.id}`}
                                                     name={inv.displayName ?? inv.product?.name ?? 'Stok'}
                                                 />
-                                            </div>
+                                            </AdminTableActions>
                                         </TableCell>
                                     </TableRow>
                                 ))}
