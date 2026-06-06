@@ -148,6 +148,10 @@ class AdminConfigurationService
 
         $validated = Validator::make($request->all(), $rules, [], $attributes)->validate();
 
+        $previousBrandName = $slug === 'general.store'
+            ? (setting('brand_name') ?: null)
+            : null;
+
         foreach ($fields as $field) {
             if (! $this->fieldIsVisible($field, $request)) {
                 continue;
@@ -174,10 +178,27 @@ class AdminConfigurationService
                 continue;
             }
 
+            $value = $validated[$name] ?? $request->input($name);
+
             Setting::updateOrCreate(
                 ['key' => $name],
-                ['value' => $validated[$name] ?? $request->input($name)],
+                ['value' => $value],
             );
+
+            if ($name === 'brand_name' && filled($value)) {
+                $this->syncDerivedBrandFields((string) $value, $previousBrandName);
+            }
+        }
+    }
+
+    private function syncDerivedBrandFields(string $brandName, ?string $previousBrandName): void
+    {
+        foreach (['site_title', 'mail_from_name'] as $key) {
+            $current = setting($key);
+
+            if (blank($current) || ($previousBrandName !== null && $current === $previousBrandName)) {
+                Setting::updateOrCreate(['key' => $key], ['value' => $brandName]);
+            }
         }
     }
 

@@ -8,6 +8,12 @@ class MailSettingsService
 {
     public function apply(): void
     {
+        if ($from = setting('mail_from_address')) {
+            Config::set('mail.from.address', $from);
+        }
+
+        Config::set('mail.from.name', setting('mail_from_name') ?: site_app_name());
+
         if (! setting_bool('mail_enabled')) {
             return;
         }
@@ -33,13 +39,5 @@ class MailSettingsService
 
         $encryption = setting('mail_encryption');
         Config::set('mail.mailers.smtp.encryption', filled($encryption) ? $encryption : null);
-
-        if ($from = setting('mail_from_address')) {
-            Config::set('mail.from.address', $from);
-        }
-
-        if ($name = setting('mail_from_name')) {
-            Config::set('mail.from.name', $name);
-        }
     }
 }

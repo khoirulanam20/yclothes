@@ -7,8 +7,8 @@ import { AppProviders } from '@/components/AppProviders';
 function getAppName(): string {
     return (
         document.querySelector('meta[name="app-name"]')?.getAttribute('content')?.trim() ||
-        import.meta.env.VITE_APP_NAME ||
-        'YClothes'
+        import.meta.env.VITE_APP_NAME?.trim() ||
+        ''
     );
 }
 

@@ -63,9 +63,10 @@ class ConfigurationController extends Controller
         app(\App\Services\MailSettingsService::class)->apply();
 
         try {
-            Mail::raw('Email test dari konfigurasi admin yClothes.', function ($message) use ($request) {
+            $appName = site_app_name();
+            Mail::raw("Email test dari konfigurasi admin {$appName}.", function ($message) use ($request, $appName) {
                 $message->to($request->input('email'))
-                    ->subject('Test Email — yClothes');
+                    ->subject("Test Email — {$appName}");
             });
         } catch (\Throwable $e) {
             report($e);

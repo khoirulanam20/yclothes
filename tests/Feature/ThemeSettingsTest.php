@@ -40,6 +40,8 @@ class ThemeSettingsTest extends TestCase
             ->assertRedirect('/admin/configuration/general/store');
 
         $this->assertDatabaseHas('settings', ['key' => 'brand_name', 'value' => 'YClothes Store']);
+        $this->assertDatabaseHas('settings', ['key' => 'site_title', 'value' => 'YClothes Store']);
+        $this->assertDatabaseHas('settings', ['key' => 'mail_from_name', 'value' => 'YClothes Store']);
         $this->assertDatabaseHas('settings', ['key' => 'color_gold', 'value' => '#111111']);
         $this->assertNotNull(Setting::where('key', 'brand_logo')->value('value'));
         $this->assertNotNull(Setting::where('key', 'favicon')->value('value'));

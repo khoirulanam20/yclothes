@@ -178,6 +178,31 @@ class ConfigurationTest extends TestCase
         $this->assertSame('shop@test.local', config('mail.from.address'));
     }
 
+    public function test_mail_from_name_falls_back_to_brand_name(): void
+    {
+        Setting::updateOrCreate(['key' => 'brand_name'], ['value' => 'Toko Baru']);
+        Setting::updateOrCreate(['key' => 'mail_from_name'], ['value' => null]);
+        clear_settings_cache();
+
+        app(\App\Services\MailSettingsService::class)->apply();
+
+        $this->assertSame('Toko Baru', config('mail.from.name'));
+    }
+
+    public function test_og_title_uses_brand_name_over_site_title(): void
+    {
+        Setting::updateOrCreate(['key' => 'brand_name'], ['value' => 'Toko Baru']);
+        Setting::updateOrCreate(['key' => 'site_title'], ['value' => 'YClothes']);
+        clear_settings_cache();
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('property="og:title" content="Toko Baru"', false);
+        $response->assertSee('property="og:site_name" content="Toko Baru"', false);
+        $response->assertDontSee('property="og:title" content="YClothes"', false);
+    }
+
     public function test_send_test_email_uses_dedicated_route(): void
     {
         \Illuminate\Support\Facades\Mail::fake();

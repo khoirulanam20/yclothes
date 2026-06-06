@@ -354,11 +354,6 @@ export default function Show({
                                                         {Array.from({ length: existing.rating }).map((_, i) => (
                                                             <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
                                                         ))}
-                                                        {!existing.isApproved && (
-                                                            <span className="ml-2 text-xs text-muted-foreground">
-                                                                (menunggu moderasi)
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     {existing.imagesUrl && existing.imagesUrl.length > 0 && (
                                                         <div className="mt-2 flex flex-wrap gap-2">

@@ -26,7 +26,7 @@ class InertiaData
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
 
         return [
-            'brandName' => $settings['brand_name'] ?? 'YClothes',
+            'brandName' => filled($settings['brand_name'] ?? null) ? $settings['brand_name'] : site_app_name(),
             'brandLogo' => isset($settings['brand_logo']) ? storage_url($settings['brand_logo']) : null,
             'faviconUrl' => isset($settings['favicon']) ? storage_url($settings['favicon']) : null,
             'colorGold' => $settings['color_gold'] ?? '#C2A56D',

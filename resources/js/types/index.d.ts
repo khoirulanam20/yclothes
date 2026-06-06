@@ -1,5 +1,6 @@
 export type Theme = {
     brandName: string;
+    appName: string;
     brandLogo: string | null;
     faviconUrl: string | null;
     colorGold: string;

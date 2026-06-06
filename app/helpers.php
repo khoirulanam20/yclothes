@@ -43,19 +43,14 @@ if (! function_exists('site_app_name')) {
             return $title;
         }
 
-        return 'YClothes';
+        return (string) config('app.name', 'Laravel');
     }
 }
 
 if (! function_exists('site_seo_title')) {
-    /** Judul SEO/Open Graph — Judul Situs jika diisi, fallback ke Nama Brand. */
+    /** Judul SEO/Open Graph — utamakan Nama Brand, lalu Judul Situs. */
     function site_seo_title(): string
     {
-        $title = setting('site_title');
-        if (is_string($title) && $title !== '') {
-            return $title;
-        }
-
         return site_app_name();
     }
 }

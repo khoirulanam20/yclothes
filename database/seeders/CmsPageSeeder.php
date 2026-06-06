@@ -15,6 +15,7 @@ class CmsPageSeeder extends Seeder
 
         $aboutContent = Setting::where('key', 'about_content')->value('value');
         $caraContent = Setting::where('key', 'cara_belanja_content')->value('value');
+        $brandName = Setting::where('key', 'brand_name')->value('value') ?: config('app.name');
 
         $pages = [
             [
@@ -23,7 +24,7 @@ class CmsPageSeeder extends Seeder
                 'content' => $aboutContent ?: '<p>Konten tentang kami.</p>',
                 'banner_image' => Setting::where('key', 'about_banner')->value('value'),
                 'meta_title' => 'Tentang Kami',
-                'meta_description' => 'Pelajari lebih lanjut tentang YClothes.',
+                'meta_description' => "Pelajari lebih lanjut tentang {$brandName}.",
             ],
             [
                 'slug' => 'cara-belanja',
@@ -31,7 +32,7 @@ class CmsPageSeeder extends Seeder
                 'content' => $caraContent ?: '<p>Panduan belanja.</p>',
                 'banner_image' => Setting::where('key', 'cara_belanja_banner')->value('value'),
                 'meta_title' => 'Cara Belanja',
-                'meta_description' => 'Panduan lengkap berbelanja di YClothes.',
+                'meta_description' => "Panduan lengkap berbelanja di {$brandName}.",
             ],
         ];
 
