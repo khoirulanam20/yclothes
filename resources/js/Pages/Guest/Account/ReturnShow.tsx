@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
-import { SectionCard } from '@/components/storefront/SectionCard';
+import { AccountPageShell } from '@/components/storefront/AccountPageShell';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,56 +34,87 @@ export default function ReturnShow({ returnRequest }: Props) {
     return (
         <AccountLayout title={`Retur ${returnRequest.requestNumber}`}>
             <Head title="Detail Retur" />
-            <SectionCard className="mb-4">
-                <p className="font-semibold">{returnRequest.requestNumber}</p>
-                <p className="text-sm">Pesanan: {returnRequest.order?.orderNumber}</p>
-                <p className="text-sm">{returnStatusLabels[returnRequest.status] ?? returnRequest.status}</p>
-                {returnRequest.resolutionType === 'replacement' && (
-                    <p className="text-sm text-muted-foreground mt-1">Resolusi: Ganti Barang</p>
-                )}
-                {returnRequest.adminNote && <p className="text-sm text-muted-foreground mt-2">{returnRequest.adminNote}</p>}
-            </SectionCard>
 
-            <SectionCard title="Item Retur" className="mb-4">
-                {returnRequest.items.map((item, i) => (
-                    <div key={i} className="text-sm border-b py-2 last:border-0">
-                        <p className="font-medium">{item.productName}</p>
-                        <p>Qty: {item.qty} · {item.reason}</p>
-                        {item.description && <p className="text-muted-foreground">{item.description}</p>}
-                    </div>
-                ))}
-            </SectionCard>
+            <AccountPageShell
+                className="mb-4"
+                title={returnRequest.requestNumber}
+                description={`Pesanan #${returnRequest.order?.orderNumber}`}
+                actions={
+                    <Badge variant="secondary">
+                        {returnStatusLabels[returnRequest.status] ?? returnRequest.status}
+                    </Badge>
+                }
+            >
+                {returnRequest.resolutionType === 'replacement' && (
+                    <p className="text-sm text-muted-foreground">Resolusi: Ganti Barang</p>
+                )}
+                {returnRequest.adminNote && (
+                    <p className="mt-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                        {returnRequest.adminNote}
+                    </p>
+                )}
+            </AccountPageShell>
+
+            <AccountPageShell title="Item Retur" className="mb-4">
+                <div className="divide-y">
+                    {returnRequest.items.map((item, i) => (
+                        <div key={i} className="py-3 text-sm first:pt-0 last:pb-0">
+                            <p className="font-medium">{item.productName}</p>
+                            <p className="text-muted-foreground">Qty: {item.qty} · {item.reason}</p>
+                            {item.description && <p className="mt-1 text-muted-foreground">{item.description}</p>}
+                        </div>
+                    ))}
+                </div>
+            </AccountPageShell>
 
             {returnRequest.media.length > 0 && (
-                <SectionCard title="Bukti" className="mb-4">
+                <AccountPageShell title="Bukti Pengajuan" className="mb-4">
                     <div className="flex flex-wrap gap-2">
                         {returnRequest.media.map((m, i) => (
-                            m.type === 'video'
-                                ? <video key={i} src={m.url} controls className="w-32 h-32 object-cover rounded" />
-                                : <img key={i} src={m.url} alt="" className="w-32 h-32 object-cover rounded" />
+                            m.type === 'video' ? (
+                                <video key={i} src={m.url} controls className="size-28 rounded-lg border object-cover" />
+                            ) : (
+                                <img key={i} src={m.url} alt="" className="size-28 rounded-lg border object-cover" />
+                            )
                         ))}
                     </div>
-                </SectionCard>
+                </AccountPageShell>
             )}
 
             {returnRequest.status === 'awaiting_return_shipment' && (
-                <SectionCard title="Kirim Barang Retur" className="mb-4">
-                    <form onSubmit={(e) => { e.preventDefault(); shipForm.post(`/account/returns/${returnRequest.id}/shipment`); }} className="space-y-3">
-                        <div><Label>Kurir</Label><Input value={shipForm.data.courier} onChange={(e) => shipForm.setData('courier', e.target.value)} required /></div>
-                        <div><Label>No. Resi</Label><Input value={shipForm.data.tracking_number} onChange={(e) => shipForm.setData('tracking_number', e.target.value)} required /></div>
-                        <Button type="submit" disabled={shipForm.processing}>Kirim Resi Retur</Button>
+                <AccountPageShell title="Kirim Barang Retur" className="mb-4">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            shipForm.post(`/account/returns/${returnRequest.id}/shipment`);
+                        }}
+                        className="grid gap-3 sm:grid-cols-2"
+                    >
+                        <div>
+                            <Label>Kurir</Label>
+                            <Input value={shipForm.data.courier} onChange={(e) => shipForm.setData('courier', e.target.value)} required />
+                        </div>
+                        <div>
+                            <Label>No. Resi</Label>
+                            <Input value={shipForm.data.tracking_number} onChange={(e) => shipForm.setData('tracking_number', e.target.value)} required />
+                        </div>
+                        <div className="sm:col-span-2">
+                            <Button type="submit" disabled={shipForm.processing}>Kirim Resi Retur</Button>
+                        </div>
                     </form>
-                </SectionCard>
+                </AccountPageShell>
             )}
 
             {returnRequest.shipment?.trackingNumber && (
-                <SectionCard title="Resi Retur" className="mb-4">
-                    <p className="text-sm">{returnRequest.shipment.courier} — {returnRequest.shipment.trackingNumber}</p>
-                </SectionCard>
+                <AccountPageShell title="Resi Retur" className="mb-4">
+                    <p className="text-sm">
+                        {returnRequest.shipment.courier} — <span className="font-medium">{returnRequest.shipment.trackingNumber}</span>
+                    </p>
+                </AccountPageShell>
             )}
 
             {replacement && (
-                <SectionCard title="Barang Pengganti" className="mb-4">
+                <AccountPageShell title="Barang Pengganti" className="mb-4">
                     <p className="text-sm mb-2">
                         Pesanan pengganti: <span className="font-medium">#{replacement.orderNumber}</span>
                     </p>
@@ -104,10 +136,10 @@ export default function ReturnShow({ returnRequest }: Props) {
                             </Link>
                         </Button>
                     )}
-                </SectionCard>
+                </AccountPageShell>
             )}
 
-            <Button variant="outline" asChild><Link href="/account/returns">Kembali</Link></Button>
+            <Button variant="outline" asChild><Link href="/account/returns">Kembali ke Daftar Retur</Link></Button>
         </AccountLayout>
     );
 }

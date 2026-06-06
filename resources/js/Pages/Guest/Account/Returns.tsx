@@ -1,10 +1,8 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
-import { SectionCard } from '@/components/storefront/SectionCard';
+import { AccountPageShell } from '@/components/storefront/AccountPageShell';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { returnStatusLabels } from '@/lib/order-status';
 
 type ReturnItem = { id: number; requestNumber: string; status: string; orderNumber?: string | null; createdAt: string };
@@ -15,22 +13,26 @@ export default function Returns({ returns }: Props) {
         <AccountLayout title="Retur Saya">
             <Head title="Retur" />
             {returns.length === 0 ? (
-                <SectionCard className="text-center py-8 text-muted-foreground">Belum ada pengajuan retur.</SectionCard>
+                <AccountPageShell title="Belum ada retur">
+                    <p className="py-6 text-center text-muted-foreground">Pengajuan retur akan muncul di sini.</p>
+                </AccountPageShell>
             ) : (
                 <div className="space-y-3">
                     {returns.map((r) => (
-                        <SectionCard key={r.id}>
-                            <div className="flex justify-between items-start">
+                        <AccountPageShell key={r.id} noPadding>
+                            <div className="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-5">
                                 <div>
                                     <p className="font-semibold">{r.requestNumber}</p>
-                                    <p className="text-sm text-muted-foreground">Pesanan {r.orderNumber}</p>
-                                    <p className="text-sm">{returnStatusLabels[r.status] ?? r.status}</p>
+                                    <p className="mt-0.5 text-sm text-muted-foreground">Pesanan #{r.orderNumber}</p>
+                                    <Badge variant="secondary" className="mt-2">
+                                        {returnStatusLabels[r.status] ?? r.status}
+                                    </Badge>
                                 </div>
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/account/returns/${r.id}`}>Detail</Link>
+                                    <Link href={`/account/returns/${r.id}`}>Detail Retur</Link>
                                 </Button>
                             </div>
-                        </SectionCard>
+                        </AccountPageShell>
                     ))}
                 </div>
             )}

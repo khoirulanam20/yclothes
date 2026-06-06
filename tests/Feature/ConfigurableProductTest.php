@@ -294,6 +294,28 @@ class ConfigurableProductTest extends TestCase
         );
     }
 
+    public function test_configurable_product_not_out_of_stock_when_one_variant_has_stock(): void
+    {
+        $product = $this->createConfigurableProduct();
+        $variants = $product->variants()->orderBy('id')->get();
+
+        $this->assertGreaterThanOrEqual(2, $variants->count());
+
+        $variants[0]->update(['stock' => 0]);
+        $variants[1]->update(['stock' => 5]);
+
+        $inventory = app(\App\Services\InventoryService::class);
+        $freshProduct = $product->fresh(['activeVariants']);
+
+        $this->assertFalse($inventory->isOutOfStock($freshProduct));
+        $this->assertTrue($inventory->canOrder($freshProduct, null, 1));
+
+        $serialized = \App\Support\ModelSerializer::product($freshProduct);
+
+        $this->assertFalse($serialized['isOutOfStock']);
+        $this->assertTrue($serialized['isPurchasable']);
+    }
+
     private function createConfigurableProduct(): Product
     {
         $category = Category::first();

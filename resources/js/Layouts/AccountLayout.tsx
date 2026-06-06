@@ -22,42 +22,43 @@ export default function AccountLayout({ children, title }: PropsWithChildren<{ t
     return (
         <GuestLayout>
             <PageContainer>
-                {title && <h1 className="text-xl font-bold mb-4">{title}</h1>}
-                <div className="flex flex-col md:flex-row gap-4">
-                    <aside className="md:w-52 shrink-0">
-                        <SectionCard noPadding>
-                            <nav className="flex md:flex-col p-2 gap-1 overflow-x-auto">
+                {title && <h1 className="mb-4 text-2xl font-bold">{title}</h1>}
+                <div className="flex flex-col gap-4 md:flex-row">
+                    <aside className="shrink-0 md:w-56 md:sticky md:top-24 md:self-start">
+                        <SectionCard noPadding className="overflow-hidden">
+                            <nav className="flex gap-1 overflow-x-auto p-2 md:flex-col">
                                 {links.map((link) => {
                                     const active = url.startsWith(link.href);
+
                                     return (
                                         <Link
                                             key={link.href}
                                             href={link.href}
                                             className={cn(
-                                                'px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors',
+                                                'rounded-lg px-3 py-2.5 text-sm whitespace-nowrap transition-colors',
                                                 active
-                                                    ? 'bg-primary/10 text-primary font-medium'
-                                                    : 'hover:bg-muted text-muted-foreground',
+                                                    ? 'bg-primary font-medium text-primary-foreground shadow-sm'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                             )}
                                         >
                                             {link.label}
                                         </Link>
                                     );
                                 })}
-                                <div className="hidden md:block border-t my-2" />
+                                <div className="hidden border-t my-1 md:block" />
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    className="justify-start px-3 py-2 h-auto text-sm font-normal text-muted-foreground hover:text-destructive hover:bg-destructive/10 whitespace-nowrap"
+                                    className="h-auto justify-start whitespace-nowrap px-3 py-2.5 text-sm font-normal text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                     onClick={() => post('/account/logout')}
                                 >
-                                    <LogOut className="h-4 w-4 mr-2 shrink-0" />
+                                    <LogOut className="mr-2 size-4 shrink-0" />
                                     Keluar
                                 </Button>
                             </nav>
                         </SectionCard>
                     </aside>
-                    <div className="flex-1 min-w-0">{children}</div>
+                    <div className="min-w-0 flex-1">{children}</div>
                 </div>
             </PageContainer>
         </GuestLayout>

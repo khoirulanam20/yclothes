@@ -8,15 +8,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Slider = { id: number; title?: string | null; imageUrl: string; linkUrl?: string | null; sortOrder?: number; isActive?: boolean };
+type Slider = {
+    id: number;
+    title?: string | null;
+    subtitle?: string | null;
+    imageUrl: string;
+    linkUrl?: string | null;
+    ctaLabel?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+};
 type Props = { slider?: Slider };
 
 export default function Form({ slider }: Props) {
     const isEdit = !!slider?.id;
     const { data, setData, post, transform, processing, errors } = useForm({
         title: slider?.title ?? '',
+        subtitle: slider?.subtitle ?? '',
         image: null as File | null,
         link_url: slider?.linkUrl ?? '',
+        cta_label: slider?.ctaLabel ?? 'Jelajahi',
         sort_order: slider?.sortOrder ?? 0,
         is_active: slider?.isActive ?? true,
     });
@@ -64,9 +75,19 @@ export default function Form({ slider }: Props) {
                                 <Input id="title" value={data.title} onChange={(e) => setData('title', e.target.value)} />
                                 <FieldError message={errors.title} />
                             </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="subtitle">Subjudul</Label>
+                                <Input id="subtitle" value={data.subtitle} onChange={(e) => setData('subtitle', e.target.value)} />
+                                <FieldError message={errors.subtitle} />
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="link_url">Link URL</Label>
                                 <Input id="link_url" value={data.link_url} onChange={(e) => setData('link_url', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cta_label">Label Tombol CTA</Label>
+                                <Input id="cta_label" value={data.cta_label} onChange={(e) => setData('cta_label', e.target.value)} placeholder="Jelajahi" />
+                                <FieldError message={errors.cta_label} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="image">Gambar {!isEdit && '*'}</Label>

@@ -17,7 +17,8 @@ class ReviewController extends Controller
         $customer = Auth::guard('customer')->user();
 
         $eligibleOrder = Order::where('customer_id', $customer->id)
-            ->whereIn('order_status', ['delivered', 'completed'])
+            ->where('order_status', 'completed')
+            ->whereNotNull('completed_at')
             ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
             ->latest()
             ->first();
@@ -52,7 +53,8 @@ class ReviewController extends Controller
 
         $order = Order::where('id', $validated['order_id'])
             ->where('customer_id', $customer->id)
-            ->whereIn('order_status', ['delivered', 'completed'])
+            ->where('order_status', 'completed')
+            ->whereNotNull('completed_at')
             ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
             ->firstOrFail();
 

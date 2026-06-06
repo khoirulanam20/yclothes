@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
+import { MapPin } from 'lucide-react';
 import AccountLayout from '@/Layouts/AccountLayout';
-import { SectionCard } from '@/components/storefront/SectionCard';
+import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { GuestConfirmDeleteButton } from '@/components/guest/GuestConfirmDeleteButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,36 +16,39 @@ export default function Addresses({ addresses }: Props) {
     return (
         <AccountLayout title="Alamat Saya">
             <Head title="Alamat" />
-            <div className="flex justify-end mb-3">
+            <div className="mb-4 flex justify-end">
                 <Button size="sm" asChild>
                     <Link href="/account/addresses/create">Tambah Alamat</Link>
                 </Button>
             </div>
             {addresses.length === 0 ? (
-                <SectionCard className="text-center py-8">
-                    <p className="text-muted-foreground">Belum ada alamat tersimpan.</p>
-                </SectionCard>
+                <AccountPageShell title="Belum ada alamat">
+                    <p className="py-6 text-center text-muted-foreground">Tambahkan alamat pengiriman untuk checkout lebih cepat.</p>
+                </AccountPageShell>
             ) : (
                 <div className="space-y-3">
                     {addresses.map((addr) => (
-                        <SectionCard key={addr.id}>
-                            <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <span className="font-semibold text-sm">{addr.label}</span>
-                                    {addr.isDefault && <Badge className="ml-2 text-xs">Default</Badge>}
+                        <AccountPageShell key={addr.id} noPadding>
+                            <div className="p-4 sm:p-5">
+                                <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="size-4 text-primary shrink-0" />
+                                        <span className="font-semibold">{addr.label}</span>
+                                        {addr.isDefault && <Badge className="text-xs">Utama</Badge>}
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={`/account/addresses/${addr.id}/edit`}>Edit</Link>
+                                        </Button>
+                                        <GuestConfirmDeleteButton href={`/account/addresses/${addr.id}`} name={addr.label} variant="outline" />
+                                    </div>
                                 </div>
-                                <div className="flex gap-1">
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/account/addresses/${addr.id}/edit`}>Edit</Link>
-                                    </Button>
-                                    <GuestConfirmDeleteButton href={`/account/addresses/${addr.id}`} name={addr.label} variant="outline" />
-                                </div>
+                                <p className="text-sm font-medium">{addr.recipientName} · {addr.phone}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    {addr.streetAddress}, {addr.city}, {addr.province}
+                                </p>
                             </div>
-                            <p className="text-sm">{addr.recipientName} — {addr.phone}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {addr.streetAddress}, {addr.city}, {addr.province}
-                            </p>
-                        </SectionCard>
+                        </AccountPageShell>
                     ))}
                 </div>
             )}

@@ -50,7 +50,7 @@ class AdminNotificationTest extends TestCase
         $order->update(['order_status' => 'confirmed', 'payment_status' => 'paid']);
         $this->assertGreaterThanOrEqual(1, $service->ordersAwaitingActionCount());
 
-        $order->update(['order_status' => 'completed']);
+        $order->update(['order_status' => 'completed', 'completed_at' => now()]);
         $this->assertEquals(0, $service->ordersAwaitingActionCount());
     }
 
@@ -114,7 +114,7 @@ class AdminNotificationTest extends TestCase
         clear_settings_cache();
 
         $order = $this->createOrder();
-        $order->update(['order_status' => 'completed']);
+        $order->update(['order_status' => 'completed', 'completed_at' => now()]);
         $item = $order->items()->first();
 
         $this->post(route('order.reviews.store', $order), [
@@ -127,6 +127,33 @@ class AdminNotificationTest extends TestCase
             'type' => 'review_submitted',
             'title' => 'Ulasan Baru Menunggu Persetujuan',
         ]);
+    }
+
+    public function test_review_can_include_images(): void
+    {
+        Setting::updateOrCreate(['key' => 'auto_approve_reviews'], ['value' => '1']);
+        clear_settings_cache();
+
+        $order = $this->createOrder();
+        $order->update(['order_status' => 'completed', 'completed_at' => now()]);
+        $item = $order->items()->first();
+
+        $this->post(route('order.reviews.store', $order), [
+            'order_item_id' => $item->id,
+            'rating' => 5,
+            'review' => 'Produk bagus dengan foto',
+            'images' => [
+                \Illuminate\Http\UploadedFile::fake()->image('review-1.jpg'),
+                \Illuminate\Http\UploadedFile::fake()->image('review-2.jpg'),
+            ],
+        ])->assertRedirect();
+
+        $review = \App\Models\Review::where('order_item_id', $item->id)->first();
+
+        $this->assertNotNull($review);
+        $this->assertCount(2, $review->images);
+        $this->assertCount(2, $review->images_url);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($review->images[0]);
     }
 
     private function createOrder(): Order

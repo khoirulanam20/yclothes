@@ -36,7 +36,7 @@ class LoginController extends Controller
 
             $cartService->mergeFromSession('guest_cart');
 
-            return redirect()->intended(route('customer.profile.edit'));
+            return redirect()->intended(route('home'));
         }
 
         return back()->withErrors([

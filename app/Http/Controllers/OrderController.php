@@ -94,7 +94,7 @@ class OrderController extends Controller
         $returnService = app(ReturnService::class);
         $customer = Auth::guard('customer')->user();
         $reviewsRequireLogin = setting_bool('reviews_require_login');
-        if ($order->order_status !== 'completed') {
+        if (! $order->canCustomerReview()) {
             $canReview = false;
         } elseif ($isAccountView) {
             $canReview = true;
@@ -104,6 +104,7 @@ class OrderController extends Controller
             $canReview = true;
         }
         $canConfirmPayment = ! $order->is_replacement
+            && $order->canSubmitPaymentConfirmation()
             && app(PaymentMethodService::class)->usesManualConfirmation($order->payment_method)
             && $order->payment_status !== 'paid'
             && in_array($order->payment_confirmation_status, ['none', 'rejected'], true);
@@ -210,7 +211,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        if ($order->order_status !== 'completed') {
+        if (! $order->canCustomerReview()) {
             return back()->with('error', 'Review hanya bisa diberikan setelah barang diterima.');
         }
 
@@ -218,6 +219,8 @@ class OrderController extends Controller
             'order_item_id' => 'required|integer|exists:order_items,id',
             'rating' => 'required|integer|min:1|max:5',
             'review' => 'nullable|string|max:2000',
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $item = $order->items()->where('id', $validated['order_item_id'])->firstOrFail();
@@ -235,6 +238,12 @@ class OrderController extends Controller
 
         $autoApprove = setting_bool('auto_approve_reviews');
 
+        $imagePaths = collect($request->file('images', []))
+            ->filter()
+            ->map(fn ($file) => $file->store('reviews/gallery', 'public'))
+            ->values()
+            ->all();
+
         $review = Review::create([
             'product_id' => $item->product_id,
             'customer_id' => $customer?->id,
@@ -242,6 +251,7 @@ class OrderController extends Controller
             'order_item_id' => $item->id,
             'rating' => $validated['rating'],
             'review' => $validated['review'],
+            'images' => $imagePaths !== [] ? $imagePaths : null,
             'is_approved' => $autoApprove,
             'created_at' => now(),
         ]);

@@ -19,7 +19,7 @@ class OrderController extends Controller
     {
         $orders = Auth::guard('customer')->user()
             ->orders()
-            ->with('items')
+            ->with(['items.product', 'reviews'])
             ->latest()
             ->paginate(10);
 

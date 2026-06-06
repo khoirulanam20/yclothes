@@ -1,35 +1,56 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { CheckCircle2, Circle, Package, Star, Truck } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import AccountLayout from '@/Layouts/AccountLayout';
 import { CopyAmount } from '@/components/storefront/CopyAmount';
 import { PaymentConfirmationDialog } from '@/components/storefront/PaymentConfirmationDialog';
 import { PageContainer } from '@/components/storefront/PageContainer';
-import { SectionCard } from '@/components/storefront/SectionCard';
+import { ReviewItemForm } from '@/components/storefront/ReviewItemForm';
+import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatRupiah } from '@/lib/utils';
+import { cn, formatRupiah } from '@/lib/utils';
 import { orderStatusLabels, paymentStatusLabels } from '@/lib/order-status';
 
 type Bank = { id: number; bankName: string; accountNumber: string; accountName: string };
 type OrderItem = {
-    id: number; productName: string; qty: number; unitPrice: number; subtotal: number;
+    id: number;
+    productName: string;
+    qty: number;
+    unitPrice: number;
+    subtotal: number;
+    size?: string | null;
+    color?: string | null;
+    imageUrl?: string | null;
 };
 type TimelineEntry = { toStatus: string; note?: string | null; createdAt: string };
-type Review = { orderItemId?: number; rating: number; isApproved: boolean };
+type Review = { orderItemId?: number; rating: number; isApproved: boolean; imagesUrl?: string[] };
 type Order = {
-    id: number; orderNumber: string; customerName: string; customerPhone: string;
-    fullShippingAddress?: string; shippingAddress: string; shippingCity: string;
-    shippingCost: number; totalPrice: number; taxAmount?: number; discountAmount?: number;
-    grandTotal: number; uniquePaymentAmount?: number | null;
-    paymentMethod: string; paymentStatus: string; orderStatus: string;
+    id: number;
+    orderNumber: string;
+    customerName: string;
+    customerPhone: string;
+    fullShippingAddress?: string;
+    shippingAddress: string;
+    shippingCity: string;
+    shippingCost: number;
+    totalPrice: number;
+    taxAmount?: number;
+    discountAmount?: number;
+    grandTotal: number;
+    uniquePaymentAmount?: number | null;
+    paymentMethod: string;
+    paymentStatus: string;
+    orderStatus: string;
+    completedAt?: string | null;
     isReplacement?: boolean;
     paymentConfirmationStatus?: string;
-    courier?: string | null; trackingNumber?: string | null;
-    bankName?: string | null; bankAccountNumber?: string | null; bankAccountName?: string | null;
+    courier?: string | null;
+    trackingNumber?: string | null;
+    bankName?: string | null;
+    bankAccountNumber?: string | null;
+    bankAccountName?: string | null;
     items: OrderItem[];
 };
 
@@ -55,9 +76,32 @@ type Props = {
     codInstructions?: string | null;
 };
 
+function statusBannerClass(status: string): string {
+    if (['completed', 'delivered'].includes(status)) {
+        return 'border-green-200 bg-green-50 text-green-900';
+    }
+    if (['cancelled', 'return'].includes(status)) {
+        return 'border-destructive/30 bg-destructive/5 text-destructive';
+    }
+    if (['shipped'].includes(status)) {
+        return 'border-blue-200 bg-blue-50 text-blue-900';
+    }
+    return 'border-primary/20 bg-primary/5 text-foreground';
+}
+
 export default function Show({
-    order, timeline = [], reviews = [], canConfirmReceived, canConfirmPayment, banks = [],
-    qris, canReturn, returnableItems = [], isAccountView, canReview = false, reviewsRequireLogin = false,
+    order,
+    timeline = [],
+    reviews = [],
+    canConfirmReceived,
+    canConfirmPayment,
+    banks = [],
+    qris,
+    canReturn,
+    returnableItems = [],
+    isAccountView,
+    canReview = false,
+    reviewsRequireLogin = false,
     codInstructions,
 }: Props) {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -66,14 +110,9 @@ export default function Show({
         ? `/account/orders/${order.id}/confirm-payment`
         : `/order/${order.orderNumber}/confirm-payment`;
 
-    const reviewForm = useForm({ order_item_id: order.items[0]?.id ?? 0, rating: 5, review: '' });
-
-    const submitReview = (itemId: number) => {
-        reviewForm.setData('order_item_id', itemId);
-        reviewForm.post(isAccountView ? `/account/orders/${order.id}/reviews` : `/order/${order.orderNumber}/reviews`, {
-            preserveScroll: true,
-        });
-    };
+    const reviewSubmitUrl = isAccountView
+        ? `/account/orders/${order.id}/reviews`
+        : `/order/${order.orderNumber}/reviews`;
 
     const confirmReceived = () => {
         router.post(
@@ -87,225 +126,329 @@ export default function Show({
     const showQrisInstructions = order.paymentMethod === 'qris' && order.paymentStatus !== 'paid';
     const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
+    const needsAction = canConfirmPayment || canConfirmReceived;
+    const orderReceived = order.orderStatus === 'completed' && !!order.completedAt;
+
+    const orderContent = (
+        <>
+            {!isAccountView && (
+                <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Detail Pesanan</p>
+                        <h1 className="text-2xl font-bold">#{order.orderNumber}</h1>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/order/track">Lacak Pesanan</Link>
+                    </Button>
+                </div>
+            )}
+
+            {isAccountView && (
+                <div className="mb-4 flex justify-end">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/account/orders">Kembali ke Pesanan</Link>
+                    </Button>
+                </div>
+            )}
+
+            <div
+                    className={cn(
+                        'mb-6 rounded-xl border px-4 py-4 sm:px-6',
+                        statusBannerClass(order.orderStatus),
+                    )}
+                >
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="bg-background/80 text-foreground">
+                            {orderStatusLabels[order.orderStatus] ?? order.orderStatus}
+                        </Badge>
+                        <Badge variant="outline" className="border-current/20 bg-background/50">
+                            {paymentStatusLabels[order.paymentStatus] ?? order.paymentStatus}
+                        </Badge>
+                        {order.isReplacement && <Badge variant="secondary">Pesanan Pengganti</Badge>}
+                    </div>
+                    <p className="mt-2 text-sm opacity-90">
+                        {order.orderStatus === 'completed'
+                            ? 'Pesanan Anda telah selesai. Terima kasih!'
+                            : order.paymentStatus === 'pending'
+                                ? 'Selesaikan pembayaran untuk memproses pesanan.'
+                                : 'Pantau status pesanan di bawah.'}
+                    </p>
+                </div>
+
+                {needsAction && (
+                    <AccountPageShell title="Perlu Tindakan" className="mb-6 border-primary/20 bg-primary/5">
+                        <div className="flex flex-wrap gap-2">
+                            {canConfirmReceived && (
+                                <Button size="sm" onClick={confirmReceived}>
+                                    Pesanan Diterima
+                                </Button>
+                            )}
+                            {canConfirmPayment && (
+                                <>
+                                    <Button size="sm" onClick={() => setPaymentModalOpen(true)}>
+                                        Konfirmasi Pembayaran
+                                    </Button>
+                                    <PaymentConfirmationDialog
+                                        open={paymentModalOpen}
+                                        onOpenChange={setPaymentModalOpen}
+                                        order={order}
+                                        banks={banks}
+                                        submitUrl={paymentSubmitUrl}
+                                        isQris={isQris}
+                                        qris={qris}
+                                    />
+                                </>
+                            )}
+                            {canReturn && returnableItems.length > 0 && (
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
+                                </Button>
+                            )}
+                        </div>
+                        {order.paymentConfirmationStatus === 'pending' && (
+                            <p className="mt-3 text-sm text-muted-foreground">
+                                Konfirmasi pembayaran sedang menunggu verifikasi penjual.
+                            </p>
+                        )}
+                        {order.paymentConfirmationStatus === 'rejected' && (
+                            <p className="mt-3 text-sm text-destructive">
+                                Konfirmasi pembayaran sebelumnya ditolak. Silakan ajukan ulang.
+                            </p>
+                        )}
+                    </AccountPageShell>
+                )}
+
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="space-y-6 lg:col-span-2">
+                        {(showTransferInstructions || showQrisInstructions || showCodInstructions) && (
+                            <AccountPageShell title="Instruksi Pembayaran">
+                                {showQrisInstructions && qris && (
+                                    <div className="space-y-3">
+                                        {qris.merchantName && <p className="text-sm font-medium">{qris.merchantName}</p>}
+                                        {qris.imageUrl && (
+                                            <img
+                                                src={qris.imageUrl}
+                                                alt="QRIS"
+                                                className="max-w-[220px] rounded border bg-white p-2"
+                                            />
+                                        )}
+                                        {order.uniquePaymentAmount && (
+                                            <p className="text-sm font-semibold text-primary">
+                                                Bayar tepat: <CopyAmount amount={order.uniquePaymentAmount} />
+                                            </p>
+                                        )}
+                                        {qris.instructions && (
+                                            <p className="text-sm text-muted-foreground">{qris.instructions}</p>
+                                        )}
+                                    </div>
+                                )}
+                                {showCodInstructions && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground whitespace-pre-line">{codInstructions}</p>
+                                        <p className="text-sm font-semibold text-primary">
+                                            Total bayar saat terima: {formatRupiah(order.grandTotal)}
+                                        </p>
+                                    </div>
+                                )}
+                                {showTransferInstructions && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm">{order.bankName} — {order.bankAccountNumber}</p>
+                                        <p className="text-sm text-muted-foreground">a.n. {order.bankAccountName}</p>
+                                        {order.uniquePaymentAmount && (
+                                            <p className="text-sm font-semibold text-primary">
+                                                Transfer tepat: <CopyAmount amount={order.uniquePaymentAmount} />
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </AccountPageShell>
+                        )}
+
+                        <AccountPageShell title={`Item Pesanan (${order.items.length})`} noPadding>
+                            <div className="divide-y">
+                                {order.items.map((item) => (
+                                    <div key={item.id} className="flex gap-4 p-4">
+                                        <div className="size-16 shrink-0 overflow-hidden rounded-lg border bg-muted sm:size-20">
+                                            {item.imageUrl ? (
+                                                <img src={item.imageUrl} alt="" className="size-full object-cover" />
+                                            ) : (
+                                                <div className="flex size-full items-center justify-center">
+                                                    <Package className="size-6 text-muted-foreground/50" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-medium leading-snug">{item.productName}</p>
+                                            {(item.size || item.color) && (
+                                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                                    {[item.size, item.color].filter(Boolean).join(' · ')}
+                                                </p>
+                                            )}
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                {formatRupiah(item.unitPrice)} × {item.qty}
+                                            </p>
+                                        </div>
+                                        <p className="shrink-0 text-sm font-semibold">{formatRupiah(item.subtotal)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccountPageShell>
+
+                        <AccountPageShell title="Ringkasan Pembayaran">
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Subtotal</span>
+                                    <span>{formatRupiah(order.totalPrice)}</span>
+                                </div>
+                                {(order.discountAmount ?? 0) > 0 && (
+                                    <div className="flex justify-between text-green-600">
+                                        <span>Diskon</span>
+                                        <span>-{formatRupiah(order.discountAmount!)}</span>
+                                    </div>
+                                )}
+                                {(order.taxAmount ?? 0) > 0 && (
+                                    <div className="flex justify-between">
+                                        <span>Pajak</span>
+                                        <span>{formatRupiah(order.taxAmount!)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Ongkir</span>
+                                    <span>{formatRupiah(order.shippingCost)}</span>
+                                </div>
+                                <div className="flex justify-between border-t pt-3 text-base font-bold">
+                                    <span>Total</span>
+                                    <span className="text-primary">{formatRupiah(order.grandTotal)}</span>
+                                </div>
+                            </div>
+                        </AccountPageShell>
+
+                        <AccountPageShell title="Detail Pengiriman">
+                            <div className="space-y-2 text-sm">
+                                <p className="font-medium">{order.customerName}</p>
+                                <p className="text-muted-foreground">{order.customerPhone}</p>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    {order.fullShippingAddress ?? `${order.shippingAddress}, ${order.shippingCity}`}
+                                </p>
+                                {order.courier && (
+                                    <p className="flex items-center gap-1.5 pt-1">
+                                        <Truck className="size-4 text-muted-foreground" />
+                                        {order.courier}
+                                        {order.trackingNumber && ` · Resi ${order.trackingNumber}`}
+                                    </p>
+                                )}
+                            </div>
+                        </AccountPageShell>
+
+                        {canReview && orderReceived && (
+                            <div id="review-section">
+                            <AccountPageShell title="Beri Ulasan Produk">
+                                <div className="space-y-4">
+                                    {order.items.map((item) => {
+                                        const existing = reviews.find((r) => r.orderItemId === item.id);
+                                        if (existing) {
+                                            return (
+                                                <div key={item.id} className="rounded-xl border bg-muted/20 p-4 text-sm">
+                                                    <p className="font-medium">{item.productName}</p>
+                                                    <div className="mt-1 flex items-center gap-1">
+                                                        {Array.from({ length: existing.rating }).map((_, i) => (
+                                                            <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
+                                                        ))}
+                                                        {!existing.isApproved && (
+                                                            <span className="ml-2 text-xs text-muted-foreground">
+                                                                (menunggu moderasi)
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {existing.imagesUrl && existing.imagesUrl.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                            {existing.imagesUrl.map((url, index) => (
+                                                                <img
+                                                                    key={`${url}-${index}`}
+                                                                    src={url}
+                                                                    alt=""
+                                                                    className="size-14 rounded-md border object-cover"
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <ReviewItemForm
+                                                key={item.id}
+                                                itemId={item.id}
+                                                productName={item.productName}
+                                                submitUrl={reviewSubmitUrl}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                {reviewsRequireLogin && !isAccountView && (
+                                    <p className="mt-4 text-xs text-muted-foreground">
+                                        <Link href="/account/login" className="underline">Login</Link> untuk menyimpan ulasan ke akun Anda.
+                                    </p>
+                                )}
+                            </AccountPageShell>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="lg:col-span-1">
+                        <div className="lg:sticky lg:top-24">
+                            {timeline.length > 0 && (
+                                <AccountPageShell title="Timeline Status">
+                                    <ol className="space-y-4">
+                                        {timeline.map((entry, i) => (
+                                            <li key={i} className="flex gap-3">
+                                                <div className="flex flex-col items-center">
+                                                    {i === 0 ? (
+                                                        <CheckCircle2 className="size-5 text-primary" />
+                                                    ) : (
+                                                        <Circle className="size-5 text-muted-foreground/40" />
+                                                    )}
+                                                    {i < timeline.length - 1 && (
+                                                        <div className="mt-1 w-px flex-1 bg-border min-h-[1rem]" />
+                                                    )}
+                                                </div>
+                                                <div className="pb-1">
+                                                    <p className="text-sm font-medium">
+                                                        {orderStatusLabels[entry.toStatus] ?? entry.toStatus}
+                                                    </p>
+                                                    {entry.note && (
+                                                        <p className="text-sm text-muted-foreground">{entry.note}</p>
+                                                    )}
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {new Date(entry.createdAt).toLocaleString('id-ID')}
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </AccountPageShell>
+                            )}
+                        </div>
+                    </div>
+                </div>
+        </>
+    );
+
+    if (isAccountView) {
+        return (
+            <AccountLayout title={`Pesanan #${order.orderNumber}`}>
+                <Head title={`Pesanan #${order.orderNumber}`} />
+                {orderContent}
+            </AccountLayout>
+        );
+    }
 
     return (
         <GuestLayout>
             <Head title={`Pesanan #${order.orderNumber}`} />
-            <PageContainer narrow>
-                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                    <h1 className="text-xl font-bold">Pesanan #{order.orderNumber}</h1>
-                    <div className="flex gap-2 flex-wrap">
-                        {canReturn && returnableItems.length > 0 && (
-                            <Button size="sm" variant="outline" asChild>
-                                <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
-                            </Button>
-                        )}
-                        {canConfirmPayment && (
-                            <>
-                                <Button size="sm" onClick={() => setPaymentModalOpen(true)}>
-                                    Konfirmasi Pembayaran
-                                </Button>
-                                <PaymentConfirmationDialog
-                                    open={paymentModalOpen}
-                                    onOpenChange={setPaymentModalOpen}
-                                    order={order}
-                                    banks={banks}
-                                    submitUrl={paymentSubmitUrl}
-                                    isQris={isQris}
-                                    qris={qris}
-                                />
-                            </>
-                        )}
-                        {canConfirmReceived && (
-                            <Button size="sm" onClick={confirmReceived}>
-                                Pesanan Diterima
-                            </Button>
-                        )}
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href="/order/track">Lacak Pesanan</Link>
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="flex gap-2 mb-4 flex-wrap">
-                    <Badge>{orderStatusLabels[order.orderStatus] ?? order.orderStatus}</Badge>
-                    <Badge variant="outline">{paymentStatusLabels[order.paymentStatus] ?? order.paymentStatus}</Badge>
-                    {order.isReplacement && (
-                        <Badge variant="secondary">Pesanan Pengganti</Badge>
-                    )}
-                    {order.paymentConfirmationStatus === 'pending' && (
-                        <Badge variant="secondary">Menunggu verifikasi pembayaran</Badge>
-                    )}
-                    {order.paymentConfirmationStatus === 'rejected' && (
-                        <Badge variant="outline" className="border-destructive text-destructive">Konfirmasi pembayaran ditolak</Badge>
-                    )}
-                </div>
-
-                {timeline.length > 0 && (
-                    <SectionCard title="Timeline Status" className="mb-4">
-                        <ol className="space-y-3 text-sm border-l-2 border-primary/20 pl-4">
-                            {timeline.map((entry, i) => (
-                                <li key={i}>
-                                    <p className="font-medium">{orderStatusLabels[entry.toStatus] ?? entry.toStatus}</p>
-                                    {entry.note && <p className="text-muted-foreground">{entry.note}</p>}
-                                    <p className="text-xs text-muted-foreground">{new Date(entry.createdAt).toLocaleString('id-ID')}</p>
-                                </li>
-                            ))}
-                        </ol>
-                    </SectionCard>
-                )}
-
-                <SectionCard title="Detail Pengiriman" className="mb-4">
-                    <div className="text-sm space-y-1">
-                        <p>{order.customerName} — {order.customerPhone}</p>
-                        <p className="text-muted-foreground">{order.fullShippingAddress ?? `${order.shippingAddress}, ${order.shippingCity}`}</p>
-                        {order.courier && (
-                            <p>Kurir: {order.courier}{order.trackingNumber && ` (Resi: ${order.trackingNumber})`}</p>
-                        )}
-                    </div>
-                </SectionCard>
-
-                <SectionCard title="Item Pesanan" noPadding className="mb-4">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Produk</TableHead>
-                                <TableHead>Qty</TableHead>
-                                <TableHead className="text-right">Subtotal</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {order.items.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.productName}</TableCell>
-                                    <TableCell>{item.qty}</TableCell>
-                                    <TableCell className="text-right">{formatRupiah(item.subtotal)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    <div className="p-4 border-t space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Subtotal</span><span>{formatRupiah(order.totalPrice)}</span></div>
-                        {(order.discountAmount ?? 0) > 0 && (
-                            <div className="flex justify-between text-green-600"><span>Diskon</span><span>-{formatRupiah(order.discountAmount!)}</span></div>
-                        )}
-                        <div className="flex justify-between"><span>Ongkir</span><span>{formatRupiah(order.shippingCost)}</span></div>
-                        <div className="flex justify-between font-bold text-base pt-1">
-                            <span>Total</span><span className="text-primary">{formatRupiah(order.grandTotal)}</span>
-                        </div>
-                    </div>
-                </SectionCard>
-
-                {showQrisInstructions && qris && (
-                    <SectionCard title="Instruksi QRIS" className="mb-4">
-                        {qris.merchantName && (
-                            <p className="text-sm font-medium mb-2">{qris.merchantName}</p>
-                        )}
-                        {qris.imageUrl && (
-                            <img
-                                src={qris.imageUrl}
-                                alt="QRIS"
-                                className="max-w-[220px] rounded border bg-white p-2 mb-3"
-                            />
-                        )}
-                        {order.uniquePaymentAmount && (
-                            <p className="text-sm font-semibold text-primary mb-2">
-                                Bayar tepat: <CopyAmount amount={order.uniquePaymentAmount} />
-                            </p>
-                        )}
-                        {qris.instructions && (
-                            <p className="text-sm text-muted-foreground mb-2">{qris.instructions}</p>
-                        )}
-                        {order.paymentConfirmationStatus === 'pending' && (
-                            <p className="text-sm text-muted-foreground mt-3">
-                                Konfirmasi pembayaran sedang menunggu verifikasi penjual.
-                            </p>
-                        )}
-                        {order.paymentConfirmationStatus === 'rejected' && canConfirmPayment && (
-                            <p className="text-sm text-muted-foreground mt-3">
-                                Konfirmasi sebelumnya ditolak. Silakan ajukan ulang via tombol di atas.
-                            </p>
-                        )}
-                    </SectionCard>
-                )}
-
-                {showCodInstructions && (
-                    <SectionCard title="Bayar di Tempat (COD)" className="mb-4">
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{codInstructions}</p>
-                        <p className="text-sm font-semibold text-primary mt-3">
-                            Total bayar saat terima: {formatRupiah(order.grandTotal)}
-                        </p>
-                    </SectionCard>
-                )}
-
-                {showTransferInstructions && (
-                    <SectionCard title="Instruksi Transfer" className="mb-4">
-                        <p className="text-sm">{order.bankName} — {order.bankAccountNumber}</p>
-                        <p className="text-sm text-muted-foreground mb-2">a.n. {order.bankAccountName}</p>
-                        {order.uniquePaymentAmount && (
-                            <p className="text-sm font-semibold text-primary">
-                                Transfer tepat: <CopyAmount amount={order.uniquePaymentAmount} />
-                            </p>
-                        )}
-                        {order.paymentConfirmationStatus === 'pending' && (
-                            <p className="text-sm text-muted-foreground mt-3">
-                                Konfirmasi pembayaran sedang menunggu verifikasi penjual.
-                            </p>
-                        )}
-                        {order.paymentConfirmationStatus === 'rejected' && canConfirmPayment && (
-                            <p className="text-sm text-muted-foreground mt-3">
-                                Konfirmasi sebelumnya ditolak. Silakan ajukan ulang via tombol di atas.
-                            </p>
-                        )}
-                    </SectionCard>
-                )}
-
-                {canReview && (
-                    <SectionCard title="Rating Produk" className="mb-4">
-                        <div className="space-y-4">
-                            {order.items.map((item) => {
-                                const existing = reviews.find((r) => r.orderItemId === item.id);
-                                if (existing) {
-                                    return (
-                                        <div key={item.id} className="text-sm border rounded p-3">
-                                            <p className="font-medium">{item.productName}</p>
-                                            <p>Rating: {'★'.repeat(existing.rating)}{existing.isApproved ? '' : ' (menunggu moderasi)'}</p>
-                                        </div>
-                                    );
-                                }
-                                return (
-                                    <div key={item.id} className="border rounded p-3 space-y-2">
-                                        <p className="font-medium text-sm">{item.productName}</p>
-                                        <div className="flex gap-2 items-center">
-                                            <Label className="text-xs">Rating</Label>
-                                            <select
-                                                className="h-8 rounded border px-2 text-sm"
-                                                value={reviewForm.data.rating}
-                                                onChange={(e) => reviewForm.setData('rating', Number(e.target.value))}
-                                            >
-                                                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} bintang</option>)}
-                                            </select>
-                                        </div>
-                                        <Textarea
-                                            rows={2}
-                                            placeholder="Ulasan (opsional)"
-                                            value={reviewForm.data.review}
-                                            onChange={(e) => reviewForm.setData('review', e.target.value)}
-                                        />
-                                        <Button size="sm" onClick={() => submitReview(item.id)} disabled={reviewForm.processing}>
-                                            Kirim Review
-                                        </Button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        {reviewsRequireLogin && !isAccountView && (
-                            <p className="text-xs text-muted-foreground mt-3">
-                                <Link href="/account/login" className="underline">Login</Link> untuk menyimpan ulasan ke akun Anda.
-                            </p>
-                        )}
-                    </SectionCard>
-                )}
+            <PageContainer>
+                {orderContent}
             </PageContainer>
         </GuestLayout>
     );

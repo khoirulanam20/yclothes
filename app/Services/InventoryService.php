@@ -14,6 +14,32 @@ class InventoryService
 {
     public function canOrder(Product $product, ?ProductVariant $variant, int $qty): bool
     {
+        if ($variant) {
+            if (! $this->tracksStock($product, $variant)) {
+                return true;
+            }
+
+            if ($this->effectiveAllowBackorder($product, $variant)) {
+                return true;
+            }
+
+            return $this->getAvailableStock($product, $variant) >= $qty;
+        }
+
+        if ($product->isConfigurable()) {
+            $variants = $product->relationLoaded('activeVariants')
+                ? $product->activeVariants
+                : $product->activeVariants()->get();
+
+            foreach ($variants as $activeVariant) {
+                if ($this->canOrder($product, $activeVariant, $qty)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         if (! $this->tracksStock($product, $variant)) {
             return true;
         }
@@ -41,6 +67,37 @@ class InventoryService
 
     public function isOutOfStock(Product $product, ?ProductVariant $variant = null): bool
     {
+        if ($variant) {
+            if (! $this->tracksStock($product, $variant)) {
+                return false;
+            }
+
+            return $this->getAvailableStock($product, $variant) <= 0
+                && ! $this->effectiveAllowBackorder($product, $variant);
+        }
+
+        if ($product->isConfigurable()) {
+            $variants = $product->relationLoaded('activeVariants')
+                ? $product->activeVariants
+                : $product->activeVariants()->get();
+
+            if ($variants->isEmpty()) {
+                return false;
+            }
+
+            foreach ($variants as $activeVariant) {
+                if (! $this->tracksStock($product, $activeVariant)) {
+                    return false;
+                }
+
+                if ($this->getAvailableStock($product, $activeVariant) > 0 || $this->effectiveAllowBackorder($product, $activeVariant)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         if (! $this->tracksStock($product, $variant)) {
             return false;
         }

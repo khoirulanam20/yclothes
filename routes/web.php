@@ -131,6 +131,7 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/checkout-selection', [CartController::class, 'setCheckoutSelection'])->name('cart.checkout-selection');
     Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
     Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index')->middleware('customer.verified');

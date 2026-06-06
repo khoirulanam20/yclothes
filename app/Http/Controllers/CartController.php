@@ -43,6 +43,7 @@ class CartController extends Controller
             'items' => array_map(fn ($r) => ModelSerializer::cartRow($r), $pricing['items']),
             'pricing' => ModelSerializer::cartPricing($pricing),
             'crossSellProducts' => ModelSerializer::collection($crossSellProducts, [ModelSerializer::class, 'product']),
+            'selectedKeys' => $this->cartService->getCheckoutSelection() ?? array_column($pricing['items'], 'key'),
         ]);
     }
 
@@ -54,9 +55,11 @@ class CartController extends Controller
             'qty' => 'nullable|integer|min:1',
             'size' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:100',
+            'buy_now' => 'nullable|boolean',
         ]);
 
         $qty = $validated['qty'] ?? 1;
+        $itemKey = null;
 
         if (! empty($validated['variant_id'])) {
             $variant = ProductVariant::with('parentProduct')->findOrFail($validated['variant_id']);
@@ -124,7 +127,49 @@ class CartController extends Controller
 
         $this->cartService->put($cart);
 
+        if ($request->boolean('buy_now') && $itemKey !== null) {
+            $this->cartService->setCheckoutSelection([$itemKey]);
+
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('checkout.index')->with('success', 'Produk siap checkout');
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => route('checkout.index'),
+                    'message' => 'Produk siap checkout',
+                ]);
+            }
+
+            return redirect()->route('checkout.index')->with('success', 'Produk siap checkout');
+        }
+
         return $this->cartActionResponse($request, 'Produk ditambahkan ke cart');
+    }
+
+    public function setCheckoutSelection(Request $request)
+    {
+        $validated = $request->validate([
+            'keys' => 'required|array|min:1',
+            'keys.*' => 'required|string|max:200',
+        ]);
+
+        $cart = $this->cartService->get();
+        $validKeys = array_values(array_filter(
+            $validated['keys'],
+            fn (string $key) => isset($cart[$key]),
+        ));
+
+        if ($validKeys === []) {
+            throw ValidationException::withMessages([
+                'keys' => 'Pilih minimal satu produk yang valid.',
+            ]);
+        }
+
+        $this->cartService->setCheckoutSelection($validKeys);
+
+        return redirect()->route('checkout.index');
     }
 
     public function applyCoupon(Request $request)

@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 class Slider extends Model
 {
     protected $fillable = [
-        'title', 'image', 'link_url', 'sort_order', 'is_active',
+        'title', 'subtitle', 'image', 'link_url', 'cta_label', 'sort_order', 'is_active',
     ];
 
     protected function casts(): array

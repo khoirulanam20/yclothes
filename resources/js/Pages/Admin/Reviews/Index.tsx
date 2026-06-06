@@ -12,7 +12,7 @@ import { useAdminConfirm } from '@/hooks/use-admin-confirm';
 
 type Review = {
     id: number; rating: number; comment: string; customerName: string; createdAt?: string;
-    product?: { id: number; name: string } | null; isApproved?: boolean;
+    product?: { id: number; name: string } | null; isApproved?: boolean; imagesUrl?: string[];
 };
 
 type Props = { reviews: Paginated<Review>; status: string; pendingCount?: number };
@@ -61,7 +61,18 @@ export default function Index({ reviews, status, pendingCount = 0 }: Props) {
                                 <TableCell>{review.product?.name ?? '—'}</TableCell>
                                 <TableCell>{review.customerName}</TableCell>
                                 <TableCell><Badge>{review.rating}★</Badge></TableCell>
-                                <TableCell className="max-w-xs truncate">{review.comment}</TableCell>
+                                <TableCell>
+                                    <div className="max-w-xs">
+                                        {review.imagesUrl && review.imagesUrl.length > 0 && (
+                                            <div className="mb-1 flex gap-1">
+                                                {review.imagesUrl.slice(0, 3).map((url, index) => (
+                                                    <img key={index} src={url} alt="" className="size-8 rounded object-cover" />
+                                                ))}
+                                            </div>
+                                        )}
+                                        <span className="truncate">{review.comment}</span>
+                                    </div>
+                                </TableCell>
                                 <TableCell className="text-right">
                                     {status === 'pending' && (
                                         <AdminTableActions>

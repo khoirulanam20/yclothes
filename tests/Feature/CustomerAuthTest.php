@@ -47,7 +47,7 @@ class CustomerAuthTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect(route('customer.profile.edit'));
+        $response->assertRedirect(route('home'));
         $this->assertAuthenticatedAs($customer, 'customer');
     }
 

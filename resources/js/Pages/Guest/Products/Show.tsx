@@ -1,36 +1,70 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import { Star } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { ProductCard, type ProductCardData } from '@/components/ProductCard';
+import { type ProductCardData } from '@/components/ProductCard';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
+import { ProductDetailTabs } from '@/components/storefront/ProductDetailTabs';
+import { ProductGallery } from '@/components/storefront/ProductGallery';
+import { ProductPurchaseCard } from '@/components/storefront/ProductPurchaseCard';
 import { SectionCard } from '@/components/storefront/SectionCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toggleWishlist } from '@/lib/toggleWishlist';
 import { guestToast } from '@/lib/guestToast';
-import { cn, contrastTextColor, formatRupiah } from '@/lib/utils';
+import { contrastTextColor } from '@/lib/utils';
 
 type Variant = {
-    id: number; sku: string; price: number; finalPrice: number;
-    imageUrl?: string; imagesUrl?: string[]; ownImagesUrl?: string[];
-    size?: string | null; color?: string | null; colorHex?: string | null;
-    stock: number; trackStock?: boolean; isPurchasable?: boolean; isOutOfStock?: boolean;
+    id: number;
+    sku: string;
+    price: number;
+    finalPrice: number;
+    imageUrl?: string;
+    imagesUrl?: string[];
+    ownImagesUrl?: string[];
+    size?: string | null;
+    color?: string | null;
+    colorHex?: string | null;
+    stock: number;
+    trackStock?: boolean;
+    isPurchasable?: boolean;
+    isOutOfStock?: boolean;
 };
-type Review = { id: number; rating: number; comment: string; customerName: string; createdAt?: string };
+
+type Review = {
+    id: number;
+    rating: number;
+    comment: string;
+    customerName: string;
+    createdAt?: string;
+    imagesUrl?: string[];
+};
+
 type Product = ProductCardData & {
-    description?: string | null; imagesUrl?: string[]; sizes?: string[]; colors?: string[];
-    ratingAvg?: number; reviewCount?: number; trackStock?: boolean; variants?: Variant[];
-    metaTitle?: string | null; metaDescription?: string | null;
+    description?: string | null;
+    imagesUrl?: string[];
+    sizes?: string[];
+    colors?: string[];
+    ratingAvg?: number;
+    reviewCount?: number;
+    trackStock?: boolean;
+    variants?: Variant[];
+    metaTitle?: string | null;
+    metaDescription?: string | null;
 };
+
 type BreadcrumbItem = { label: string; href: string };
+
 type Props = {
-    product: Product; relatedProducts: ProductCardData[]; upSellProducts?: ProductCardData[];
+    product: Product;
+    relatedProducts: ProductCardData[];
+    upSellProducts?: ProductCardData[];
     reviews: Review[];
-    inWishlist: boolean; productStock: number; variants: Variant[];
-    isPurchasable?: boolean; isOutOfStock?: boolean;
+    inWishlist: boolean;
+    productStock: number;
+    variants: Variant[];
+    isPurchasable?: boolean;
+    isOutOfStock?: boolean;
     categoryPath?: BreadcrumbItem[];
 };
 
@@ -52,6 +86,14 @@ function resolveDisplayImages(variant: Variant | undefined, product: Product): s
     }
 
     return product.imageUrl ? [product.imageUrl] : [];
+}
+
+function variantOverlayLabel(variant: Variant | undefined): string | null {
+    if (!variant) {
+        return null;
+    }
+
+    return [variant.size, variant.color].filter(Boolean).join(' / ') || null;
 }
 
 export default function Show({
@@ -116,6 +158,10 @@ export default function Show({
 
     const addToCart = () => post('/cart/add', { preserveScroll: true });
 
+    const buyNow = () => {
+        router.post('/cart/add', { ...data, buy_now: true });
+    };
+
     const handleToggleWishlist = async () => {
         if (wishlistLoading) {
             return;
@@ -153,34 +199,18 @@ export default function Show({
                     ]}
                 />
 
-                <SectionCard noPadding className="mb-4">
-                    <div className="grid lg:grid-cols-2 gap-0">
-                        <div className="p-4 space-y-3">
-                            <img
-                                src={activeImage || displayImages[0]}
-                                alt={product.name}
-                                className="w-full rounded-lg aspect-square object-cover bg-muted"
+                <SectionCard noPadding className="mb-4 overflow-hidden">
+                    <div className="grid gap-0 lg:grid-cols-12">
+                        <div className="p-4 lg:col-span-4">
+                            <ProductGallery
+                                images={displayImages}
+                                activeImage={activeImage}
+                                onActiveChange={setActiveImage}
+                                overlayLabel={variantOverlayLabel(selectedVariant)}
                             />
-                            {displayImages.length > 1 && (
-                                <div className="flex gap-2 overflow-x-auto">
-                                    {displayImages.map((url, i) => (
-                                        <button
-                                            key={i}
-                                            type="button"
-                                            onClick={() => setActiveImage(url)}
-                                            className={cn(
-                                                'h-16 w-16 shrink-0 rounded border-2 overflow-hidden',
-                                                activeImage === url ? 'border-primary' : 'border-transparent',
-                                            )}
-                                        >
-                                            <img src={url} alt="" className="h-full w-full object-cover" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
 
-                        <div className="p-4 lg:sticky lg:top-36 lg:self-start border-t lg:border-t-0 lg:border-l">
+                        <div className="border-t p-4 lg:col-span-5 lg:border-t-0 lg:border-l">
                             {product.badge && (
                                 <Badge
                                     className="mb-2 border-transparent"
@@ -196,115 +226,53 @@ export default function Show({
                                     {product.badge}
                                 </Badge>
                             )}
-                            <h1 className="text-xl font-bold">{product.name}</h1>
+                            <h1 className="text-xl font-bold leading-snug lg:text-2xl">{product.name}</h1>
                             {product.ratingAvg ? (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    ★ {product.ratingAvg} ({product.reviewCount} ulasan)
-                                </p>
+                                <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                                    <Star className="size-4 fill-amber-400 text-amber-400" />
+                                    <span className="font-medium text-foreground">{product.ratingAvg.toFixed(1)}</span>
+                                    <span>· {product.reviewCount} ulasan</span>
+                                </div>
                             ) : null}
-                            <div className="flex items-baseline gap-2 mt-3">
-                                <span className="text-2xl font-bold text-primary">
-                                    {formatRupiah(displayPrice)}
-                                </span>
-                                {product.salePrice && !selectedVariant?.price && (
-                                    <span className="text-sm line-through text-muted-foreground">
-                                        {formatRupiah(product.price)}
-                                    </span>
-                                )}
-                            </div>
-                            {product.description && (
-                                <div
-                                    className="prose prose-sm mt-4 max-w-none text-muted-foreground"
-                                    dangerouslySetInnerHTML={{ __html: product.description }}
+
+                            <div className="mt-6">
+                                <ProductDetailTabs
+                                    description={product.description}
+                                    ratingAvg={product.ratingAvg}
+                                    reviewCount={product.reviewCount}
+                                    reviews={reviews}
+                                    relatedProducts={relatedProducts}
+                                    upSellProducts={upSellProducts}
                                 />
-                            )}
-                            <div className="mt-5 space-y-3">
-                                {variants.length > 0 && (
-                                    <div>
-                                        <Label className="text-xs">Varian</Label>
-                                        <select
-                                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm mt-1"
-                                            value={data.variant_id}
-                                            onChange={(e) => handleVariantChange(Number(e.target.value))}
-                                        >
-                                            {variants.map((v) => (
-                                                <option key={v.id} value={v.id}>
-                                                    {v.size ?? v.sku}{v.color ? ` - ${v.color}` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                                <div>
-                                    <Label htmlFor="qty" className="text-xs">Jumlah</Label>
-                                    <Input
-                                        id="qty"
-                                        type="number"
-                                        min={1}
-                                        max={trackStock && displayStock > 0 ? displayStock : undefined}
-                                        value={data.qty}
-                                        onChange={(e) => setData('qty', Number(e.target.value))}
-                                        className="w-24 h-9 mt-1"
-                                    />
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Stok: {displayStock}
-                                    {displayOutOfStock && (
-                                        <span className="ml-2 text-destructive font-medium">Habis</span>
-                                    )}
-                                </p>
-                                <div className="flex gap-2 pt-1">
-                                    <Button
-                                        onClick={addToCart}
-                                        disabled={processing || !displayPurchasable}
-                                        className="flex-1"
-                                    >
-                                        {displayPurchasable ? '+ Keranjang' : 'Stok Habis'}
-                                    </Button>
-                                    <Button variant="outline" onClick={handleToggleWishlist} disabled={wishlistLoading}>
-                                        {inWishlist ? '♥' : '♡'}
-                                    </Button>
-                                </div>
                             </div>
+                        </div>
+
+                        <div className="border-t p-4 lg:col-span-3 lg:border-t-0 lg:border-l lg:bg-muted/20">
+                            <ProductPurchaseCard
+                                productName={product.name}
+                                productPrice={product.price}
+                                salePrice={product.salePrice}
+                                variants={variants}
+                                selectedVariantId={data.variant_id}
+                                onVariantChange={handleVariantChange}
+                                qty={data.qty}
+                                onQtyChange={(qty) => setData('qty', qty)}
+                                displayPrice={displayPrice}
+                                displayStock={displayStock}
+                                displayPurchasable={displayPurchasable}
+                                displayOutOfStock={displayOutOfStock}
+                                trackStock={trackStock}
+                                processing={processing}
+                                inWishlist={inWishlist}
+                                wishlistLoading={wishlistLoading}
+                                onAddToCart={addToCart}
+                                onBuyNow={buyNow}
+                                onToggleWishlist={handleToggleWishlist}
+                                variantPreviewUrl={activeImage || displayImages[0]}
+                            />
                         </div>
                     </div>
                 </SectionCard>
-
-                {reviews.length > 0 && (
-                    <SectionCard title="Ulasan Pembeli" className="mb-4">
-                        <div className="space-y-3">
-                            {reviews.map((r) => (
-                                <div key={r.id} className="border rounded-lg p-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium">{r.customerName}</span>
-                                        <span className="text-primary">★ {r.rating}</span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mt-1">{r.comment}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </SectionCard>
-                )}
-
-                {upSellProducts.length > 0 && (
-                    <SectionCard title="Produk Up-Sell" className="mb-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {upSellProducts.map((p) => (
-                                <ProductCard key={p.id} product={p} />
-                            ))}
-                        </div>
-                    </SectionCard>
-                )}
-
-                {relatedProducts.length > 0 && (
-                    <SectionCard title="Produk Terkait">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {relatedProducts.map((p) => (
-                                <ProductCard key={p.id} product={p} />
-                            ))}
-                        </div>
-                    </SectionCard>
-                )}
             </PageContainer>
         </GuestLayout>
     );

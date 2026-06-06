@@ -1,10 +1,12 @@
 import { Head, router } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { ProductCard, type ProductCardData } from '@/components/ProductCard';
+import { type ProductCardData } from '@/components/ProductCard';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductFilterSidebar } from '@/components/storefront/ProductFilterSidebar';
+import { ProductGrid } from '@/components/storefront/ProductGrid';
+import { ProductSortDropdown } from '@/components/storefront/ProductSortDropdown';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import type { CategoryNav } from '@/types';
 
@@ -27,12 +29,12 @@ type Props = {
 };
 
 const sortOptions = [
-    { value: '', label: 'Terbaru' },
+    { value: '', label: 'Paling Sesuai' },
     { value: 'price_asc', label: 'Harga Terendah' },
     { value: 'price_desc', label: 'Harga Tertinggi' },
 ];
 
-export default function Index({ products, categories, filters, activeCategory, pageTitle }: Props) {
+export default function Index({ products, categories, filters, activeCategory }: Props) {
     const isFlashSale = filters.flash_sale === '1';
 
     const applySort = (sort: string) => {
@@ -57,35 +59,21 @@ export default function Index({ products, categories, filters, activeCategory, p
 
                     <div className="min-w-0 flex-1">
                         <SectionCard noPadding>
-                            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
                                 <p className="text-sm text-muted-foreground">
-                                    {products.meta.total} produk ditemukan
+                                    Menampilkan {products.meta.total} produk
                                     {isFlashSale ? ' di Flash Sale' : activeCategory ? ` di ${activeCategory.name}` : ''}
                                 </p>
-                                <div className="flex gap-1 overflow-x-auto">
-                                    {sortOptions.map((opt) => (
-                                        <button
-                                            key={opt.value}
-                                            type="button"
-                                            onClick={() => applySort(opt.value)}
-                                            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition-colors ${
-                                                (filters.sort ?? '') === opt.value
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-muted hover:bg-muted/80'
-                                            }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
+                                <ProductSortDropdown
+                                    value={filters.sort ?? ''}
+                                    options={sortOptions}
+                                    onChange={applySort}
+                                />
                             </div>
                             <div className="p-4">
-                                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                                    {products.data.map((p) => (
-                                        <ProductCard key={p.id} product={p} />
-                                    ))}
-                                </div>
-                                {products.data.length === 0 && (
+                                {products.data.length > 0 ? (
+                                    <ProductGrid products={products.data} columns="wide" showWishlist />
+                                ) : (
                                     <p className="py-12 text-center text-muted-foreground">
                                         Produk tidak ditemukan.
                                     </p>

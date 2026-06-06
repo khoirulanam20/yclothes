@@ -8,6 +8,8 @@ class CartService
 
     public const COUPON_SESSION_KEY = 'cart_coupon';
 
+    public const CHECKOUT_SELECTION_KEY = 'cart_checkout_selection';
+
     public function get(): array
     {
         return session()->get(self::SESSION_KEY, []);
@@ -21,6 +23,37 @@ class CartService
     public function clear(): void
     {
         session()->forget(self::SESSION_KEY);
+    }
+
+    /** @return array<int, string>|null */
+    public function getCheckoutSelection(): ?array
+    {
+        $selection = session()->get(self::CHECKOUT_SELECTION_KEY);
+
+        return is_array($selection) && $selection !== [] ? array_values($selection) : null;
+    }
+
+    /** @param  array<int, string>  $keys */
+    public function setCheckoutSelection(array $keys): void
+    {
+        session()->put(self::CHECKOUT_SELECTION_KEY, array_values(array_unique($keys)));
+    }
+
+    public function clearCheckoutSelection(): void
+    {
+        session()->forget(self::CHECKOUT_SELECTION_KEY);
+    }
+
+    /** @param  array<int, string>  $keys */
+    public function removeKeys(array $keys): void
+    {
+        $cart = $this->get();
+
+        foreach ($keys as $key) {
+            unset($cart[$key]);
+        }
+
+        $this->put($cart);
     }
 
     public function count(): int

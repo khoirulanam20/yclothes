@@ -219,7 +219,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                     return;
                 }
 
-                router.reload({ only: ['product'], preserveScroll: true });
+                router.reload({ only: ['product'] });
                 return;
             }
 

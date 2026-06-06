@@ -18,6 +18,11 @@ class PaymentConfirmationController extends Controller
 
     public function create(Order $order)
     {
+        if (! $order->canSubmitPaymentConfirmation()) {
+            return redirect()->to($this->redirectUrl($order))
+                ->with('info', 'Konfirmasi pembayaran tidak diperlukan untuk pesanan ini.');
+        }
+
         if (app(PaymentMethodService::class)->isCod($order->payment_method)) {
             return redirect()->to($this->redirectUrl($order))
                 ->with('info', 'Pesanan COD dibayar saat barang diterima.');
@@ -45,6 +50,10 @@ class PaymentConfirmationController extends Controller
 
     public function store(Request $request, Order $order)
     {
+        if (! $order->canSubmitPaymentConfirmation()) {
+            return back()->with('error', 'Konfirmasi pembayaran tidak diperlukan karena pesanan sudah diproses.');
+        }
+
         if (app(PaymentMethodService::class)->isCod($order->payment_method)) {
             return back()->with('error', 'Pesanan COD tidak memerlukan konfirmasi pembayaran di awal.');
         }

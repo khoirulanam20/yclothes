@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
-import { SectionCard } from '@/components/storefront/SectionCard';
+import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { WilayahSelect, type WilayahValue } from '@/components/storefront/WilayahSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,14 +55,30 @@ export default function AddressForm({ address }: Props) {
         <AccountLayout title={isEdit ? 'Edit Alamat' : 'Tambah Alamat'}>
             <Head title={isEdit ? 'Edit Alamat' : 'Tambah Alamat'} />
             <form onSubmit={submit}>
-                <SectionCard>
-                    <div className="space-y-3">
-                        <div className="grid md:grid-cols-2 gap-3">
-                            <div><Label>Label</Label><Input value={data.label} onChange={(e) => setData('label', e.target.value)} required /><FieldError message={errors.label} /></div>
-                            <div><Label>Nama Penerima</Label><Input value={data.recipient_name} onChange={(e) => setData('recipient_name', e.target.value)} required /></div>
+                <AccountPageShell
+                    title={isEdit ? 'Edit Alamat Pengiriman' : 'Alamat Pengiriman Baru'}
+                    description="Lengkapi detail alamat untuk checkout lebih cepat."
+                >
+                    <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <Label>Label</Label>
+                                <Input value={data.label} onChange={(e) => setData('label', e.target.value)} required />
+                                <FieldError message={errors.label} />
+                            </div>
+                            <div>
+                                <Label>Nama Penerima</Label>
+                                <Input value={data.recipient_name} onChange={(e) => setData('recipient_name', e.target.value)} required />
+                            </div>
                         </div>
-                        <div><Label>Telepon</Label><Input value={data.phone} onChange={(e) => setData('phone', e.target.value)} required /></div>
-                        <div><Label>Alamat Jalan</Label><Textarea rows={2} value={data.street_address} onChange={(e) => setData('street_address', e.target.value)} required /></div>
+                        <div>
+                            <Label>Telepon</Label>
+                            <Input value={data.phone} onChange={(e) => setData('phone', e.target.value)} required />
+                        </div>
+                        <div>
+                            <Label>Alamat Jalan</Label>
+                            <Textarea rows={2} value={data.street_address} onChange={(e) => setData('street_address', e.target.value)} required />
+                        </div>
                         <WilayahSelect
                             value={wilayah}
                             onChange={(w) => setData({
@@ -76,14 +92,14 @@ export default function AddressForm({ address }: Props) {
                         />
                         <label className="flex items-center gap-2 text-sm">
                             <input type="checkbox" checked={data.is_default} onChange={(e) => setData('is_default', e.target.checked)} />
-                            Jadikan alamat default
+                            Jadikan alamat utama
                         </label>
-                        <div className="flex gap-2">
-                            <Button type="submit" disabled={processing}>{isEdit ? 'Simpan' : 'Tambah'}</Button>
+                        <div className="flex gap-2 pt-2">
+                            <Button type="submit" disabled={processing}>{isEdit ? 'Simpan Alamat' : 'Tambah Alamat'}</Button>
                             <Button variant="outline" asChild><Link href="/account/addresses">Batal</Link></Button>
                         </div>
                     </div>
-                </SectionCard>
+                </AccountPageShell>
             </form>
         </AccountLayout>
     );

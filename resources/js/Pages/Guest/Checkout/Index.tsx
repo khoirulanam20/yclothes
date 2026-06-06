@@ -164,10 +164,11 @@ export default function Index({
             <PageContainer>
                 <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Keranjang', href: '/cart' }, { label: 'Checkout' }]} />
 
-                <form onSubmit={submit} className="grid lg:grid-cols-3 gap-4">
-                    <div className="lg:col-span-2 space-y-4">
+                <form onSubmit={submit} className="grid gap-4 lg:grid-cols-3">
+                    <div className="space-y-4 lg:col-span-2">
                         {addresses.length > 0 && (
-                            <SectionCard title="Alamat Tersimpan">
+                            <SectionCard title="Alamat Pengiriman" className="store-card">
+                                <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">Pilih alamat tersimpan</p>
                                 <div className="flex flex-wrap gap-2">
                                     {addresses.map((addr) => (
                                         <Button
@@ -184,7 +185,8 @@ export default function Index({
                             </SectionCard>
                         )}
 
-                        <SectionCard title="Data Pengiriman">
+                        <SectionCard title="Data Pengiriman" className="store-card">
+                            <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">Informasi penerima</p>
                             <div className="space-y-3">
                                 <div className="grid md:grid-cols-2 gap-3">
                                     <div>
@@ -244,7 +246,8 @@ export default function Index({
                             </div>
                         </SectionCard>
 
-                        <SectionCard title="Metode Pembayaran">
+                        <SectionCard title="Metode Pembayaran" className="store-card">
+                            <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">Pilih metode</p>
                             <div className="space-y-2">
                                 {paymentMethods.length === 0 && (
                                     <p className="text-sm text-muted-foreground">Tidak ada metode pembayaran tersedia.</p>
@@ -265,7 +268,7 @@ export default function Index({
                                     if (method.id === 'bank_transfer') {
                                         return (
                                             <div key={method.id}>
-                                                <label className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50">
+                                                <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                                                     <input
                                                         type="radio"
                                                         name="pm"
@@ -292,7 +295,7 @@ export default function Index({
                                     return (
                                         <label
                                             key={method.id}
-                                            className="flex items-center gap-2 text-sm p-2 rounded border cursor-pointer hover:bg-muted/50"
+                                            className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                                         >
                                             <input
                                                 type="radio"
@@ -309,8 +312,9 @@ export default function Index({
                         </SectionCard>
                     </div>
 
-                    <div className="lg:sticky lg:top-36 lg:self-start">
-                        <SectionCard title="Ringkasan Pesanan">
+                    <div className="lg:sticky lg:top-24 lg:self-start">
+                        <SectionCard title="Ringkasan Transaksi" className="store-card">
+                            <p className="mb-3 text-xs text-muted-foreground">Cek ringkasan transaksimu, yuk</p>
                             <div className="space-y-2 text-sm">
                                 {items.map((item, i) => (
                                     <div key={i} className="flex justify-between gap-2">
@@ -367,7 +371,9 @@ export default function Index({
                                     <span>{newsletterOptInLabel ?? 'Berlangganan newsletter untuk promo & update'}</span>
                                 </label>
                             )}
-                            <Button type="submit" className="w-full mt-4" disabled={processing || paymentMethods.length === 0}>Buat Pesanan</Button>
+                            <Button type="submit" className="mt-4 w-full" size="lg" disabled={processing || paymentMethods.length === 0}>
+                                Bayar Sekarang
+                            </Button>
                             <Button variant="outline" className="w-full mt-2" asChild>
                                 <Link href="/cart">Kembali ke Keranjang</Link>
                             </Button>

@@ -73,8 +73,10 @@ class SliderController extends Controller
     {
         return $request->validate([
             'title' => 'nullable|string|max:255',
+            'subtitle' => 'nullable|string|max:500',
             'image' => ($requireImage ? 'required' : 'nullable').'|image|mimes:jpeg,png,jpg,webp|max:4096',
             'link_url' => 'nullable|string|max:500',
+            'cta_label' => 'nullable|string|max:100',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
         ]);

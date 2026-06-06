@@ -45,6 +45,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -82,6 +87,31 @@ class Order extends Model
         ]);
 
         return implode(', ', $parts);
+    }
+
+    public function canCustomerReview(): bool
+    {
+        return $this->order_status === 'completed' && $this->completed_at !== null;
+    }
+
+    public function canSubmitPaymentConfirmation(): bool
+    {
+        return in_array($this->order_status, ['pending', 'awaiting_verification', 'confirmed'], true);
+    }
+
+    public function hasUnreviewedItems(): bool
+    {
+        if (! $this->relationLoaded('items')) {
+            return false;
+        }
+
+        $reviewedItemIds = $this->relationLoaded('reviews')
+            ? $this->reviews->pluck('order_item_id')->filter()->all()
+            : [];
+
+        return $this->items->contains(
+            fn ($item) => ! in_array($item->id, $reviewedItemIds, true),
+        );
     }
 
     protected static function booted(): void

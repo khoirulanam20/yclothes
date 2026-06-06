@@ -1,7 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { ProductCard, type ProductCardData } from '@/components/ProductCard';
+import { ProductGrid } from '@/components/storefront/ProductGrid';
+import type { ProductCardData } from '@/components/ProductCard';
 import { HeroSlider } from '@/components/storefront/HeroSlider';
+import { PromotionBanner } from '@/components/storefront/PromotionBanner';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,28 +58,16 @@ function ProductGridSection({
     actionLabel?: string;
     actionHref?: string;
 }) {
-    const isScroll = layout === 'scroll';
-
     return (
         <SectionCard
             title={title}
             action={actionLabel && actionHref ? { label: actionLabel, href: actionHref } : undefined}
         >
-            {isScroll ? (
-                <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-                    {products.map((p) => (
-                        <div key={p.id} className="w-[160px] shrink-0">
-                            <ProductCard product={p} compact />
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {products.map((p) => (
-                        <ProductCard key={p.id} product={p} />
-                    ))}
-                </div>
-            )}
+            <ProductGrid
+                products={products}
+                layout={layout === 'scroll' ? 'scroll' : 'grid'}
+                compact={layout === 'scroll'}
+            />
         </SectionCard>
     );
 }
@@ -126,13 +116,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                                     : undefined
                             }
                         >
-                            <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-                                {section.products.map((p) => (
-                                    <div key={p.id} className="w-[160px] shrink-0">
-                                        <ProductCard product={p} compact />
-                                    </div>
-                                ))}
-                            </div>
+                            <ProductGrid products={section.products} layout="scroll" compact />
                         </SectionCard>
                     </PageContainer>
                 </>
@@ -155,10 +139,14 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                                 <Link
                                     key={cat.id}
                                     href={`/products?category=${cat.slug}`}
-                                    className="rounded-lg border bg-card p-3 text-center hover:border-primary transition-colors"
+                                    className="group store-card store-card-hover rounded-xl border bg-card p-3 text-center transition-colors hover:border-primary/40"
                                 >
                                     {(props.showImages as boolean) !== false && cat.imageUrl && (
-                                        <img src={cat.imageUrl} alt={cat.name} className="mx-auto h-16 w-16 object-cover rounded-full mb-2" />
+                                        <img
+                                            src={cat.imageUrl}
+                                            alt={cat.name}
+                                            className="mx-auto mb-2 h-16 w-16 rounded-full object-cover transition-transform group-hover:scale-105"
+                                        />
                                     )}
                                     <span className="text-sm font-medium">{cat.name}</span>
                                 </Link>
@@ -190,28 +178,14 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                 <>
                     <SectionHeadMeta props={props} />
                     <PageContainer>
-                        <section className="relative overflow-hidden rounded-2xl bg-primary/5 border">
-                            {props.imageUrl ? (
-                                <img
-                                    src={String(props.imageUrl)}
-                                    alt={(typeof props.imageAlt === 'string' ? props.imageAlt : '') || (typeof props.title === 'string' ? props.title : '') || 'Promosi'}
-                                    className="w-full max-h-64 object-cover"
-                                />
-                            ) : null}
-                            <div className="p-6 md:p-8">
-                                {typeof props.title === 'string' && props.title && (
-                                    <h2 className="text-2xl font-semibold">{props.title}</h2>
-                                )}
-                                {typeof props.subtitle === 'string' && props.subtitle && (
-                                    <p className="text-muted-foreground mt-2">{props.subtitle}</p>
-                                )}
-                                {typeof props.ctaLabel === 'string' && props.ctaLabel && typeof props.ctaHref === 'string' && props.ctaHref && (
-                                    <Button asChild className="mt-4">
-                                        <Link href={props.ctaHref}>{props.ctaLabel}</Link>
-                                    </Button>
-                                )}
-                            </div>
-                        </section>
+                        <PromotionBanner
+                            title={typeof props.title === 'string' ? props.title : undefined}
+                            subtitle={typeof props.subtitle === 'string' ? props.subtitle : undefined}
+                            ctaLabel={typeof props.ctaLabel === 'string' ? props.ctaLabel : undefined}
+                            ctaHref={typeof props.ctaHref === 'string' ? props.ctaHref : undefined}
+                            imageUrl={typeof props.imageUrl === 'string' ? props.imageUrl : undefined}
+                            imageAlt={typeof props.imageAlt === 'string' ? props.imageAlt : undefined}
+                        />
                     </PageContainer>
                 </>
             );

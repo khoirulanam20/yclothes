@@ -136,8 +136,10 @@ class ModelSerializer
         return [
             'id' => $slider->id,
             'title' => $slider->title,
+            'subtitle' => $slider->subtitle,
             'imageUrl' => $slider->image_url,
             'linkUrl' => $slider->link_url,
+            'ctaLabel' => $slider->cta_label,
             'sortOrder' => $slider->sort_order,
             'isActive' => (bool) $slider->is_active,
         ];
@@ -285,6 +287,7 @@ class ModelSerializer
             'customerName' => $review->customer?->name ?? 'Pembeli',
             'createdAt' => $review->created_at?->toIso8601String(),
             'isApproved' => (bool) $review->is_approved,
+            'imagesUrl' => $review->images_url,
             'product' => $review->relationLoaded('product') && $review->product
                 ? ['id' => $review->product->id, 'name' => $review->product->name]
                 : null,
@@ -488,7 +491,7 @@ class ModelSerializer
 
     public static function orderSummary(Order $order): array
     {
-        return [
+        $data = [
             'id' => $order->id,
             'orderNumber' => $order->order_number,
             'customerName' => $order->customer_name,
@@ -499,6 +502,19 @@ class ModelSerializer
             'createdAt' => $order->created_at?->toIso8601String(),
             'itemsCount' => $order->items_count ?? null,
         ];
+
+        if ($order->relationLoaded('items')) {
+            $data['itemsCount'] = $order->items->count();
+            $data['previewItems'] = $order->items->take(3)->map(fn ($item) => [
+                'productName' => $item->product_name,
+                'imageUrl' => $item->product?->image_url,
+                'qty' => $item->qty,
+            ])->values()->all();
+
+            $data['canReview'] = $order->canCustomerReview() && $order->hasUnreviewedItems();
+        }
+
+        return $data;
     }
 
     public static function orderStatusHistory($history): array

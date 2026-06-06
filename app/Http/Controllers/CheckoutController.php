@@ -48,6 +48,12 @@ class CheckoutController extends Controller
         }
 
         $pricing = $this->cartPricing->build();
+        if ($pricing['items'] === []) {
+            $this->cartService->clearCheckoutSelection();
+
+            return redirect()->route('cart.index')->with('error', 'Pilih produk yang ingin di-checkout.');
+        }
+
         $totalWeight = $pricing['total_weight'];
         $hasPhysical = collect($pricing['items'])->contains(
             fn (array $row) => $row['product']->type?->value !== 'digital',
@@ -124,6 +130,12 @@ class CheckoutController extends Controller
         }
 
         $previewPricing = $this->cartPricing->build();
+        if ($previewPricing['items'] === []) {
+            $this->cartService->clearCheckoutSelection();
+
+            return redirect()->route('cart.index')->with('error', 'Pilih produk yang ingin di-checkout.');
+        }
+
         $hasPhysicalProducts = collect($previewPricing['items'])->contains(
             fn (array $row) => $row['product']->type?->value !== 'digital',
         );
@@ -342,7 +354,9 @@ class CheckoutController extends Controller
             $validated['customer_email'],
         );
         session()->forget(CartService::COUPON_SESSION_KEY);
-        $this->cartService->clear();
+        $orderedKeys = array_column($pricing['items'], 'key');
+        $this->cartService->removeKeys($orderedKeys);
+        $this->cartService->clearCheckoutSelection();
         grant_order_access($order);
 
         if ($validated['payment_method'] === 'midtrans') {

@@ -34,9 +34,15 @@ class CartPricingService
      *   total_qty: int
      * }
      */
-    public function build(?string $shippingCity = null, ?string $couponCode = null): array
+    public function build(?string $shippingCity = null, ?string $couponCode = null, ?array $onlyKeys = null): array
     {
         $cart = $this->cartService->get();
+        $onlyKeys ??= $this->cartService->getCheckoutSelection();
+
+        if ($onlyKeys !== null) {
+            $cart = array_intersect_key($cart, array_flip($onlyKeys));
+        }
+
         $couponCode ??= session(CartService::COUPON_SESSION_KEY);
         $customerId = Auth::guard('customer')->id();
 
