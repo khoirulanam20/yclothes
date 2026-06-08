@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShippingCost;
 use App\Models\User;
+use App\Services\InvoicePdfService;
 use App\Services\OrderPaymentService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -176,6 +177,24 @@ class EmailNotificationSettingsTest extends TestCase
 
         $this->assertStringContainsString($productName, $html);
         $this->assertStringContainsString('Grand Total', $html);
+        $this->assertStringContainsString('Faktur PDF Terlampir', $html);
+    }
+
+    public function test_invoice_email_attaches_pdf(): void
+    {
+        $order = $this->placeOrder()->load('items');
+
+        $mail = new OrderInvoiceMail($order, InvoiceEmailContext::Paid);
+        $attachments = $mail->attachments();
+
+        $this->assertCount(1, $attachments);
+        $this->assertSame('faktur-'.$order->order_number.'.pdf', $attachments[0]->as);
+        $this->assertSame('application/pdf', $attachments[0]->mime);
+
+        $pdf = app(InvoicePdfService::class)->generate($order, 'Faktur Pembayaran #'.$order->order_number);
+
+        $this->assertNotEmpty($pdf);
+        $this->assertStringStartsWith('%PDF', $pdf);
     }
 
     private function placeOrder(): Order

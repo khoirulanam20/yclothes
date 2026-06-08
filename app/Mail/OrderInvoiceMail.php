@@ -4,9 +4,11 @@ namespace App\Mail;
 
 use App\Enums\InvoiceEmailContext;
 use App\Models\Order;
+use App\Services\InvoicePdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -50,5 +52,18 @@ class OrderInvoiceMail extends Mailable implements ShouldQueue
                 'intro' => $this->intro,
             ],
         );
+    }
+
+    /** @return array<int, Attachment> */
+    public function attachments(): array
+    {
+        $pdfService = app(InvoicePdfService::class);
+
+        return [
+            Attachment::fromData(
+                fn () => $pdfService->generate($this->order, $this->heading),
+                $pdfService->filename($this->order),
+            )->withMime('application/pdf'),
+        ];
     }
 }
