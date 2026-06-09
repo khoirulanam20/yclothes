@@ -50,7 +50,7 @@ export function HeroSlider({ sliders }: { sliders: Slider[] }) {
         <section className="pt-4">
             <div className="container mx-auto px-4">
                 <div
-                    className="relative min-h-[320px] overflow-hidden rounded-2xl shadow-sm md:min-h-[380px]"
+                    className="group relative min-h-[320px] overflow-hidden rounded-2xl shadow-sm md:min-h-[380px]"
                     onMouseEnter={() => setPaused(true)}
                     onMouseLeave={() => setPaused(false)}
                     onFocusCapture={() => setPaused(true)}
@@ -107,7 +107,7 @@ export function HeroSlider({ sliders }: { sliders: Slider[] }) {
                             <button
                                 type="button"
                                 onClick={goPrev}
-                                className="absolute left-3 top-1/2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background md:left-4"
+                                className="absolute left-3 top-1/2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground opacity-0 shadow-md backdrop-blur-sm transition-all duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-background focus-visible:opacity-100 focus-visible:pointer-events-auto md:left-4"
                                 aria-label="Slide sebelumnya"
                             >
                                 <ChevronLeft className="size-5" />
@@ -115,7 +115,7 @@ export function HeroSlider({ sliders }: { sliders: Slider[] }) {
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="absolute right-3 top-1/2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background md:right-4"
+                                className="absolute right-3 top-1/2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground opacity-0 shadow-md backdrop-blur-sm transition-all duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-background focus-visible:opacity-100 focus-visible:pointer-events-auto md:right-4"
                                 aria-label="Slide berikutnya"
                             >
                                 <ChevronRight className="size-5" />

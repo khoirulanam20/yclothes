@@ -12,6 +12,8 @@ type Props = {
     showWishlist?: boolean;
     wishlistMode?: boolean;
     onWishlistToggle?: (productId: number, inWishlist: boolean) => void;
+    /** Parent section sudah punya class `group` (mis. SectionCard) */
+    hoverGroupParent?: boolean;
 };
 
 export function ProductGrid({
@@ -23,6 +25,7 @@ export function ProductGrid({
     showWishlist = false,
     wishlistMode = false,
     onWishlistToggle,
+    hoverGroupParent = false,
 }: Props) {
     if (products.length === 0) {
         return null;
@@ -37,6 +40,7 @@ export function ProductGrid({
                 showWishlist={showWishlist}
                 wishlistMode={wishlistMode}
                 onWishlistToggle={onWishlistToggle}
+                hoverGroupParent={hoverGroupParent}
             />
         );
     }
@@ -72,6 +76,7 @@ function ProductScrollRow({
     showWishlist,
     wishlistMode,
     onWishlistToggle,
+    hoverGroupParent = false,
 }: {
     products: ProductCardData[];
     compact?: boolean;
@@ -79,6 +84,7 @@ function ProductScrollRow({
     showWishlist?: boolean;
     wishlistMode?: boolean;
     onWishlistToggle?: (productId: number, inWishlist: boolean) => void;
+    hoverGroupParent?: boolean;
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -129,12 +135,12 @@ function ProductScrollRow({
     const showNav = canScrollLeft || canScrollRight;
 
     return (
-        <div className={cn('relative', className)}>
+        <div className={cn('relative', !hoverGroupParent && 'group', className)}>
             {showNav && canScrollLeft && (
                 <button
                     type="button"
                     onClick={() => scroll('left')}
-                    className="absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-border/60 bg-background/95 p-2 shadow-md backdrop-blur-sm transition-opacity hover:bg-background sm:flex"
+                    className="absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-border/60 bg-background/95 p-2 opacity-0 shadow-md backdrop-blur-sm transition-all duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-background focus-visible:opacity-100 focus-visible:pointer-events-auto sm:flex"
                     aria-label="Produk sebelumnya"
                 >
                     <ChevronLeft className="size-5" />
@@ -144,7 +150,7 @@ function ProductScrollRow({
                 <button
                     type="button"
                     onClick={() => scroll('right')}
-                    className="absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-border/60 bg-background/95 p-2 shadow-md backdrop-blur-sm transition-opacity hover:bg-background sm:flex"
+                    className="absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-border/60 bg-background/95 p-2 opacity-0 shadow-md backdrop-blur-sm transition-all duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-background focus-visible:opacity-100 focus-visible:pointer-events-auto sm:flex"
                     aria-label="Produk berikutnya"
                 >
                     <ChevronRight className="size-5" />

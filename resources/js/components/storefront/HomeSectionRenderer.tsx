@@ -64,7 +64,7 @@ function ProductGridSection({
 }) {
     return (
         <SectionCard
-            className={HOME_SECTION_RADIUS}
+            className={cn(HOME_SECTION_RADIUS, layout === 'scroll' && 'group')}
             title={title}
             action={actionLabel && actionHref ? { label: actionLabel, href: actionHref } : undefined}
         >
@@ -72,6 +72,7 @@ function ProductGridSection({
                 products={products}
                 layout={layout === 'scroll' ? 'scroll' : 'grid'}
                 compact={layout === 'scroll'}
+                hoverGroupParent={layout === 'scroll'}
             />
         </SectionCard>
     );
@@ -108,7 +109,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                     <SectionHeadMeta props={props} />
                     <PageContainer>
                         <SectionCard
-                            className={HOME_SECTION_RADIUS}
+                            className={cn(HOME_SECTION_RADIUS, 'group')}
                             title={(props.title as string) || 'Flash Sale'}
                             variant="primary"
                             headerExtra={
@@ -122,7 +123,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                                     : undefined
                             }
                         >
-                            <ProductGrid products={section.products} layout="scroll" compact />
+                            <ProductGrid products={section.products} layout="scroll" compact hoverGroupParent />
                         </SectionCard>
                     </PageContainer>
                 </>
