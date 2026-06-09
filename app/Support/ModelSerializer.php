@@ -43,7 +43,7 @@ class ModelSerializer
             'badge' => $product->badge_label,
             'badgeLabel' => $product->badge_label,
             'badgeColor' => $product->badge_color,
-            'discountPercentage' => $product->discount_percentage,
+            'discountPercentage' => $product->getAttribute('display_discount_percentage') ?? $product->discount_percentage,
             'isOutOfStock' => $inventory->isOutOfStock($product),
             'isPurchasable' => $inventory->canOrder($product, null, 1),
             'category' => $product->relationLoaded('category') && $product->category

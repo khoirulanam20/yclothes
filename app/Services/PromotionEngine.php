@@ -102,8 +102,19 @@ class PromotionEngine
     public function decorateProduct(Product $product): Product
     {
         $unit = $this->getUnitPrice($product, 1);
+        $original = $product->price;
+
         $product->setAttribute('catalog_unit_price', $unit);
-        $product->setAttribute('catalog_has_discount', $unit < $product->final_price);
+        $product->setAttribute('catalog_has_discount', $original > 0 && $unit < $original);
+
+        if ($original > 0 && $unit < $original) {
+            $product->setAttribute(
+                'display_discount_percentage',
+                (int) round((1 - $unit / $original) * 100),
+            );
+        } else {
+            $product->setAttribute('display_discount_percentage', null);
+        }
 
         return $product;
     }

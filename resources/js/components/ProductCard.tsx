@@ -35,9 +35,14 @@ type Props = {
     onWishlistToggle?: (productId: number, inWishlist: boolean) => void;
 };
 
-function DiscountBadge({ percentage }: { percentage: number }) {
+export function DiscountBadge({ percentage, className }: { percentage: number; className?: string }) {
     return (
-        <span className="absolute left-0 top-2 z-10 inline-flex items-center rounded-r-md bg-[#ee4d2d] px-2 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm">
+        <span
+            className={cn(
+                'inline-flex items-center rounded-md bg-[#ee4d2d] px-2 py-0.5 text-xs font-bold leading-none text-white shadow-sm',
+                className,
+            )}
+        >
             {percentage}%
         </span>
     );
@@ -91,7 +96,10 @@ export function ProductCard({ product, compact, showWishlist = false, wishlistMo
             >
                 <div className="relative store-image-zoom aspect-square shrink-0 overflow-hidden rounded-t-lg bg-muted">
                     {product.discountPercentage ? (
-                        <DiscountBadge percentage={product.discountPercentage} />
+                        <DiscountBadge
+                            percentage={product.discountPercentage}
+                            className="absolute left-0 top-2 z-10 rounded-r-md text-[10px]"
+                        />
                     ) : null}
                     {product.badge && (
                         <div

@@ -36,8 +36,34 @@ class FlashSalePricingTest extends TestCase
         $flashPrice = app(FlashSaleService::class)->priceForProduct($product->fresh());
         $this->assertSame(72000, $flashPrice);
 
-        $unitPrice = app(PromotionEngine::class)->getUnitPrice($product->fresh());
-        $this->assertSame(72000, $unitPrice);
+        $engine = app(PromotionEngine::class);
+        $decorated = $engine->decorateProduct($product->fresh());
+
+        $this->assertSame(72000, $engine->getUnitPrice($decorated));
+        $this->assertSame(28, $decorated->getAttribute('display_discount_percentage'));
+    }
+
+    public function test_flash_sale_only_shows_total_discount_percentage(): void
+    {
+        $product = Product::first();
+        $product->update(['price' => 100000, 'sale_price' => null]);
+
+        $this->saveFlashLayout($product->id, 'percentage', 10);
+
+        $decorated = app(PromotionEngine::class)->decorateProduct($product->fresh());
+
+        $this->assertSame(90000, $decorated->getAttribute('catalog_unit_price'));
+        $this->assertSame(10, $decorated->getAttribute('display_discount_percentage'));
+    }
+
+    public function test_no_promo_has_no_display_discount_percentage(): void
+    {
+        $product = Product::first();
+        $product->update(['price' => 100000, 'sale_price' => null]);
+
+        $decorated = app(PromotionEngine::class)->decorateProduct($product->fresh());
+
+        $this->assertNull($decorated->getAttribute('display_discount_percentage'));
     }
 
     public function test_flash_sale_applies_fixed_discount(): void

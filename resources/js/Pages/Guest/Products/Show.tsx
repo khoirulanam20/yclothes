@@ -2,7 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Star } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { type ProductCardData } from '@/components/ProductCard';
+import { DiscountBadge, type ProductCardData } from '@/components/ProductCard';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductDetailTabs } from '@/components/storefront/ProductDetailTabs';
@@ -137,7 +137,7 @@ export default function Show({
     );
 
     const displayStock = selectedVariant?.stock ?? productStock;
-    const displayPrice = selectedVariant?.finalPrice ?? product.finalPrice;
+    const displayPrice = selectedVariant?.finalPrice ?? product.catalogUnitPrice ?? product.finalPrice;
     const displayPurchasable = selectedVariant?.isPurchasable ?? defaultPurchasable;
     const displayOutOfStock = selectedVariant?.isOutOfStock ?? defaultOutOfStock;
     const trackStock = selectedVariant?.trackStock ?? product.trackStock ?? true;
@@ -265,9 +265,14 @@ export default function Show({
                                         {formatRupiah(product.price)}
                                     </p>
                                 )}
-                                <p className="text-3xl font-bold tracking-tight text-foreground">
-                                    {formatRupiah(displayPrice)}
-                                </p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-3xl font-bold tracking-tight text-foreground">
+                                        {formatRupiah(displayPrice)}
+                                    </p>
+                                    {product.discountPercentage ? (
+                                        <DiscountBadge percentage={product.discountPercentage} />
+                                    ) : null}
+                                </div>
                             </div>
 
                             <ProductDetailTabs
