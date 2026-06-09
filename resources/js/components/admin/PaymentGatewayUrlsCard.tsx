@@ -19,8 +19,9 @@ export function PaymentGatewayUrlsCard({ appUrl, gateway }: Props) {
                     { label: 'Callback URL (return browser)', value: `${base}/order/doku-return/{order_number}?token={access_token}` },
                 ]
               : [
-                    { label: 'Notification URL (webhook)', value: `${base}/klikqris/notification` },
-                    { label: 'Snap Payment', value: 'Dibuka otomatis dari halaman pembayaran setelah checkout' },
+                    { label: 'Callback URL (webhook notifikasi)', value: `${base}/klikqris/notification` },
+                    { label: 'Redirect URL (setelah pembayaran)', value: `${base}/order/success/{order_number}?token={access_token}` },
+                    { label: 'Mode API', value: 'Sandbox otomatis jika API key berprefix sk_sandbox_; production jika tidak' },
                 ];
 
     return (

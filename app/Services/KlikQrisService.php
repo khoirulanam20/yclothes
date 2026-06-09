@@ -54,8 +54,36 @@ class KlikQrisService
         ];
     }
 
+    public static function notificationUrl(): string
+    {
+        return url(route('klikqris.notification', [], false));
+    }
+
+    public function redirectUrl(Order $order): string
+    {
+        return order_public_url('order.success', $order);
+    }
+
     /** @return array{signature: string, qris_url: ?string, qris_image: ?string, total_amount: int, amount: int, expired_at: ?string, status: ?string} */
     public function createTransaction(Order $order): array
+    {
+        try {
+            return $this->requestCreate($order);
+        } catch (\RuntimeException $e) {
+            if ($this->shouldRecoverExistingTransaction($e)) {
+                Log::info('KlikQRIS create retry via status check', [
+                    'order_number' => $order->order_number,
+                ]);
+
+                return $this->recoverExistingTransaction($order);
+            }
+
+            throw $e;
+        }
+    }
+
+    /** @return array{signature: string, qris_url: ?string, qris_image: ?string, total_amount: int, amount: int, expired_at: ?string, status: ?string} */
+    private function requestCreate(Order $order): array
     {
         $config = self::resolveConfig();
 
@@ -65,19 +93,64 @@ class KlikQrisService
                 'amount' => (int) $order->grand_total,
                 'id_merchant' => $config['merchant_id'],
                 'keterangan' => 'Pesanan #'.$order->order_number,
+                'callback_url' => self::notificationUrl(),
+                'redirect_url' => $this->redirectUrl($order),
             ]);
 
         if (! $response->successful()) {
+            Log::error('KlikQRIS create HTTP error', [
+                'order_number' => $order->order_number,
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'is_sandbox' => $config['is_sandbox'],
+            ]);
+
             throw new \RuntimeException('KlikQRIS create failed: '.$response->body());
         }
 
         $json = $response->json();
 
         if (! ($json['status'] ?? false)) {
+            Log::error('KlikQRIS create rejected', [
+                'order_number' => $order->order_number,
+                'message' => $json['message'] ?? $response->body(),
+                'is_sandbox' => $config['is_sandbox'],
+            ]);
+
             throw new \RuntimeException('KlikQRIS create rejected: '.($json['message'] ?? $response->body()));
         }
 
         return $this->parseCreateResponse($json);
+    }
+
+    /** @return array{signature: string, qris_url: ?string, qris_image: ?string, total_amount: int, amount: int, expired_at: ?string, status: ?string} */
+    private function recoverExistingTransaction(Order $order): array
+    {
+        $status = $this->checkStatus($order->order_number);
+
+        if (! filled($status['signature'] ?? null)) {
+            throw new \RuntimeException('KlikQRIS existing transaction could not be recovered for '.$order->order_number);
+        }
+
+        return [
+            'signature' => (string) $status['signature'],
+            'qris_url' => null,
+            'qris_image' => null,
+            'total_amount' => $status['total_amount'] ?? (int) $order->grand_total,
+            'amount' => (int) $order->grand_total,
+            'expired_at' => null,
+            'status' => $status['status'],
+        ];
+    }
+
+    private function shouldRecoverExistingTransaction(\RuntimeException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'already')
+            || str_contains($message, 'exist')
+            || str_contains($message, 'duplicate')
+            || str_contains($message, 'sudah ada');
     }
 
     /** @return array{status: ?string, total_amount: ?int, signature: ?string} */

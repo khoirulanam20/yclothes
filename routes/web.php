@@ -147,7 +147,11 @@ Route::post('/order/track', [OrderController::class, 'search'])->name('order.sea
 
 Route::middleware(['order.access'])->group(function () {
     Route::get('/order/success/{order:order_number}', [OrderController::class, 'success'])->name('order.success');
-    Route::get('/order/{order:order_number}', [OrderController::class, 'show'])->name('order.show');
+    Route::get('/order/{order:order_number}/klikqris-payment', [KlikQrisController::class, 'payment'])
+        ->name('order.klikqris-payment');
+    Route::post('/order/klikqris-verify/{order:order_number}', [KlikQrisController::class, 'verifyPayment'])
+        ->name('order.klikqris-verify')
+        ->middleware('throttle:30,1');
     Route::get('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'create'])->name('order.confirm-payment');
     Route::post('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'store'])->name('order.confirm-payment.store');
     Route::post('/order/{order:order_number}/confirm-received', [OrderController::class, 'confirmReceived'])->name('order.confirm-received');
@@ -157,11 +161,7 @@ Route::middleware(['order.access'])->group(function () {
         ->middleware('throttle:30,1');
     Route::get('/order/doku-return/{order:order_number}', [DokuController::class, 'return'])
         ->name('order.doku-return');
-    Route::get('/order/{order:order_number}/klikqris-payment', [KlikQrisController::class, 'payment'])
-        ->name('order.klikqris-payment');
-    Route::post('/order/klikqris-verify/{order:order_number}', [KlikQrisController::class, 'verifyPayment'])
-        ->name('order.klikqris-verify')
-        ->middleware('throttle:30,1');
+    Route::get('/order/{order:order_number}', [OrderController::class, 'show'])->name('order.show');
 });
 
 Route::post('/midtrans/notification', [MidtransController::class, 'notification'])

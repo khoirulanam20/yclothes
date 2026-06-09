@@ -146,6 +146,19 @@ if (! function_exists('order_public_url')) {
     }
 }
 
+if (! function_exists('order_klikqris_payment_url')) {
+    function order_klikqris_payment_url(\App\Models\Order $order): string
+    {
+        if (\Illuminate\Support\Facades\Route::has('order.klikqris-payment')) {
+            return order_public_url('order.klikqris-payment', $order);
+        }
+
+        return url('/order/'.$order->order_number.'/klikqris-payment').'?'.http_build_query([
+            'token' => $order->access_token,
+        ]);
+    }
+}
+
 if (! function_exists('redirect_external')) {
     /** Full-page redirect — required when leaving Inertia to a Blade/non-Inertia route. */
     function redirect_external(string $url): \Symfony\Component\HttpFoundation\Response

@@ -372,7 +372,7 @@ return [
     [
         'key' => 'payment.klikqris',
         'name' => 'KlikQRIS',
-        'info' => 'Konfigurasi gateway KlikQRIS. Mode sandbox/production otomatis berdasarkan prefix API key (sk_sandbox_). URL webhook tampil di bawah.',
+        'info' => 'Konfigurasi gateway KlikQRIS. Mode sandbox/production otomatis berdasarkan prefix API key (sk_sandbox_). Salin Callback URL & Redirect URL di bawah ke dashboard KlikQRIS.',
         'sort' => 7,
         'fields' => [
             ['name' => 'klikqris_api_key', 'title' => 'x-api-key', 'type' => 'password', 'validation' => 'nullable|string|max:255'],

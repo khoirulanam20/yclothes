@@ -205,11 +205,11 @@ class CheckoutController extends Controller
                     'payment_gateway_data' => ['klikqris' => $result],
                 ]);
 
-                return redirect_external(order_public_url('order.klikqris-payment', $order));
+                return redirect_external(order_klikqris_payment_url($order));
             } catch (\Exception $e) {
                 report($e);
 
-                return redirect()->to(order_public_url('order.success', $order))
+                return redirect()->to(order_public_url('order.show', $order))
                     ->with('error', 'Gagal memproses pembayaran KlikQRIS. Silakan coba lagi atau hubungi kami.');
             }
         }
