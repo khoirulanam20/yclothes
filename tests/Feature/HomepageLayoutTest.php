@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CartRule;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Slider;
@@ -137,6 +138,43 @@ class HomepageLayoutTest extends TestCase
 
         $this->assertNotNull($grid);
         $this->assertTrue(collect($grid['products'])->pluck('id')->contains($product->id));
+    }
+
+    public function test_category_grid_columns_respect_row_setting(): void
+    {
+        $service = app(HomepageLayoutService::class);
+
+        $this->assertSame(6, $service->categoryGridColumns(6, 1));
+        $this->assertSame(3, $service->categoryGridColumns(6, 2));
+        $this->assertSame(2, $service->categoryGridColumns(6, 3));
+    }
+
+    public function test_category_grid_resolves_selected_categories_in_order(): void
+    {
+        $categories = Category::whereNull('parent_id')->orderBy('order')->take(3)->get();
+        $ids = $categories->pluck('id')->reverse()->values()->all();
+
+        app(HomepageLayoutService::class)->saveLayout([
+            [
+                'id' => 'cat-grid-1',
+                'type' => 'category_grid',
+                'enabled' => true,
+                'props' => [
+                    'title' => 'Kategori Pilihan',
+                    'categoryIds' => $ids,
+                    'rows' => 1,
+                    'showImages' => true,
+                ],
+            ],
+        ]);
+
+        $section = collect(app(HomepageLayoutService::class)->resolveSections(app(\App\Services\PromotionEngine::class)))
+            ->firstWhere('type', 'category_grid');
+
+        $this->assertNotNull($section);
+        $this->assertSame($ids, collect($section['categories'])->pluck('id')->all());
+        $this->assertSame(1, $section['props']['rows']);
+        $this->assertSame(3, $section['props']['gridColumns']);
     }
 
     public function test_admin_can_upload_banner_image(): void

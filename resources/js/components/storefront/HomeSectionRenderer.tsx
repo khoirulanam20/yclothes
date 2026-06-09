@@ -138,7 +138,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                         <div
                             className="grid gap-3"
                             style={{
-                                gridTemplateColumns: `repeat(${Math.min(Number(props.columns) || 4, 6)}, minmax(0, 1fr))`,
+                                gridTemplateColumns: `repeat(${Math.max(Number(props.gridColumns) || section.categories.length, 1)}, minmax(0, 1fr))`,
                             }}
                         >
                             {section.categories.map((cat) => (

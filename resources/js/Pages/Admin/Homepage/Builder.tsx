@@ -17,7 +17,7 @@ type Slider = {
     id: number; title: string | null; imageUrl: string; linkUrl: string | null;
     sortOrder: number; isActive: boolean;
 };
-type Category = { id: number; name: string };
+type Category = { id: number; name: string; depth?: number };
 type Product = { id: number; name: string; sku: string };
 type FlashSaleItem = { productId: number; discountType: 'percentage' | 'fixed'; discountAmount: number; productName?: string; sku?: string };
 type SearchProduct = Product & { price?: number; salePrice?: number | null };
@@ -30,6 +30,15 @@ type Props = {
     products: Product[];
     badgePresets: Record<string, string>;
 };
+
+const SPACER_HEIGHT_OPTIONS = [
+    { value: '16', label: 'Kecil (16px)' },
+    { value: '24', label: 'Ringkas (24px)' },
+    { value: '32', label: 'Sedang (32px)' },
+    { value: '48', label: 'Besar (48px)' },
+    { value: '64', label: 'Lebar (64px)' },
+    { value: '96', label: 'Sangat lebar (96px)' },
+] as const;
 
 function defaultEndOfDay(): string {
     const d = new Date();
@@ -46,7 +55,7 @@ function defaultProps(type: string): Record<string, unknown> {
                 items: [] as FlashSaleItem[], metaTitle: '', metaDescription: '',
             };
         case 'category_grid':
-            return { title: 'Kategori', limit: 8, columns: 4, showImages: true };
+            return { title: 'Kategori', categoryIds: [] as number[], rows: 1, showImages: true };
         case 'product_grid':
             return { title: 'Produk', source: 'latest', limit: 8, layout: 'grid', actionLabel: 'Lihat Semua →', actionHref: '/products', productIds: [], badgePreset: 'sale' };
         case 'products_by_category':
@@ -109,6 +118,65 @@ function SliderForm({ sliders }: { sliders: Slider[] }) {
                     <div><Label>Link</Label><Input value={createForm.data.link_url} onChange={(e) => createForm.setData('link_url', e.target.value)} /></div>
                     <Button type="button" disabled={createForm.processing} onClick={() => createForm.post('/admin/homepage/sliders', { forceFormData: true, preserveScroll: true, onSuccess: () => createForm.reset() })}><Plus className="h-4 w-4 mr-1" /> Tambah Slide</Button>
                 </div>
+            )}
+        </div>
+    );
+}
+
+function CategoryGridEditor({
+    categoryIds,
+    categories,
+    rows,
+    onChange,
+}: {
+    categoryIds: number[];
+    categories: Category[];
+    rows: number;
+    onChange: (categoryIds: number[]) => void;
+}) {
+    const toggleCategory = (id: number, checked: boolean) => {
+        if (checked) {
+            if (categoryIds.includes(id)) {
+                return;
+            }
+            onChange([...categoryIds, id]);
+        } else {
+            onChange(categoryIds.filter((categoryId) => categoryId !== id));
+        }
+    };
+
+    const gridColumns = categoryIds.length > 0 ? Math.ceil(categoryIds.length / Math.max(1, rows)) : 0;
+
+    return (
+        <div className="space-y-2">
+            <Label>Kategori yang Ditampilkan</Label>
+            <p className="text-xs text-muted-foreground">
+                Centang kategori yang ingin ditampilkan di halaman utama.
+            </p>
+            <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                {categories.map((category) => {
+                    const checked = categoryIds.includes(category.id);
+
+                    return (
+                        <label
+                            key={category.id}
+                            className="flex items-center gap-2 text-sm"
+                            style={{ paddingLeft: `${(category.depth ?? 0) * 12}px` }}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => toggleCategory(category.id, e.target.checked)}
+                            />
+                            {category.name}
+                        </label>
+                    );
+                })}
+            </div>
+            {categoryIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                    Terpilih: {categoryIds.length} kategori · {gridColumns} kolom × {rows} baris
+                </p>
             )}
         </div>
     );
@@ -266,7 +334,16 @@ function SectionEditor({
                 </>
             )}
             {section.type === 'category_grid' && (
-                <>{field('limit', 'Jumlah Kategori', 'number')}{field('columns', 'Kolom', 'number')}{field('showImages', 'Tampilkan Gambar', 'checkbox')}</>
+                <>
+                    <CategoryGridEditor
+                        categoryIds={(props.categoryIds as number[]) ?? []}
+                        categories={categories}
+                        rows={Math.max(1, Number(props.rows) || 1)}
+                        onChange={(ids) => onChange({ ...props, categoryIds: ids })}
+                    />
+                    {field('rows', 'Jumlah Baris', 'number')}
+                    {field('showImages', 'Tampilkan Gambar', 'checkbox')}
+                </>
             )}
             {section.type === 'product_grid' && (
                 <>
@@ -326,7 +403,22 @@ function SectionEditor({
             {section.type === 'blog_posts' && (
                 <>{field('limit', 'Limit', 'number')}{field('actionLabel', 'Label Tombol')}{field('actionHref', 'Link Tombol')}</>
             )}
-            {section.type === 'spacer' && field('height', 'Tinggi (px)', 'number')}
+            {section.type === 'spacer' && (
+                <div>
+                    <Label>Tinggi Spacer</Label>
+                    <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={String(props.height ?? 32)}
+                        onChange={(e) => onChange({ ...props, height: Number(e.target.value) })}
+                    >
+                        {SPACER_HEIGHT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
         </div>
     );
 }

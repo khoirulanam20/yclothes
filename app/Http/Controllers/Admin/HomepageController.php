@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Slider;
+use App\Services\CategoryTreeService;
 use App\Services\HomepageLayoutService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
@@ -19,7 +20,12 @@ class HomepageController extends Controller
 
     public function edit()
     {
-        $categories = Category::orderBy('name')->get(['id', 'name']);
+        $treeService = app(CategoryTreeService::class);
+        $roots = Category::whereNull('parent_id')
+            ->with(['children' => fn ($q) => $q->orderBy('order')->with(['children' => fn ($q) => $q->orderBy('order')])])
+            ->orderBy('order')
+            ->get();
+        $categories = $treeService->flattenForSelect($roots);
         $products = Product::where('is_active', true)->orderBy('name')->take(100)->get(['id', 'name', 'sku']);
         $sliders = Slider::orderBy('sort_order')->get();
 
@@ -27,7 +33,10 @@ class HomepageController extends Controller
             'layout' => $this->layoutService->getLayout(),
             'sectionTypes' => $this->layoutService->sectionTypeOptions(),
             'sliders' => ModelSerializer::collection($sliders, [ModelSerializer::class, 'slider']),
-            'categories' => $categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values()->all(),
+            'categories' => array_map(
+                fn (array $c) => ['id' => $c['id'], 'name' => $c['name'], 'depth' => $c['depth']],
+                $categories,
+            ),
             'products' => $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku])->values()->all(),
             'badgePresets' => BadgePreset::options(),
         ]);

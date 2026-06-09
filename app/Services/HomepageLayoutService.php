@@ -231,26 +231,55 @@ class HomepageLayoutService
      */
     private function resolveCategoryGrid(array $section, array $props): ?array
     {
-        $limit = max(1, (int) ($props['limit'] ?? 8));
-        $categories = Category::whereNull('parent_id')
-            ->orderBy('order')
-            ->take($limit)
-            ->get();
+        $categoryIds = array_values(array_filter(
+            array_map('intval', is_array($props['categoryIds'] ?? null) ? $props['categoryIds'] : []),
+            fn (int $id) => $id > 0,
+        ));
+
+        if ($categoryIds !== []) {
+            $categories = Category::whereIn('id', $categoryIds)
+                ->get()
+                ->sortBy(fn ($category) => array_search($category->id, $categoryIds, true))
+                ->values();
+        } else {
+            $categories = Category::whereNull('parent_id')
+                ->orderBy('order')
+                ->get();
+        }
 
         if ($categories->isEmpty()) {
             return null;
         }
+
+        $count = $categories->count();
+        $rows = max(1, (int) ($props['rows'] ?? 1));
+        $gridColumns = $this->categoryGridColumns($count, $rows);
 
         return [
             'id' => $section['id'],
             'type' => 'category_grid',
             'props' => array_merge([
                 'title' => 'Kategori',
-                'columns' => 4,
                 'showImages' => true,
-            ], $props),
+                'rows' => $rows,
+                'gridColumns' => $gridColumns,
+            ], $props, [
+                'rows' => $rows,
+                'gridColumns' => $gridColumns,
+            ]),
             'categories' => ModelSerializer::collection($categories, [ModelSerializer::class, 'category']),
         ];
+    }
+
+    public function categoryGridColumns(int $count, int $rows = 1): int
+    {
+        if ($count <= 0) {
+            return 1;
+        }
+
+        $rows = max(1, $rows);
+
+        return (int) ceil($count / $rows);
     }
 
     /** @param  array<string, mixed>  $section
@@ -411,6 +440,23 @@ class HomepageLayoutService
             }
 
             $props = is_array($section['props'] ?? null) ? $section['props'] : [];
+
+            if ($type === 'spacer') {
+                $allowedHeights = [16, 24, 32, 48, 64, 96];
+                $height = (int) ($props['height'] ?? 32);
+                $props['height'] = in_array($height, $allowedHeights, true) ? $height : 32;
+            }
+
+            if ($type === 'category_grid') {
+                if (isset($props['categoryIds']) && is_array($props['categoryIds'])) {
+                    $props['categoryIds'] = array_values(array_unique(array_map(
+                        'intval',
+                        array_filter($props['categoryIds']),
+                    )));
+                }
+
+                $props['rows'] = max(1, (int) ($props['rows'] ?? 1));
+            }
 
             if ($type === 'flash_sale') {
                 if (empty($props['endsAt'])) {
