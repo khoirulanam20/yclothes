@@ -10,6 +10,7 @@ use App\Models\ShippingCost;
 use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\DokuService;
+use App\Services\KlikQrisService;
 use App\Services\MidtransService;
 use App\Services\OrderCreationService;
 use App\Services\OrderPaymentService;
@@ -192,6 +193,24 @@ class CheckoutController extends Controller
 
                 return redirect()->to(order_public_url('order.success', $order))
                     ->with('error', 'Gagal memproses pembayaran DOKU. Silakan coba lagi atau hubungi kami.');
+            }
+        }
+
+        if ($paymentMethodInput === 'klikqris') {
+            try {
+                $klikQris = app(KlikQrisService::class);
+                $result = $klikQris->createTransaction($order);
+                $order->updateTrusted([
+                    'unique_payment_amount' => $result['total_amount'],
+                    'payment_gateway_data' => ['klikqris' => $result],
+                ]);
+
+                return redirect_external(order_public_url('order.klikqris-payment', $order));
+            } catch (\Exception $e) {
+                report($e);
+
+                return redirect()->to(order_public_url('order.success', $order))
+                    ->with('error', 'Gagal memproses pembayaran KlikQRIS. Silakan coba lagi atau hubungi kami.');
             }
         }
 

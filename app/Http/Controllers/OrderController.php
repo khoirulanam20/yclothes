@@ -27,6 +27,9 @@ class OrderController extends Controller
             'order' => ModelSerializer::order($order),
             'orderShowUrl' => order_public_url('order.show', $order),
             'qris' => $qris,
+            'klikqrisPaymentUrl' => $order->payment_method === 'klikqris' && $order->payment_status !== 'paid'
+                ? order_public_url('order.klikqris-payment', $order)
+                : null,
         ]);
     }
 
@@ -144,6 +147,9 @@ class OrderController extends Controller
             'qris' => $order->payment_method === 'qris' ? app(PaymentMethodService::class)->qrisSettings() : null,
             'codInstructions' => $order->payment_method === 'cod' && $order->payment_status !== 'paid'
                 ? app(PaymentMethodService::class)->codSettings()['instructions']
+                : null,
+            'klikqrisPaymentUrl' => $order->payment_method === 'klikqris' && $order->payment_status !== 'paid'
+                ? order_public_url('order.klikqris-payment', $order)
                 : null,
         ];
     }

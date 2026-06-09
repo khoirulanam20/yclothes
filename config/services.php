@@ -48,4 +48,9 @@ return [
         'is_production' => env('DOKU_IS_PRODUCTION', false),
     ],
 
+    'klikqris' => [
+        'api_key' => env('KLIKQRIS_API_KEY'),
+        'merchant_id' => env('KLIKQRIS_MERCHANT_ID'),
+    ],
+
 ];

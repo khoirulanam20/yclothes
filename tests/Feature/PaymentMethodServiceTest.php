@@ -72,4 +72,22 @@ class PaymentMethodServiceTest extends TestCase
         $this->assertTrue($service->isDokuAvailable());
         $this->assertContains('doku', $service->allowedCheckoutValues());
     }
+
+    public function test_klikqris_requires_toggle_and_credentials(): void
+    {
+        Setting::updateOrCreate(['key' => 'payment_klikqris_enabled'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'klikqris_api_key'], ['value' => 'sk_sandbox_test']);
+        Setting::updateOrCreate(['key' => 'klikqris_merchant_id'], ['value' => '178093268321']);
+        clear_settings_cache();
+
+        $service = app(PaymentMethodService::class);
+
+        $this->assertTrue($service->isKlikQrisAvailable());
+        $this->assertContains('klikqris', $service->allowedCheckoutValues());
+
+        Setting::updateOrCreate(['key' => 'payment_klikqris_enabled'], ['value' => '0']);
+        clear_settings_cache();
+
+        $this->assertFalse(app(PaymentMethodService::class)->isKlikQrisAvailable());
+    }
 }

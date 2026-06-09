@@ -1,10 +1,8 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminRoleController as AdminAdminRoleController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Admin\ConfigurationController as AdminConfigurationController;
-use App\Http\Controllers\Admin\HomepageController as AdminHomepageController;
-use App\Http\Controllers\Admin\PromotionPopupController as AdminPromotionPopupController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\AdminRoleController as AdminAdminRoleController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AttributeFamilyController as AdminAttributeFamilyController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -13,26 +11,28 @@ use App\Http\Controllers\Admin\CartRuleController as AdminCartRuleController;
 use App\Http\Controllers\Admin\CatalogRuleController as AdminCatalogRuleController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CmsPageController as AdminCmsPageController;
-use App\Http\Controllers\Admin\EditorUploadController as AdminEditorUploadController;
+use App\Http\Controllers\Admin\ConfigurationController as AdminConfigurationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EditorUploadController as AdminEditorUploadController;
 use App\Http\Controllers\Admin\FaqCategoryController as AdminFaqCategoryController;
 use App\Http\Controllers\Admin\FaqItemController as AdminFaqItemController;
+use App\Http\Controllers\Admin\HomepageController as AdminHomepageController;
 use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
-use App\Http\Controllers\Admin\StaffController as AdminStaffController;
-use App\Http\Controllers\Admin\StockMovementController as AdminStockMovementController;
-use App\Http\Controllers\Admin\TaxRateController as AdminTaxRateController;
-use App\Http\Controllers\Admin\TaxZoneController as AdminTaxZoneController;
-use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
 use App\Http\Controllers\Admin\NavigationController as AdminNavigationController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentBankController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductVariantController as AdminProductVariantController;
-use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Admin\PromotionPopupController as AdminPromotionPopupController;
 use App\Http\Controllers\Admin\ReturnRequestController as AdminReturnRequestController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShippingCostController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Admin\StockMovementController as AdminStockMovementController;
+use App\Http\Controllers\Admin\TaxRateController as AdminTaxRateController;
+use App\Http\Controllers\Admin\TaxZoneController as AdminTaxZoneController;
+use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -50,12 +50,15 @@ use App\Http\Controllers\Customer\WishlistController as CustomerWishlistControll
 use App\Http\Controllers\DokuController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\KlikQrisController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\PromotionLandingController;
 use App\Http\Controllers\PaymentConfirmationController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PromotionLandingController;
 use App\Http\Controllers\WilayahController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -72,7 +75,7 @@ Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
 Route::get('/sitemap.xml', function () {
     $path = public_path('sitemap.xml');
     if (! file_exists($path)) {
-        \Illuminate\Support\Facades\Artisan::call('sitemap:generate');
+        Artisan::call('sitemap:generate');
     }
 
     return response()->file($path, ['Content-Type' => 'application/xml']);
@@ -154,6 +157,11 @@ Route::middleware(['order.access'])->group(function () {
         ->middleware('throttle:30,1');
     Route::get('/order/doku-return/{order:order_number}', [DokuController::class, 'return'])
         ->name('order.doku-return');
+    Route::get('/order/{order:order_number}/klikqris-payment', [KlikQrisController::class, 'payment'])
+        ->name('order.klikqris-payment');
+    Route::post('/order/klikqris-verify/{order:order_number}', [KlikQrisController::class, 'verifyPayment'])
+        ->name('order.klikqris-verify')
+        ->middleware('throttle:30,1');
 });
 
 Route::post('/midtrans/notification', [MidtransController::class, 'notification'])
@@ -164,6 +172,10 @@ Route::post('/doku/notification', [DokuController::class, 'notification'])
     ->name('doku.notification')
     ->middleware('throttle:120,1');
 
+Route::post('/klikqris/notification', [KlikQrisController::class, 'notification'])
+    ->name('klikqris.notification')
+    ->middleware('throttle:120,1');
+
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
@@ -171,9 +183,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware(['auth', 'admin', 'admin.activity'])->group(function () {
         Route::get('/', DashboardController::class)->name('dashboard');
-        Route::get('/notifications', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/notifications/read-all', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
-        Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('/notifications/{notification}/read', [AdminNotificationController::class, 'markRead'])->name('notifications.read');
 
         Route::middleware('permission:settings.manage')->group(function () {
             Route::get('/configuration', [AdminConfigurationController::class, 'index'])->name('configuration.index');

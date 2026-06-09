@@ -15,9 +15,9 @@ type QrisSettings = {
     merchantName?: string | null;
     instructions?: string | null;
 };
-type Props = { order: Order; orderShowUrl: string; qris?: QrisSettings | null };
+type Props = { order: Order; orderShowUrl: string; qris?: QrisSettings | null; klikqrisPaymentUrl?: string | null };
 
-export default function Success({ order, orderShowUrl, qris }: Props) {
+export default function Success({ order, orderShowUrl, qris, klikqrisPaymentUrl }: Props) {
     return (
         <GuestLayout>
             <Head title="Pesanan Berhasil" />
@@ -70,6 +70,21 @@ export default function Success({ order, orderShowUrl, qris }: Props) {
                         <p className="text-sm text-muted-foreground">
                             Selesaikan pembayaran online melalui halaman gateway yang dibuka, atau cek status di detail pesanan.
                         </p>
+                    )}
+                    {order.paymentMethod === 'klikqris' && (
+                        <div className="text-sm space-y-2 text-muted-foreground">
+                            {order.uniquePaymentAmount && (
+                                <p className="text-primary font-semibold">
+                                    Nominal bayar: <CopyAmount amount={order.uniquePaymentAmount} />
+                                </p>
+                            )}
+                            <p>Selesaikan pembayaran QRIS melalui popup KlikQRIS.</p>
+                            {klikqrisPaymentUrl && (
+                                <Button asChild size="sm" className="mt-2">
+                                    <a href={klikqrisPaymentUrl}>Bayar dengan KlikQRIS</a>
+                                </Button>
+                            )}
+                        </div>
                     )}
                 </SectionCard>
 

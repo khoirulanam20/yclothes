@@ -130,7 +130,7 @@ export default function Index({
         });
     };
 
-    const applyCoupon = (e: React.FormEvent) => {
+    const applyCoupon = (e: React.SyntheticEvent) => {
         e.preventDefault();
         couponForm.post('/cart/coupon', { preserveScroll: true });
     };
@@ -330,17 +330,23 @@ export default function Index({
                                         </Button>
                                     </div>
                                 ) : (
-                                    <form onSubmit={applyCoupon} className="flex gap-2">
+                                    <div className="flex gap-2">
                                         <Input
                                             placeholder="Kode kupon"
                                             value={couponForm.data.coupon_code}
                                             onChange={(e) => couponForm.setData('coupon_code', e.target.value)}
                                             className="h-9"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    applyCoupon(e);
+                                                }
+                                            }}
                                         />
-                                        <Button type="submit" variant="outline" size="sm" disabled={couponForm.processing}>
+                                        <Button type="button" variant="outline" size="sm" disabled={couponForm.processing} onClick={applyCoupon}>
                                             Apply
                                         </Button>
-                                    </form>
+                                    </div>
                                 )}
                                 <div className="border-t pt-2 space-y-1">
                                     <div className="flex justify-between"><span>Subtotal</span><span>{formatRupiah(pricing.subtotal)}</span></div>

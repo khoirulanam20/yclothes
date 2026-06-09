@@ -111,10 +111,16 @@ export default function Edit({ section, appUrl = '' }: Props) {
                         contentClassName="space-y-8"
                         footer={saveFooter}
                     >
-                        {(section.key === 'payment.midtrans' || section.key === 'payment.doku') && appUrl && (
+                        {(section.key === 'payment.midtrans' || section.key === 'payment.doku' || section.key === 'payment.klikqris') && appUrl && (
                             <PaymentGatewayUrlsCard
                                 appUrl={appUrl}
-                                gateway={section.key === 'payment.midtrans' ? 'midtrans' : 'doku'}
+                                gateway={
+                                    section.key === 'payment.midtrans'
+                                        ? 'midtrans'
+                                        : section.key === 'payment.doku'
+                                          ? 'doku'
+                                          : 'klikqris'
+                                }
                             />
                         )}
                         {fieldGroups.map((group, index) => (

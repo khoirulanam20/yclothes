@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,8 +11,9 @@ type Props = { returns: ReturnItem[] };
 
 export default function Returns({ returns }: Props) {
     return (
-        <AccountLayout title="Retur Saya">
+        <AccountLayout>
             <Head title="Retur" />
+            <AccountPageHeader title="Retur Saya" />
             {returns.length === 0 ? (
                 <AccountPageShell title="Belum ada retur">
                     <p className="py-6 text-center text-muted-foreground">Pengajuan retur akan muncul di sini.</p>

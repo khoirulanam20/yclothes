@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { User } from 'lucide-react';
 import AccountLayout from '@/Layouts/AccountLayout';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,9 @@ export default function Profile({ customer }: Props) {
         : customer.avatarUrl;
 
     return (
-        <AccountLayout title="Profil Saya">
+        <AccountLayout>
             <Head title="Profil" />
+            <AccountPageHeader title="Profil Saya" />
             <AccountPageShell title="Informasi Akun" description="Perbarui data profil dan avatar Anda.">
                 <form onSubmit={submit} className="max-w-2xl space-y-5">
                     <div className="flex items-center gap-4">

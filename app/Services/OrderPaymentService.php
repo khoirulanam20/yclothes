@@ -9,6 +9,7 @@ use App\Models\Order;
 class OrderPaymentService
 {
     public function __construct(private EmailNotificationService $emailNotifications) {}
+
     public function applyMidtransStatus(Order $order, string $transactionStatus): void
     {
         if ($transactionStatus === 'settlement' || $transactionStatus === 'capture') {
@@ -118,6 +119,50 @@ class OrderPaymentService
             $order,
             'cancelled',
             'Pembayaran DOKU gagal',
+            'system',
+        );
+    }
+
+    public function applyKlikQrisStatus(Order $order, string $status): void
+    {
+        $status = strtoupper($status);
+
+        if (in_array($status, ['PAID', 'SUCCESS'], true)) {
+            if ($order->payment_status !== 'paid') {
+                $this->markPaid($order, 'klikqris');
+            }
+
+            return;
+        }
+
+        if (! in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED', 'CANCEL', 'PENDING'], true)) {
+            return;
+        }
+
+        if (in_array($status, ['PENDING'], true)) {
+            return;
+        }
+
+        if (! setting_bool('auto_cancel_on_payment_fail', true)) {
+            return;
+        }
+
+        $action = setting('payment_fail_action', 'cancel_order');
+
+        if ($action === 'keep_pending') {
+            return;
+        }
+
+        if ($action === 'mark_failed') {
+            $order->updateTrusted(['payment_status' => 'failed']);
+
+            return;
+        }
+
+        app(OrderWorkflowService::class)->transition(
+            $order,
+            'cancelled',
+            'Pembayaran KlikQRIS gagal',
             'system',
         );
     }

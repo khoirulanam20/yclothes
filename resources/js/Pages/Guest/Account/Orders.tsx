@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AccountLayout from '@/Layouts/AccountLayout';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,8 +26,9 @@ type Props = { orders: Order[] };
 
 export default function Orders({ orders }: Props) {
     return (
-        <AccountLayout title="Pesanan Saya">
+        <AccountLayout>
             <Head title="Pesanan Saya" />
+            <AccountPageHeader title="Pesanan Saya" />
             {orders.length === 0 ? (
                 <AccountPageShell title="Belum ada pesanan">
                     <p className="py-6 text-center text-muted-foreground">

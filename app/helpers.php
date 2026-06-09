@@ -146,6 +146,18 @@ if (! function_exists('order_public_url')) {
     }
 }
 
+if (! function_exists('redirect_external')) {
+    /** Full-page redirect — required when leaving Inertia to a Blade/non-Inertia route. */
+    function redirect_external(string $url): \Symfony\Component\HttpFoundation\Response
+    {
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location($url);
+        }
+
+        return redirect()->to($url);
+    }
+}
+
 if (! function_exists('storage_url')) {
     function storage_url(?string $path): ?string
     {

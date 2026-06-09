@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\PaymentBank;
-use Illuminate\Support\Collection;
 
 class PaymentMethodService
 {
@@ -25,6 +24,11 @@ class PaymentMethodService
     public function isDokuEnabled(): bool
     {
         return setting_bool('payment_doku_enabled');
+    }
+
+    public function isKlikQrisEnabled(): bool
+    {
+        return setting_bool('payment_klikqris_enabled');
     }
 
     public function isCodEnabled(): bool
@@ -51,6 +55,11 @@ class PaymentMethodService
     public function isDokuAvailable(): bool
     {
         return $this->isDokuEnabled() && DokuService::hasCredentials();
+    }
+
+    public function isKlikQrisAvailable(): bool
+    {
+        return $this->isKlikQrisEnabled() && KlikQrisService::hasCredentials();
     }
 
     public function isCodAvailable(bool $hasPhysicalProducts = true): bool
@@ -89,6 +98,10 @@ class PaymentMethodService
 
         if ($this->isDokuAvailable()) {
             $methods[] = 'doku';
+        }
+
+        if ($this->isKlikQrisAvailable()) {
+            $methods[] = 'klikqris';
         }
 
         if ($this->isCodAvailable($hasPhysicalProducts)) {
@@ -147,6 +160,14 @@ class PaymentMethodService
             $options[] = [
                 'id' => 'doku',
                 'label' => 'DOKU (Online)',
+                'type' => 'gateway',
+            ];
+        }
+
+        if ($this->isKlikQrisAvailable()) {
+            $options[] = [
+                'id' => 'klikqris',
+                'label' => 'KlikQRIS (QRIS Online)',
                 'type' => 'gateway',
             ];
         }

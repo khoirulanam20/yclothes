@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { MapPin } from 'lucide-react';
 import AccountLayout from '@/Layouts/AccountLayout';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { GuestConfirmDeleteButton } from '@/components/guest/GuestConfirmDeleteButton';
 import { Badge } from '@/components/ui/badge';
@@ -14,13 +15,16 @@ type Props = { addresses: Address[] };
 
 export default function Addresses({ addresses }: Props) {
     return (
-        <AccountLayout title="Alamat Saya">
+        <AccountLayout>
             <Head title="Alamat" />
-            <div className="mb-4 flex justify-end">
-                <Button size="sm" asChild>
-                    <Link href="/account/addresses/create">Tambah Alamat</Link>
-                </Button>
-            </div>
+            <AccountPageHeader
+                title="Alamat Saya"
+                action={
+                    <Button size="sm" asChild>
+                        <Link href="/account/addresses/create">Tambah Alamat</Link>
+                    </Button>
+                }
+            />
             {addresses.length === 0 ? (
                 <AccountPageShell title="Belum ada alamat">
                     <p className="py-6 text-center text-muted-foreground">Tambahkan alamat pengiriman untuk checkout lebih cepat.</p>

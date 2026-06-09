@@ -1,17 +1,20 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { CheckCircle2, Circle, Package, Star, Truck } from 'lucide-react';
+import { Package, Star, Truck } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import AccountLayout from '@/Layouts/AccountLayout';
 import { CopyAmount } from '@/components/storefront/CopyAmount';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
+import { OrderStatusOverview } from '@/components/storefront/OrderStatusOverview';
+import { OrderTimeline } from '@/components/storefront/OrderTimeline';
 import { PaymentConfirmationDialog } from '@/components/storefront/PaymentConfirmationDialog';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ReviewItemForm } from '@/components/storefront/ReviewItemForm';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn, formatRupiah } from '@/lib/utils';
-import { orderStatusLabels, paymentStatusLabels } from '@/lib/order-status';
+import { formatRupiah } from '@/lib/utils';
+import { orderStatusLabels } from '@/lib/order-status';
 
 type Bank = { id: number; bankName: string; accountNumber: string; accountName: string };
 type OrderItem = {
@@ -74,20 +77,8 @@ type Props = {
     canReview?: boolean;
     reviewsRequireLogin?: boolean;
     codInstructions?: string | null;
+    klikqrisPaymentUrl?: string | null;
 };
-
-function statusBannerClass(status: string): string {
-    if (['completed', 'delivered'].includes(status)) {
-        return 'border-green-200 bg-green-50 text-green-900';
-    }
-    if (['cancelled', 'return'].includes(status)) {
-        return 'border-destructive/30 bg-destructive/5 text-destructive';
-    }
-    if (['shipped'].includes(status)) {
-        return 'border-blue-200 bg-blue-50 text-blue-900';
-    }
-    return 'border-primary/20 bg-primary/5 text-foreground';
-}
 
 export default function Show({
     order,
@@ -103,6 +94,7 @@ export default function Show({
     canReview = false,
     reviewsRequireLogin = false,
     codInstructions,
+    klikqrisPaymentUrl,
 }: Props) {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -124,6 +116,7 @@ export default function Show({
 
     const showTransferInstructions = order.paymentMethod === 'bank_transfer' && order.paymentStatus !== 'paid';
     const showQrisInstructions = order.paymentMethod === 'qris' && order.paymentStatus !== 'paid';
+    const showKlikQrisInstructions = order.paymentMethod === 'klikqris' && order.paymentStatus !== 'paid';
     const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
     const needsAction = canConfirmPayment || canConfirmReceived;
@@ -144,36 +137,21 @@ export default function Show({
             )}
 
             {isAccountView && (
-                <div className="mb-4 flex justify-end">
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href="/account/orders">Kembali ke Pesanan</Link>
-                    </Button>
-                </div>
+                <AccountPageHeader
+                    title={`Pesanan #${order.orderNumber}`}
+                    action={
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href="/account/orders">Kembali ke Pesanan</Link>
+                        </Button>
+                    }
+                />
             )}
 
-            <div
-                    className={cn(
-                        'mb-6 rounded-xl border px-4 py-4 sm:px-6',
-                        statusBannerClass(order.orderStatus),
-                    )}
-                >
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="bg-background/80 text-foreground">
-                            {orderStatusLabels[order.orderStatus] ?? order.orderStatus}
-                        </Badge>
-                        <Badge variant="outline" className="border-current/20 bg-background/50">
-                            {paymentStatusLabels[order.paymentStatus] ?? order.paymentStatus}
-                        </Badge>
-                        {order.isReplacement && <Badge variant="secondary">Pesanan Pengganti</Badge>}
-                    </div>
-                    <p className="mt-2 text-sm opacity-90">
-                        {order.orderStatus === 'completed'
-                            ? 'Pesanan Anda telah selesai. Terima kasih!'
-                            : order.paymentStatus === 'pending'
-                                ? 'Selesaikan pembayaran untuk memproses pesanan.'
-                                : 'Pantau status pesanan di bawah.'}
-                    </p>
-                </div>
+            <OrderStatusOverview
+                orderStatus={order.orderStatus}
+                paymentStatus={order.paymentStatus}
+                isReplacement={order.isReplacement}
+            />
 
                 {needsAction && (
                     <AccountPageShell title="Perlu Tindakan" className="mb-6 border-primary/20 bg-primary/5">
@@ -220,8 +198,25 @@ export default function Show({
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">
-                        {(showTransferInstructions || showQrisInstructions || showCodInstructions) && (
+                        {(showTransferInstructions || showQrisInstructions || showKlikQrisInstructions || showCodInstructions) && (
                             <AccountPageShell title="Instruksi Pembayaran">
+                                {showKlikQrisInstructions && (
+                                    <div className="space-y-3">
+                                        {order.uniquePaymentAmount && (
+                                            <p className="text-sm font-semibold text-primary">
+                                                Nominal bayar: <CopyAmount amount={order.uniquePaymentAmount} />
+                                            </p>
+                                        )}
+                                        <p className="text-sm text-muted-foreground">
+                                            Klik tombol di bawah untuk membuka popup pembayaran QRIS KlikQRIS.
+                                        </p>
+                                        {klikqrisPaymentUrl && (
+                                            <Button asChild size="sm">
+                                                <a href={klikqrisPaymentUrl}>Bayar dengan KlikQRIS</a>
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                                 {showQrisInstructions && qris && (
                                     <div className="space-y-3">
                                         {qris.merchantName && <p className="text-sm font-medium">{qris.merchantName}</p>}
@@ -393,37 +388,7 @@ export default function Show({
 
                     <div className="lg:col-span-1">
                         <div className="lg:sticky lg:top-24">
-                            {timeline.length > 0 && (
-                                <AccountPageShell title="Timeline Status">
-                                    <ol className="space-y-4">
-                                        {timeline.map((entry, i) => (
-                                            <li key={i} className="flex gap-3">
-                                                <div className="flex flex-col items-center">
-                                                    {i === 0 ? (
-                                                        <CheckCircle2 className="size-5 text-primary" />
-                                                    ) : (
-                                                        <Circle className="size-5 text-muted-foreground/40" />
-                                                    )}
-                                                    {i < timeline.length - 1 && (
-                                                        <div className="mt-1 w-px flex-1 bg-border min-h-[1rem]" />
-                                                    )}
-                                                </div>
-                                                <div className="pb-1">
-                                                    <p className="text-sm font-medium">
-                                                        {orderStatusLabels[entry.toStatus] ?? entry.toStatus}
-                                                    </p>
-                                                    {entry.note && (
-                                                        <p className="text-sm text-muted-foreground">{entry.note}</p>
-                                                    )}
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {new Date(entry.createdAt).toLocaleString('id-ID')}
-                                                    </p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                </AccountPageShell>
-                            )}
+                            <OrderTimeline entries={timeline} />
                         </div>
                     </div>
                 </div>
@@ -432,7 +397,7 @@ export default function Show({
 
     if (isAccountView) {
         return (
-            <AccountLayout title={`Pesanan #${order.orderNumber}`}>
+            <AccountLayout>
                 <Head title={`Pesanan #${order.orderNumber}`} />
                 {orderContent}
             </AccountLayout>

@@ -32,6 +32,7 @@ class OrderSerializer
             'couponCode' => $order->coupon_code,
             'grandTotal' => $order->grand_total,
             'uniquePaymentAmount' => $order->unique_payment_amount,
+            'paymentGatewayData' => $order->payment_gateway_data,
             'paymentMethod' => $order->payment_method,
             'paymentStatus' => $order->payment_status,
             'paymentConfirmationStatus' => $order->payment_confirmation_status,

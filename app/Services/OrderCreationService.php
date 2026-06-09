@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceEmailContext;
 use App\Exceptions\CheckoutProcessException;
 use App\Exceptions\InsufficientStockException;
-use App\Enums\InvoiceEmailContext;
 use App\Mail\OrderCreatedMail;
 use App\Mail\OrderInvoiceMail;
 use App\Models\Order;
@@ -309,6 +309,8 @@ class OrderCreationService
             $orderData['payment_method'] = 'qris';
         } elseif ($validated['payment_method'] === 'doku') {
             $orderData['payment_method'] = 'doku';
+        } elseif ($validated['payment_method'] === 'klikqris') {
+            $orderData['payment_method'] = 'klikqris';
         } elseif ($validated['payment_method'] === 'midtrans') {
             $orderData['payment_method'] = 'midtrans';
         } elseif ($validated['payment_method'] === 'cod') {

@@ -313,6 +313,7 @@ return [
             ['name' => 'payment_qris_enabled', 'title' => 'QRIS (Manual)', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'payment_midtrans_enabled', 'title' => 'Midtrans', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'payment_doku_enabled', 'title' => 'DOKU Checkout', 'type' => 'boolean', 'default' => '0'],
+            ['name' => 'payment_klikqris_enabled', 'title' => 'KlikQRIS', 'type' => 'boolean', 'default' => '0'],
             ['name' => 'payment_cod_enabled', 'title' => 'Bayar di Tempat (COD) — Segera Hadir', 'type' => 'boolean', 'default' => '0'],
         ],
     ],
@@ -369,10 +370,20 @@ return [
         ],
     ],
     [
+        'key' => 'payment.klikqris',
+        'name' => 'KlikQRIS',
+        'info' => 'Konfigurasi gateway KlikQRIS. Mode sandbox/production otomatis berdasarkan prefix API key (sk_sandbox_). URL webhook tampil di bawah.',
+        'sort' => 7,
+        'fields' => [
+            ['name' => 'klikqris_api_key', 'title' => 'x-api-key', 'type' => 'password', 'validation' => 'nullable|string|max:255'],
+            ['name' => 'klikqris_merchant_id', 'title' => 'ID Merchant', 'type' => 'text', 'validation' => 'nullable|string|max:100'],
+        ],
+    ],
+    [
         'key' => 'payment.timeout',
         'name' => 'Batas Waktu Pembayaran',
         'info' => 'Timeout dan auto-batal pesanan belum bayar.',
-        'sort' => 7,
+        'sort' => 8,
         'fields' => [
             ['name' => 'payment_timeout_hours', 'title' => 'Batas Waktu (jam)', 'type' => 'number', 'default' => '24', 'validation' => 'nullable|integer|min:1|max:168'],
             ['name' => 'auto_cancel_unpaid_orders', 'title' => 'Auto-batal Pesanan Expired', 'type' => 'boolean', 'default' => '1'],

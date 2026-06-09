@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import AccountLayout from '@/Layouts/AccountLayout';
 import { type ProductCardData } from '@/components/ProductCard';
+import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { ProductGrid } from '@/components/storefront/ProductGrid';
 import { Button } from '@/components/ui/button';
@@ -18,8 +19,9 @@ export default function Wishlist({ products: initialProducts }: Props) {
     };
 
     return (
-        <AccountLayout title="Wishlist">
+        <AccountLayout>
             <Head title="Wishlist" />
+            <AccountPageHeader title="Wishlist" />
             {products.length === 0 ? (
                 <AccountPageShell title="Wishlist kosong">
                     <div className="py-6 text-center">
