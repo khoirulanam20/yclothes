@@ -14,17 +14,17 @@ export function ProductSortDropdown({ value, options, onChange, className }: Pro
     const selected = options.find((opt) => opt.value === value) ?? options[0];
 
     return (
-        <div className={cn('relative inline-flex items-center', className)}>
+        <div className={cn('relative flex min-w-0 items-center', className)}>
             <label className="sr-only" htmlFor="product-sort">
                 Urutkan produk
             </label>
-            <span className="mr-2 text-sm text-muted-foreground whitespace-nowrap">Urutkan:</span>
-            <div className="relative">
+            <span className="mr-2 hidden text-sm text-muted-foreground whitespace-nowrap sm:inline">Urutkan:</span>
+            <div className="relative min-w-0 flex-1 sm:flex-initial">
                 <select
                     id="product-sort"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="appearance-none rounded-lg border border-input bg-background pl-3 pr-8 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                    className="h-9 w-full min-w-0 appearance-none rounded-lg border border-input bg-background py-2 pl-3 pr-8 text-sm font-medium shadow-sm transition-colors hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer sm:w-auto"
                 >
                     {options.map((opt) => (
                         <option key={opt.value} value={opt.value}>

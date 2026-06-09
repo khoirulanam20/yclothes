@@ -161,11 +161,11 @@ export default function Index({
     return (
         <GuestLayout>
             <Head title="Checkout" />
-            <PageContainer>
+            <PageContainer narrow compact className="max-w-2xl lg:max-w-3xl">
                 <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Keranjang', href: '/cart' }, { label: 'Checkout' }]} />
 
-                <form onSubmit={submit} className="grid gap-4 lg:grid-cols-3">
-                    <div className="space-y-4 lg:col-span-2">
+                <form id="checkout-form" onSubmit={submit} className="grid min-w-0 gap-4 pb-24 lg:grid-cols-3 lg:pb-0">
+                    <div className="order-2 min-w-0 space-y-4 lg:order-none lg:col-span-2">
                         {addresses.length > 0 && (
                             <SectionCard title="Alamat Pengiriman" className="store-card">
                                 <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">Pilih alamat tersimpan</p>
@@ -268,7 +268,7 @@ export default function Index({
                                     if (method.id === 'bank_transfer') {
                                         return (
                                             <div key={method.id}>
-                                                <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                                <label className="flex min-w-0 cursor-pointer items-center gap-3 break-words rounded-xl border p-3 transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                                                     <input
                                                         type="radio"
                                                         name="pm"
@@ -295,7 +295,7 @@ export default function Index({
                                     return (
                                         <label
                                             key={method.id}
-                                            className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                                            className="flex min-w-0 cursor-pointer items-center gap-3 break-words rounded-xl border p-3 text-sm transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                                         >
                                             <input
                                                 type="radio"
@@ -312,14 +312,14 @@ export default function Index({
                         </SectionCard>
                     </div>
 
-                    <div className="lg:sticky lg:top-24 lg:self-start">
-                        <SectionCard title="Ringkasan Transaksi" className="store-card">
+                    <div className="order-1 min-w-0 lg:order-none lg:sticky lg:top-24 lg:self-start">
+                        <SectionCard title="Ringkasan Transaksi" className="store-card overflow-visible">
                             <p className="mb-3 text-xs text-muted-foreground">Cek ringkasan transaksimu, yuk</p>
-                            <div className="space-y-2 text-sm">
+                            <div className="min-w-0 space-y-2 text-sm">
                                 {items.map((item, i) => (
-                                    <div key={i} className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground truncate">{item.productName} ×{item.qty}</span>
-                                        <span className="shrink-0">{formatRupiah(item.subtotal)}</span>
+                                    <div key={i} className="flex min-w-0 items-start justify-between gap-3">
+                                        <span className="min-w-0 flex-1 text-muted-foreground line-clamp-2">{item.productName} ×{item.qty}</span>
+                                        <span className="shrink-0 tabular-nums">{formatRupiah(item.subtotal)}</span>
                                     </div>
                                 ))}
                                 {pricing.couponCode ? (
@@ -349,20 +349,29 @@ export default function Index({
                                     </div>
                                 )}
                                 <div className="border-t pt-2 space-y-1">
-                                    <div className="flex justify-between"><span>Subtotal</span><span>{formatRupiah(pricing.subtotal)}</span></div>
+                                    <div className="flex min-w-0 items-center justify-between gap-3">
+                                        <span>Subtotal</span>
+                                        <span className="shrink-0 tabular-nums">{formatRupiah(pricing.subtotal)}</span>
+                                    </div>
                                     {pricing.discountAmount > 0 && (
-                                        <div className="flex justify-between text-green-600">
-                                            <span>Diskon{pricing.couponCode ? ` (${pricing.couponCode})` : ''}</span>
-                                            <span>-{formatRupiah(pricing.discountAmount)}</span>
+                                        <div className="flex min-w-0 items-center justify-between gap-3 text-green-600">
+                                            <span className="min-w-0 truncate">Diskon{pricing.couponCode ? ` (${pricing.couponCode})` : ''}</span>
+                                            <span className="shrink-0 tabular-nums">-{formatRupiah(pricing.discountAmount)}</span>
                                         </div>
                                     )}
                                     {pricing.taxAmount > 0 && (
-                                        <div className="flex justify-between"><span>Pajak</span><span>{formatRupiah(pricing.taxAmount)}</span></div>
+                                        <div className="flex min-w-0 items-center justify-between gap-3">
+                                            <span>Pajak</span>
+                                            <span className="shrink-0 tabular-nums">{formatRupiah(pricing.taxAmount)}</span>
+                                        </div>
                                     )}
-                                    <div className="flex justify-between"><span>Ongkir</span><span>{formatRupiah(shippingCost)}</span></div>
-                                    <div className="flex justify-between font-bold text-base pt-1">
+                                    <div className="flex min-w-0 items-center justify-between gap-3">
+                                        <span>Ongkir</span>
+                                        <span className="shrink-0 tabular-nums">{formatRupiah(shippingCost)}</span>
+                                    </div>
+                                    <div className="flex min-w-0 items-center justify-between gap-3 pt-1 text-base font-bold">
                                         <span>Total</span>
-                                        <span className="text-primary">{formatRupiah(grandTotal)}</span>
+                                        <span className="shrink-0 tabular-nums text-primary">{formatRupiah(grandTotal)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -377,15 +386,33 @@ export default function Index({
                                     <span>{newsletterOptInLabel ?? 'Berlangganan newsletter untuk promo & update'}</span>
                                 </label>
                             )}
-                            <Button type="submit" className="mt-4 w-full" size="lg" disabled={processing || paymentMethods.length === 0}>
+                            <Button type="submit" form="checkout-form" className="mt-4 hidden w-full lg:inline-flex" size="lg" disabled={processing || paymentMethods.length === 0}>
                                 Bayar Sekarang
                             </Button>
-                            <Button variant="outline" className="w-full mt-2" asChild>
+                            <Button variant="outline" className="mt-2 hidden w-full lg:inline-flex" asChild>
                                 <Link href="/cart">Kembali ke Keranjang</Link>
                             </Button>
                         </SectionCard>
                     </div>
                 </form>
+
+                <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] lg:hidden">
+                    <div className="mx-auto flex max-w-2xl items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs text-muted-foreground">Total</p>
+                            <p className="truncate text-base font-bold tabular-nums text-primary sm:text-lg">{formatRupiah(grandTotal)}</p>
+                        </div>
+                        <Button
+                            type="submit"
+                            form="checkout-form"
+                            size="lg"
+                            className="h-11 shrink-0 whitespace-nowrap px-4 text-sm sm:px-6 sm:text-base"
+                            disabled={processing || paymentMethods.length === 0}
+                        >
+                            Bayar Sekarang
+                        </Button>
+                    </div>
+                </div>
             </PageContainer>
         </GuestLayout>
     );

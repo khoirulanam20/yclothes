@@ -1,13 +1,18 @@
 import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { type ProductCardData } from '@/components/ProductCard';
 import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductFilterSidebar } from '@/components/storefront/ProductFilterSidebar';
+import { ProductFilterMobileSheet } from '@/components/storefront/ProductFilterMobileSheet';
+import { hasActiveProductFilters } from '@/components/storefront/ProductFilterPanel';
 import { ProductGrid } from '@/components/storefront/ProductGrid';
 import { ProductSortDropdown } from '@/components/storefront/ProductSortDropdown';
 import { SectionCard } from '@/components/storefront/SectionCard';
+import { Button } from '@/components/ui/button';
 import type { CategoryNav } from '@/types';
 
 type BreadcrumbItem = { label: string; href: string };
@@ -35,7 +40,9 @@ const sortOptions = [
 ];
 
 export default function Index({ products, categories, filters, activeCategory }: Props) {
+    const [filterOpen, setFilterOpen] = useState(false);
     const isFlashSale = filters.flash_sale === '1';
+    const hasActiveFilters = hasActiveProductFilters(filters);
 
     const applySort = (sort: string) => {
         router.get('/products', { ...filters, sort }, { preserveState: true });
@@ -59,16 +66,33 @@ export default function Index({ products, categories, filters, activeCategory }:
 
                     <div className="min-w-0 flex-1">
                         <SectionCard noPadding>
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                            <div className="space-y-3 border-b px-4 py-3 lg:flex lg:items-center lg:justify-between lg:space-y-0">
                                 <p className="text-sm text-muted-foreground">
-                                    Menampilkan {products.meta.total} produk
+                                    Menampilkan{' '}
+                                    <span className="font-medium text-foreground">{products.meta.total}</span> produk
                                     {isFlashSale ? ' di Flash Sale' : activeCategory ? ` di ${activeCategory.name}` : ''}
                                 </p>
-                                <ProductSortDropdown
-                                    value={filters.sort ?? ''}
-                                    options={sortOptions}
-                                    onChange={applySort}
-                                />
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="relative h-9 shrink-0 gap-1.5 lg:hidden"
+                                        onClick={() => setFilterOpen(true)}
+                                    >
+                                        <SlidersHorizontal className="size-4" />
+                                        Filter
+                                        {hasActiveFilters && (
+                                            <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" aria-hidden />
+                                        )}
+                                    </Button>
+                                    <ProductSortDropdown
+                                        value={filters.sort ?? ''}
+                                        options={sortOptions}
+                                        onChange={applySort}
+                                        className="min-w-0 flex-1 justify-end sm:flex-initial sm:justify-start"
+                                    />
+                                </div>
                             </div>
                             <div className="p-4">
                                 {products.data.length > 0 ? (
@@ -84,6 +108,13 @@ export default function Index({ products, categories, filters, activeCategory }:
                     </div>
                 </div>
             </PageContainer>
+
+            <ProductFilterMobileSheet
+                open={filterOpen}
+                onOpenChange={setFilterOpen}
+                categories={categories}
+                filters={filters}
+            />
         </GuestLayout>
     );
 }

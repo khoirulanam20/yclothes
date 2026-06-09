@@ -137,7 +137,7 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                 <PageContainer>
                     <SectionCard className={HOME_SECTION_RADIUS} title={(props.title as string) || 'Kategori'}>
                         <div
-                            className="grid gap-3"
+                            className="store-scroll-x -mx-1 flex gap-3 overflow-x-auto pb-1 md:mx-0 md:grid md:gap-3 md:overflow-visible md:pb-0"
                             style={{
                                 gridTemplateColumns: `repeat(${Math.max(Number(props.gridColumns) || section.categories.length, 1)}, minmax(0, 1fr))`,
                             }}
@@ -147,18 +147,25 @@ export function HomeSectionRenderer({ section }: { section: HomeSection }) {
                                     key={cat.id}
                                     href={`/products?category=${cat.slug}`}
                                     className={cn(
-                                        'group store-card store-card-hover border bg-card p-3 text-center transition-colors hover:border-primary/40',
+                                        'group store-card store-card-hover shrink-0 border bg-card transition-colors hover:border-primary/40',
+                                        'flex size-[4.5rem] items-center justify-center p-2 md:size-auto md:flex-col md:p-3 md:text-center',
                                         HOME_SECTION_RADIUS,
                                     )}
+                                    title={cat.name}
+                                    aria-label={cat.name}
                                 >
-                                    {(props.showImages as boolean) !== false && cat.imageUrl && (
+                                    {(props.showImages as boolean) !== false && cat.imageUrl ? (
                                         <img
                                             src={cat.imageUrl}
                                             alt={cat.name}
-                                            className="mx-auto mb-2 h-16 w-16 rounded-full object-cover transition-transform group-hover:scale-105"
+                                            className="size-12 rounded-full object-cover transition-transform group-hover:scale-105 md:mx-auto md:mb-2 md:size-16"
                                         />
+                                    ) : (
+                                        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground md:hidden">
+                                            {cat.name.charAt(0)}
+                                        </span>
                                     )}
-                                    <span className="text-sm font-medium">{cat.name}</span>
+                                    <span className="hidden text-sm font-medium md:block">{cat.name}</span>
                                 </Link>
                             ))}
                         </div>
