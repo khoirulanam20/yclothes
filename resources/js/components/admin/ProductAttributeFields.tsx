@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldError } from '@/components/admin/FieldError';
+import { ColorAttributeField } from '@/components/admin/ColorAttributeField';
 
 export type AttributeDefinition = {
     id: number;
@@ -100,27 +101,13 @@ function renderField(
         const colors = Array.isArray(rawValue)
             ? (rawValue as { hex: string; name: string }[])
             : [];
-        const text = colors.map((c) => `${c.hex}|${c.name}`).join('\n');
 
         return (
-            <div className="space-y-2">
-                <Textarea
-                    id={`attr-${attr.code}`}
-                    rows={4}
-                    value={text}
-                    placeholder="#000000|Hitam"
-                    onChange={(e) => {
-                        const lines = e.target.value.split('\n').filter(Boolean);
-                        onChange(
-                            lines.map((line) => {
-                                const [hex, name] = line.split('|', 2);
-                                return { hex: hex.trim(), name: (name ?? hex).trim() };
-                            }),
-                        );
-                    }}
-                />
-                <p className="text-xs text-muted-foreground">Format per baris: hex|nama warna</p>
-            </div>
+            <ColorAttributeField
+                id={`attr-${attr.code}`}
+                colors={colors}
+                onChange={onChange}
+            />
         );
     }
 

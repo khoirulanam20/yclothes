@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
+import { MapPin, MessageCircle } from 'lucide-react';
 import { resolveNav } from '@/lib/storefront-nav';
-import type { SharedPageProps } from '@/types';
+import type { NavItem, SharedPageProps } from '@/types';
 
 function SocialIcon({ label }: { label: string }) {
     const icons: Record<string, string> = {
@@ -21,13 +22,58 @@ function SocialIcon({ label }: { label: string }) {
     );
 }
 
+const defaultHelpLinks: NavItem[] = [
+    { id: -1, label: 'Lacak Pesanan', url: '/order/track' },
+    { id: -2, label: 'FAQ', url: '/faq' },
+    { id: -3, label: 'Cara Belanja', url: '/page/cara-belanja' },
+];
+
+function mergeLinks(primary: NavItem[], fallback: NavItem[]): NavItem[] {
+    const seen = new Set<string>();
+    const merged: NavItem[] = [];
+
+    for (const item of [...primary, ...fallback]) {
+        const key = item.url.toLowerCase();
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        merged.push(item);
+    }
+
+    return merged;
+}
+
+function FooterLinkList({ items }: { items: NavItem[] }) {
+    return (
+        <ul className="space-y-2.5">
+            {items.map((item) => (
+                <li key={`${item.id}-${item.url}`}>
+                    <Link
+                        href={item.url}
+                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    >
+                        {item.label}
+                    </Link>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 export function SiteFooter() {
     const { theme, navigation } = usePage<SharedPageProps>().props;
-    const navItems = resolveNav(navigation.header, navigation.footer);
-    const footerNav = resolveNav(navigation.footer, navigation.footer);
-    const helpLinks = navItems.filter((item) =>
-        /lacak|faq|bantuan|kontak|help|track/i.test(item.label),
+    const menuLinks = navigation.footer.length > 0
+        ? navigation.footer
+        : resolveNav(navigation.header, navigation.footer);
+    const helpFromNav = menuLinks.filter((item) =>
+        /lacak|faq|bantuan|kontak|help|track|belanja|cara/i.test(item.label),
     );
+    const helpLinks = mergeLinks(helpFromNav, defaultHelpLinks);
+    const menuOnlyLinks = menuLinks.filter(
+        (item) => !helpLinks.some((help) => help.url.toLowerCase() === item.url.toLowerCase()),
+    );
+
     const socials = [
         { label: 'Instagram', url: theme.socialInstagram },
         { label: 'Facebook', url: theme.socialFacebook },
@@ -35,25 +81,31 @@ export function SiteFooter() {
     ].filter((s) => s.url);
 
     return (
-        <footer className="mt-auto border-t bg-card">
-            <div className="container mx-auto px-4 py-12">
-                <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="sm:col-span-2 lg:col-span-1">
-                        <p className="text-xl font-bold text-primary">{theme.brandName}</p>
+        <footer className="mt-auto border-t bg-muted/30 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+            <div className="container mx-auto px-4 py-10 md:py-12">
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+                    <div className="sm:col-span-2 lg:col-span-5">
+                        <Link href="/" className="inline-flex items-center gap-2">
+                            {theme.brandLogo ? (
+                                <img src={theme.brandLogo} alt={theme.brandName} className="h-9 w-auto" />
+                            ) : (
+                                <span className="text-xl font-bold text-primary">{theme.brandName}</span>
+                            )}
+                        </Link>
                         {theme.siteDescription && (
-                            <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-xs">
+                            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
                                 {theme.siteDescription}
                             </p>
                         )}
                         {socials.length > 0 && (
-                            <div className="mt-5 flex gap-3">
+                            <div className="mt-5 flex gap-2.5">
                                 {socials.map((s) => (
                                     <a
                                         key={s.label}
                                         href={s.url!}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex size-9 items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                                        className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                                         aria-label={s.label}
                                     >
                                         <SocialIcon label={s.label} />
@@ -63,73 +115,42 @@ export function SiteFooter() {
                         )}
                     </div>
 
-                    <div>
-                        <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">Menu</p>
-                        <ul className="space-y-2.5">
-                            {(footerNav.length > 0 ? footerNav : navItems).map((item) => (
-                                <li key={item.id}>
-                                    <Link
-                                        href={item.url}
-                                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                                    >
-                                        {item.label}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                    <div className="lg:col-span-3">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">Menu</p>
+                        <FooterLinkList items={menuOnlyLinks.length > 0 ? menuOnlyLinks : menuLinks} />
                     </div>
 
-                    <div>
-                        <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">Bantuan</p>
-                        <ul className="space-y-2.5">
-                            {helpLinks.length > 0 ? (
-                                helpLinks.map((item) => (
-                                    <li key={item.id}>
-                                        <Link
-                                            href={item.url}
-                                            className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                                        >
-                                            {item.label}
-                                        </Link>
-                                    </li>
-                                ))
-                            ) : (
-                                <>
-                                    <li>
-                                        <Link href="/order/track" className="text-sm text-muted-foreground hover:text-primary">
-                                            Lacak Pesanan
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/products" className="text-sm text-muted-foreground hover:text-primary">
-                                            Belanja
-                                        </Link>
-                                    </li>
-                                </>
+                    <div className="lg:col-span-2">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">Bantuan</p>
+                        <FooterLinkList items={helpLinks} />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">Hubungi Kami</p>
+                        <div className="space-y-3">
+                            {theme.storeLocation && (
+                                <p className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+                                    <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+                                    <span>{theme.storeLocation}</span>
+                                </p>
                             )}
-                        </ul>
-                    </div>
-
-                    <div>
-                        <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">Hubungi Kami</p>
-                        {theme.storeLocation && (
-                            <p className="text-sm leading-relaxed text-muted-foreground">{theme.storeLocation}</p>
-                        )}
-                        {theme.waNumber && (
-                            <a
-                                href={`https://wa.me/${theme.waNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-                            >
-                                Chat WhatsApp
-                            </a>
-                        )}
+                            {theme.waNumber && (
+                                <a
+                                    href={`https://wa.me/${theme.waNumber}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 sm:w-auto"
+                                >
+                                    <MessageCircle className="size-4" />
+                                    Chat WhatsApp
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="border-t bg-muted/50 py-4">
+            <div className="border-t border-border/60 bg-background py-4">
                 <p className="container mx-auto px-4 text-center text-xs text-muted-foreground">
                     © {new Date().getFullYear()} {theme.brandName}. Hak cipta dilindungi.
                 </p>

@@ -1,5 +1,5 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { FormEvent, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
@@ -19,23 +19,49 @@ type CartRule = {
 };
 type Props = { rule?: CartRule; categoryOptions: CategoryOption[] };
 
+type NumberField = number | '';
+
+function numberField(value: number | undefined | null): NumberField {
+    if (value === undefined || value === null) {
+        return '';
+    }
+
+    return value;
+}
+
+function normalizeNumbers<T extends Record<string, unknown>>(data: T): T {
+    const numericKeys = ['uses_per_coupon', 'uses_per_customer', 'discount_amount', 'priority'] as const;
+
+    return {
+        ...data,
+        ...Object.fromEntries(
+            numericKeys.map((key) => [
+                key,
+                data[key] === '' || data[key] === undefined ? 0 : Number(data[key]),
+            ]),
+        ),
+    } as T;
+}
+
 export default function Form({ rule, categoryOptions }: Props) {
     const isEdit = !!rule?.id;
+    const [syncing, setSyncing] = useState(false);
+
     const { data, setData, post, transform, processing, errors } = useForm({
         name: rule?.name ?? '',
         description: rule?.description ?? '',
         coupon_code: rule?.couponCode ?? '',
-        uses_per_coupon: rule?.usesPerCoupon ?? 0,
-        uses_per_customer: rule?.usesPerCustomer ?? 0,
+        uses_per_coupon: numberField(rule?.usesPerCoupon),
+        uses_per_customer: numberField(rule?.usesPerCustomer),
         discount_type: rule?.discountType ?? 'percentage',
-        discount_amount: rule?.discountAmount ?? 0,
+        discount_amount: numberField(rule?.discountAmount),
         min_order_amount: rule?.minOrderAmount ?? '',
         max_discount: rule?.maxDiscount ?? '',
         category_ids: rule?.categoryIds ?? [] as number[],
         start_date: rule?.startDate?.slice(0, 10) ?? '',
         end_date: rule?.endDate?.slice(0, 10) ?? '',
         is_active: rule?.isActive ?? true,
-        priority: rule?.priority ?? 0,
+        priority: numberField(rule?.priority),
         slug: rule?.slug ?? '',
         meta_title: rule?.metaTitle ?? '',
         meta_description: rule?.metaDescription ?? '',
@@ -51,13 +77,29 @@ export default function Form({ rule, categoryOptions }: Props) {
         e.preventDefault();
         const needsFormData = !!data.banner_image || (isEdit && data.remove_banner_image);
         const options = needsFormData ? { forceFormData: true as const } : {};
+
         if (isEdit) {
-            transform((d) => ({ ...d, _method: 'put' }));
+            transform((formData) => ({ ...normalizeNumbers(formData), _method: 'put' }));
             post(`/admin/cart-rules/${rule!.id}`, options);
         } else {
+            transform((formData) => normalizeNumbers(formData));
             post('/admin/cart-rules', options);
         }
     };
+
+    const syncHomepage = () => {
+        if (!rule?.id) {
+            return;
+        }
+
+        setSyncing(true);
+        router.post(`/admin/cart-rules/${rule.id}/sync-homepage`, {}, {
+            preserveScroll: true,
+            onFinish: () => setSyncing(false),
+        });
+    };
+
+    const canSyncHomepage = isEdit && !!rule?.bannerImageUrl && !data.remove_banner_image;
 
     return (
         <AdminLayout
@@ -84,8 +126,27 @@ export default function Form({ rule, categoryOptions }: Props) {
                             <select id="discount_type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={data.discount_type} onChange={(e) => setData('discount_type', e.target.value)}>
                                 <option value="percentage">Percentage</option><option value="fixed">Fixed</option><option value="free_shipping">Free Shipping</option>
                             </select></div>
-                        <div><Label htmlFor="discount_amount">Jumlah Diskon</Label><Input id="discount_amount" type="number" min={0} value={data.discount_amount} onChange={(e) => setData('discount_amount', Number(e.target.value))} required /></div>
-                        <div><Label htmlFor="priority">Priority</Label><Input id="priority" type="number" value={data.priority} onChange={(e) => setData('priority', Number(e.target.value))} /></div>
+                        <div>
+                            <Label htmlFor="discount_amount">Jumlah Diskon</Label>
+                            <Input
+                                id="discount_amount"
+                                type="number"
+                                min={0}
+                                value={data.discount_amount}
+                                onChange={(e) => setData('discount_amount', e.target.value === '' ? '' : Number(e.target.value))}
+                                required
+                            />
+                            <FieldError message={errors.discount_amount} />
+                        </div>
+                        <div>
+                            <Label htmlFor="priority">Priority</Label>
+                            <Input
+                                id="priority"
+                                type="number"
+                                value={data.priority}
+                                onChange={(e) => setData('priority', e.target.value === '' ? '' : Number(e.target.value))}
+                            />
+                        </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                         <div><Label htmlFor="start_date">Mulai</Label><Input id="start_date" type="date" value={data.start_date} onChange={(e) => setData('start_date', e.target.value)} required /></div>
@@ -106,13 +167,25 @@ export default function Form({ rule, categoryOptions }: Props) {
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="uses_per_coupon">Maks. pemakaian (global)</Label>
-                                <Input id="uses_per_coupon" type="number" min={0} value={data.uses_per_coupon} onChange={(e) => setData('uses_per_coupon', Number(e.target.value))} />
-                                <p className="text-xs text-muted-foreground mt-1">0 = tidak terbatas untuk semua pembeli</p>
+                                <Input
+                                    id="uses_per_coupon"
+                                    type="number"
+                                    min={0}
+                                    value={data.uses_per_coupon}
+                                    onChange={(e) => setData('uses_per_coupon', e.target.value === '' ? '' : Number(e.target.value))}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Kosongkan atau 0 = tidak terbatas untuk semua pembeli</p>
                             </div>
                             <div>
                                 <Label htmlFor="uses_per_customer">Maks. per pembeli</Label>
-                                <Input id="uses_per_customer" type="number" min={0} value={data.uses_per_customer} onChange={(e) => setData('uses_per_customer', Number(e.target.value))} />
-                                <p className="text-xs text-muted-foreground mt-1">0 = tidak terbatas. Tamu dicek via email checkout</p>
+                                <Input
+                                    id="uses_per_customer"
+                                    type="number"
+                                    min={0}
+                                    value={data.uses_per_customer}
+                                    onChange={(e) => setData('uses_per_customer', e.target.value === '' ? '' : Number(e.target.value))}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Kosongkan atau 0 = tidak terbatas. Tamu dicek via email checkout</p>
                             </div>
                         </div>
                     </div>
@@ -138,6 +211,27 @@ export default function Form({ rule, categoryOptions }: Props) {
                                 <div className="mt-2 flex items-center gap-3">
                                     <img src={rule.bannerImageUrl} alt="" className="h-16 rounded" />
                                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={data.remove_banner_image} onChange={(e) => setData('remove_banner_image', e.target.checked)} /> Hapus banner</label>
+                                </div>
+                            )}
+                            {isEdit && (
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        disabled={!canSyncHomepage || syncing}
+                                        onClick={syncHomepage}
+                                    >
+                                        {syncing ? 'Menyinkronkan...' : 'Sinkron ke Halaman Utama'}
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" asChild>
+                                        <Link href="/admin/homepage">Buka Homepage Builder</Link>
+                                    </Button>
+                                    {!canSyncHomepage && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Upload banner terlebih dahulu untuk menyinkronkan ke section Banner Promosi.
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>

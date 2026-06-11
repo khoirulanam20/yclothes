@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CartRule;
 use App\Services\CategoryTreeService;
+use App\Services\HomepageLayoutService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CartRuleController extends Controller
 {
-    public function __construct(private CategoryTreeService $categoryTree) {}
+    public function __construct(
+        private CategoryTreeService $categoryTree,
+        private HomepageLayoutService $homepageLayout,
+    ) {}
 
     public function index()
     {
@@ -56,6 +60,25 @@ class CartRuleController extends Controller
         $cartRule->delete();
 
         return redirect()->route('admin.cart-rules.index')->with('success', 'Cart rule berhasil dihapus');
+    }
+
+    public function syncHomepage(CartRule $cartRule)
+    {
+        if (empty($cartRule->banner_image)) {
+            return back()->with('error', 'Upload banner landing terlebih dahulu sebelum sinkronisasi.');
+        }
+
+        try {
+            $updated = $this->homepageLayout->syncPromotionBannerFromCartRule($cartRule);
+            $count = count($updated);
+
+            return back()->with(
+                'success',
+                "Banner promosi disinkronkan ke {$count} section Banner Promosi di halaman utama.",
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     private function cartRule(CartRule $rule): array

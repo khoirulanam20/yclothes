@@ -155,6 +155,8 @@ Route::middleware(['order.access'])->group(function () {
     Route::get('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'create'])->name('order.confirm-payment');
     Route::post('/order/{order:order_number}/confirm-payment', [PaymentConfirmationController::class, 'store'])->name('order.confirm-payment.store');
     Route::post('/order/{order:order_number}/confirm-received', [OrderController::class, 'confirmReceived'])->name('order.confirm-received');
+    Route::get('/order/{order:order_number}/returns/create', [OrderController::class, 'createReturn'])->name('order.returns.create');
+    Route::post('/order/{order:order_number}/returns', [OrderController::class, 'storeReturn'])->name('order.returns.store');
     Route::post('/order/{order:order_number}/reviews', [OrderController::class, 'storeReview'])->name('order.reviews.store');
     Route::post('/order/payment-finish/{order:order_number}', [CheckoutController::class, 'paymentFinish'])
         ->name('order.payment-finish')
@@ -270,6 +272,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::middleware('permission:promotions.manage')->group(function () {
+            Route::post('cart-rules/{cart_rule}/sync-homepage', [AdminCartRuleController::class, 'syncHomepage'])->name('cart-rules.sync-homepage');
             Route::resource('cart-rules', AdminCartRuleController::class);
             Route::resource('catalog-rules', AdminCatalogRuleController::class);
             Route::resource('promotion-popups', AdminPromotionPopupController::class)->except(['show']);

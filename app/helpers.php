@@ -136,6 +136,15 @@ if (! function_exists('grant_order_access')) {
     }
 }
 
+if (! function_exists('order_has_access')) {
+    function order_has_access(\App\Models\Order $order): bool
+    {
+        $token = session('order_access.'.$order->order_number);
+
+        return is_string($token) && hash_equals($order->access_token, $token);
+    }
+}
+
 if (! function_exists('order_public_url')) {
     function order_public_url(string $routeName, \App\Models\Order $order, array $parameters = []): string
     {

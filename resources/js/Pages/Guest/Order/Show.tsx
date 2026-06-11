@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertCircle, Clock, CreditCard, Package, RotateCcw, Star, Truck } from 'lucide-react';
+import { ReviewImageModal } from '@/components/storefront/ReviewImageModal';
 import GuestLayout from '@/Layouts/GuestLayout';
 import AccountLayout from '@/Layouts/AccountLayout';
 import { CopyAmount } from '@/components/storefront/CopyAmount';
@@ -28,7 +29,14 @@ type OrderItem = {
     imageUrl?: string | null;
 };
 type TimelineEntry = { toStatus: string; note?: string | null; createdAt: string };
-type Review = { orderItemId?: number; rating: number; isApproved: boolean; imagesUrl?: string[] };
+type Review = {
+    orderItemId?: number;
+    rating: number;
+    comment?: string | null;
+    isApproved: boolean;
+    imagesUrl?: string[];
+    createdAt?: string;
+};
 type Order = {
     id: number;
     orderNumber: string;
@@ -73,6 +81,8 @@ type Props = {
     qris?: QrisSettings | null;
     canReturn?: boolean;
     returnableItems?: { id: number; productName: string; qty: number }[];
+    returnCreateUrl?: string | null;
+    returnRequiresLogin?: boolean;
     isAccountView?: boolean;
     canReview?: boolean;
     reviewsRequireLogin?: boolean;
@@ -90,6 +100,8 @@ export default function Show({
     qris,
     canReturn,
     returnableItems = [],
+    returnCreateUrl,
+    returnRequiresLogin = false,
     isAccountView,
     canReview = false,
     reviewsRequireLogin = false,
@@ -97,6 +109,7 @@ export default function Show({
     klikqrisPaymentUrl,
 }: Props) {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [reviewLightbox, setReviewLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
     const paymentSubmitUrl = isAccountView
         ? `/account/orders/${order.id}/confirm-payment`
@@ -119,7 +132,7 @@ export default function Show({
     const showKlikQrisInstructions = order.paymentMethod === 'klikqris' && order.paymentStatus !== 'paid';
     const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
-    const canSubmitReturn = !!(canReturn && returnableItems.length > 0);
+    const canSubmitReturn = !!(canReturn && returnCreateUrl);
     const orderReceived = order.orderStatus === 'completed' && !!order.completedAt;
 
     const orderContent = (
@@ -228,7 +241,26 @@ export default function Show({
                             </div>
                         </div>
                         <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto" asChild>
-                            <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
+                            <Link href={returnCreateUrl!}>Ajukan Retur</Link>
+                        </Button>
+                    </div>
+                )}
+
+                {returnRequiresLogin && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-700">
+                                <RotateCcw className="size-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-medium">Ajukan retur</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
+                                    Login ke akun Anda untuk mengajukan retur item pesanan ini.
+                                </p>
+                            </div>
+                        </div>
+                        <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto" asChild>
+                            <Link href="/account/login">Masuk</Link>
                         </Button>
                     </div>
                 )}
@@ -381,21 +413,39 @@ export default function Show({
                                         if (existing) {
                                             return (
                                                 <div key={item.id} className="rounded-xl border bg-muted/20 p-4 text-sm">
-                                                    <p className="font-medium">{item.productName}</p>
+                                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                                        <p className="font-medium">{item.productName}</p>
+                                                        {/* {!existing.isApproved && (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                Menunggu persetujuan
+                                                            </Badge>
+                                                        )} */}
+                                                    </div>
                                                     <div className="mt-1 flex items-center gap-1">
                                                         {Array.from({ length: existing.rating }).map((_, i) => (
                                                             <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
                                                         ))}
                                                     </div>
+                                                    {existing.comment && (
+                                                        <p className="mt-2 text-muted-foreground leading-relaxed">
+                                                            {existing.comment}
+                                                        </p>
+                                                    )}
                                                     {existing.imagesUrl && existing.imagesUrl.length > 0 && (
                                                         <div className="mt-2 flex flex-wrap gap-2">
                                                             {existing.imagesUrl.map((url, index) => (
-                                                                <img
+                                                                <button
                                                                     key={`${url}-${index}`}
-                                                                    src={url}
-                                                                    alt=""
-                                                                    className="size-14 rounded-md border object-cover"
-                                                                />
+                                                                    type="button"
+                                                                    onClick={() => setReviewLightbox({ images: existing.imagesUrl!, index })}
+                                                                    className="overflow-hidden rounded-md border transition-opacity hover:opacity-90"
+                                                                >
+                                                                    <img
+                                                                        src={url}
+                                                                        alt=""
+                                                                        className="size-14 object-cover"
+                                                                    />
+                                                                </button>
                                                             ))}
                                                         </div>
                                                     )}
@@ -429,6 +479,18 @@ export default function Show({
                         </div>
                     </div>
                 </div>
+
+            {reviewLightbox && (
+                <ReviewImageModal
+                    open={!!reviewLightbox}
+                    onOpenChange={(open) => !open && setReviewLightbox(null)}
+                    images={reviewLightbox.images}
+                    activeIndex={reviewLightbox.index}
+                    onIndexChange={(index) =>
+                        setReviewLightbox((prev) => (prev ? { ...prev, index } : null))
+                    }
+                />
+            )}
         </>
     );
 

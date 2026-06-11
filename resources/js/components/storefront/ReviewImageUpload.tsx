@@ -1,6 +1,8 @@
-import { ImagePlus, X } from 'lucide-react';
-import { useRef } from 'react';
+import { ImagePlus, Loader2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { compressImages, MAX_IMAGE_FILE_SIZE, formatFileSize } from '@/lib/compressImage';
+import { guestToast } from '@/lib/guestToast';
 import { cn } from '@/lib/utils';
 
 const MAX_IMAGES = 5;
@@ -11,16 +13,59 @@ type Props = {
     className?: string;
 };
 
+function fileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+function dedupeFiles(files: File[]): File[] {
+    const seen = new Set<string>();
+    return files.filter((file) => {
+        const key = fileKey(file);
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+}
+
 export function ReviewImageUpload({ files, onChange, className }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const processingRef = useRef(false);
+    const [processing, setProcessing] = useState(false);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-    const addFiles = (incoming: FileList | null) => {
-        if (!incoming?.length) {
+    useEffect(() => {
+        const urls = files.map((file) => URL.createObjectURL(file));
+        setPreviewUrls(urls);
+
+        return () => {
+            urls.forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [files]);
+
+    const addFiles = async (incoming: FileList | null) => {
+        if (!incoming?.length || processingRef.current) {
             return;
         }
 
-        const next = [...files, ...Array.from(incoming)].slice(0, MAX_IMAGES);
-        onChange(next);
+        processingRef.current = true;
+        setProcessing(true);
+
+        try {
+            const incomingFiles = Array.from(incoming);
+            const compressed = await compressImages(incomingFiles, (message) => guestToast.error(message));
+
+            if (compressed.length === 0) {
+                return;
+            }
+
+            const merged = dedupeFiles([...files, ...compressed]).slice(0, MAX_IMAGES);
+            onChange(merged);
+        } finally {
+            processingRef.current = false;
+            setProcessing(false);
+        }
     };
 
     const removeFile = (index: number) => {
@@ -30,13 +75,13 @@ export function ReviewImageUpload({ files, onChange, className }: Props) {
     return (
         <div className={cn('space-y-2', className)}>
             <p className="text-xs font-medium text-muted-foreground">
-                Foto produk (opsional, maks. {MAX_IMAGES})
+                Foto produk (opsional, maks. {MAX_IMAGES}, per foto maks. {formatFileSize(MAX_IMAGE_FILE_SIZE)})
             </p>
             <div className="flex flex-wrap gap-2">
                 {files.map((file, index) => (
-                    <div key={`${file.name}-${file.lastModified}-${index}`} className="relative">
+                    <div key={fileKey(file)} className="relative">
                         <img
-                            src={URL.createObjectURL(file)}
+                            src={previewUrls[index]}
                             alt=""
                             className="size-16 rounded-lg border object-cover"
                         />
@@ -54,11 +99,18 @@ export function ReviewImageUpload({ files, onChange, className }: Props) {
                 {files.length < MAX_IMAGES && (
                     <button
                         type="button"
+                        disabled={processing}
                         onClick={() => inputRef.current?.click()}
-                        className="flex size-16 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 text-muted-foreground transition-colors hover:bg-muted/60"
+                        className="flex size-16 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 text-muted-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
                     >
-                        <ImagePlus className="size-4" />
-                        <span className="mt-0.5 text-[10px]">Tambah</span>
+                        {processing ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            <>
+                                <ImagePlus className="size-4" />
+                                <span className="mt-0.5 text-[10px]">Tambah</span>
+                            </>
+                        )}
                     </button>
                 )}
             </div>
@@ -69,7 +121,7 @@ export function ReviewImageUpload({ files, onChange, className }: Props) {
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                    addFiles(e.target.files);
+                    void addFiles(e.target.files);
                     e.target.value = '';
                 }}
             />

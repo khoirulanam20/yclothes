@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\PaymentBank;
+use App\Models\ReturnPolicy;
 use App\Models\Review;
 use App\Services\InventoryService;
 use App\Services\OrderPaymentService;
@@ -96,6 +97,8 @@ class OrderController extends Controller
         $reviews = Review::where('order_id', $order->id)->get()->keyBy('order_item_id');
         $returnService = app(ReturnService::class);
         $customer = Auth::guard('customer')->user();
+        $hasOrderAccess = order_has_access($order);
+        $ownsOrder = $customer && $order->customer_id && $order->customer_id === $customer->id;
         $reviewsRequireLogin = setting_bool('reviews_require_login');
         if (! $order->canCustomerReview()) {
             $canReview = false;
@@ -112,11 +115,44 @@ class OrderController extends Controller
             && $order->payment_status !== 'paid'
             && in_array($order->payment_confirmation_status, ['none', 'rejected'], true);
         $canConfirmReceived = in_array($order->order_status, ['shipped', 'delivered'], true)
+            && ($isAccountView ? (bool) $ownsOrder : ($hasOrderAccess || $ownsOrder));
+
+        $returnableItems = $order->items->filter(fn ($item) => $returnService->canReturnItem($order, $item))
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'productName' => $item->product_name,
+                'qty' => $returnService->getReturnableQty($order, $item),
+            ])
+            ->values()
+            ->all();
+
+        $hasReturnableItems = $returnableItems !== [];
+        $returnEligibleStatus = in_array($order->order_status, ['delivered', 'completed', 'return'], true);
+
+        $canReturn = ! $order->is_replacement
+            && $returnEligibleStatus
+            && $hasReturnableItems
             && (
-                $isAccountView
-                || ! $order->customer_id
-                || ($customer && $order->customer_id === $customer->id)
+                ($isAccountView && $ownsOrder)
+                || $ownsOrder
+                || ($hasOrderAccess && $order->customer_id)
             );
+
+        $returnRequiresLogin = ! $order->is_replacement
+            && $returnEligibleStatus
+            && $hasReturnableItems
+            && $hasOrderAccess
+            && ! $customer
+            && ! $order->customer_id;
+
+        $returnCreateUrl = null;
+        if ($canReturn) {
+            if ($isAccountView || $ownsOrder) {
+                $returnCreateUrl = route('customer.returns.create', $order);
+            } elseif ($hasOrderAccess && $order->customer_id) {
+                $returnCreateUrl = order_public_url('order.returns.create', $order);
+            }
+        }
 
         return [
             'order' => ModelSerializer::order($order, true),
@@ -130,17 +166,10 @@ class OrderController extends Controller
                     [ModelSerializer::class, 'paymentBank'],
                 )
                 : [],
-            'canReturn' => ! $order->is_replacement
-                && in_array($order->order_status, ['delivered', 'completed', 'return'], true)
-                && ($isAccountView || Auth::guard('customer')->check()),
-            'returnableItems' => $order->items->filter(fn ($item) => $returnService->canReturnItem($order, $item))
-                ->map(fn ($item) => [
-                    'id' => $item->id,
-                    'productName' => $item->product_name,
-                    'qty' => $returnService->getReturnableQty($order, $item),
-                ])
-                ->values()
-                ->all(),
+            'canReturn' => $canReturn,
+            'returnableItems' => $returnableItems,
+            'returnCreateUrl' => $returnCreateUrl,
+            'returnRequiresLogin' => $returnRequiresLogin,
             'isAccountView' => $isAccountView,
             'canReview' => $canReview,
             'reviewsRequireLogin' => $reviewsRequireLogin,
@@ -163,9 +192,14 @@ class OrderController extends Controller
         $customer = Auth::guard('customer')->user();
 
         if ($order->customer_id) {
-            if (! $customer || $order->customer_id !== $customer->id) {
+            $allowed = ($customer && $order->customer_id === $customer->id)
+                || order_has_access($order);
+
+            if (! $allowed) {
                 abort(403, 'Hanya pembeli yang dapat mengonfirmasi pesanan diterima.');
             }
+        } elseif (! order_has_access($order)) {
+            abort(403);
         }
 
         $actorType = $customer ? 'customer' : 'guest';
@@ -227,6 +261,11 @@ class OrderController extends Controller
             'review' => 'nullable|string|max:2000',
             'images' => 'nullable|array|max:5',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'images.max' => 'Maksimal 5 foto per ulasan.',
+            'images.*.max' => 'Setiap foto maksimal 2 MB. Kompres gambar terlebih dahulu.',
+            'images.*.image' => 'File harus berupa gambar (JPEG, PNG, atau WebP).',
+            'images.*.mimes' => 'Format gambar harus JPEG, PNG, JPG, atau WebP.',
         ]);
 
         $item = $order->items()->where('id', $validated['order_item_id'])->firstOrFail();
@@ -268,5 +307,77 @@ class OrderController extends Controller
         return back()->with('success', $autoApprove
             ? 'Review berhasil dikirim.'
             : 'Review berhasil dikirim dan menunggu persetujuan admin.');
+    }
+
+    public function createReturn(Order $order)
+    {
+        abort_unless(order_has_access($order), 403);
+        abort_unless(in_array($order->order_status, ['delivered', 'completed', 'return'], true), 403);
+        abort_if(! $order->customer_id, 403, 'Login diperlukan untuk mengajukan retur pesanan ini.');
+
+        $returnService = app(ReturnService::class);
+        $order->load('items.product');
+        $policy = ReturnPolicy::current();
+
+        $returnableItems = $order->items
+            ->map(function ($item) use ($order, $returnService) {
+                $maxQty = $returnService->getReturnableQty($order, $item);
+
+                if ($maxQty <= 0) {
+                    return null;
+                }
+
+                return [
+                    'id' => $item->id,
+                    'productName' => $item->product_name,
+                    'qty' => $maxQty,
+                    'maxQty' => $maxQty,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        abort_if($returnableItems === [], 403, 'Tidak ada item yang dapat diretur.');
+
+        return Inertia::render('Guest/Account/ReturnCreate', [
+            'order' => ModelSerializer::order($order, true),
+            'returnableItems' => $returnableItems,
+            'returnReasons' => $policy->return_reasons ?? [],
+            'policyText' => $policy->policy_text,
+            'isGuestView' => true,
+            'submitUrl' => route('order.returns.store', ['order' => $order->order_number]),
+            'cancelUrl' => order_public_url('order.show', $order),
+        ]);
+    }
+
+    public function storeReturn(Request $request, Order $order)
+    {
+        abort_unless(order_has_access($order), 403);
+        abort_if(! $order->customer_id, 403, 'Login diperlukan untuk mengajukan retur pesanan ini.');
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.order_item_id' => 'required|integer|exists:order_items,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.reason' => 'required|string|max:100',
+            'items.*.description' => 'nullable|string|max:2000',
+            'media' => 'nullable|array|max:5',
+            'media.*' => 'file|mimes:jpg,jpeg,png,webp,mp4,mov|max:10240',
+        ]);
+
+        try {
+            app(ReturnService::class)->submit(
+                $order,
+                $order->customer_id,
+                $validated['items'],
+                $request->file('media') ?? [],
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(order_public_url('order.show', $order))
+            ->with('success', 'Pengajuan retur berhasil dikirim.');
     }
 }

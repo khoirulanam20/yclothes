@@ -21,6 +21,30 @@ type CatalogRule = {
 };
 type Props = { rule?: CatalogRule; categoryOptions: CategoryOption[]; products: Product[] };
 
+type NumberField = number | '';
+
+function numberField(value: number | undefined | null): NumberField {
+    if (value === undefined || value === null) {
+        return '';
+    }
+
+    return value;
+}
+
+function normalizeNumbers<T extends Record<string, unknown>>(data: T): T {
+    const numericKeys = ['discount_amount', 'priority', 'min_qty', 'buy_qty', 'get_qty', 'get_discount_percent'] as const;
+
+    return {
+        ...data,
+        ...Object.fromEntries(
+            numericKeys.map((key) => [
+                key,
+                data[key] === '' || data[key] === undefined ? null : Number(data[key]),
+            ]),
+        ),
+    } as T;
+}
+
 export default function Form({ rule, categoryOptions, products }: Props) {
     const isEdit = !!rule?.id;
     const { data, setData, post, transform, processing, errors } = useForm({
@@ -28,18 +52,18 @@ export default function Form({ rule, categoryOptions, products }: Props) {
         description: rule?.description ?? '',
         rule_type: rule?.ruleType ?? 'percentage_discount',
         discount_type: rule?.discountType ?? 'percentage',
-        discount_amount: rule?.discountAmount ?? 0,
+        discount_amount: numberField(rule?.discountAmount),
         min_order_amount: rule?.minOrderAmount ?? '',
-        min_qty: rule?.minQty ?? '',
-        buy_qty: rule?.buyQty ?? '',
-        get_qty: rule?.getQty ?? '',
-        get_discount_percent: rule?.getDiscountPercent ?? '',
+        min_qty: numberField(rule?.minQty),
+        buy_qty: numberField(rule?.buyQty),
+        get_qty: numberField(rule?.getQty),
+        get_discount_percent: numberField(rule?.getDiscountPercent),
         category_ids: rule?.categoryIds ?? [] as number[],
         product_ids: rule?.productIds ?? [] as number[],
         start_date: rule?.startDate?.slice(0, 10) ?? '',
         end_date: rule?.endDate?.slice(0, 10) ?? '',
         is_active: rule?.isActive ?? true,
-        priority: rule?.priority ?? 0,
+        priority: numberField(rule?.priority),
         slug: rule?.slug ?? '',
         meta_title: rule?.metaTitle ?? '',
         meta_description: rule?.metaDescription ?? '',
@@ -56,9 +80,10 @@ export default function Form({ rule, categoryOptions, products }: Props) {
         const needsFormData = !!data.banner_image || (isEdit && data.remove_banner_image);
         const options = needsFormData ? { forceFormData: true as const } : {};
         if (isEdit) {
-            transform((d) => ({ ...d, _method: 'put' }));
+            transform((formData) => ({ ...normalizeNumbers(formData), _method: 'put' }));
             post(`/admin/catalog-rules/${rule!.id}`, options);
         } else {
+            transform((formData) => normalizeNumbers(formData));
             post('/admin/catalog-rules', options);
         }
     };

@@ -1,4 +1,6 @@
+import { useMemo, useState } from 'react';
 import { Star } from 'lucide-react';
+import { ReviewImageModal } from '@/components/storefront/ReviewImageModal';
 import { cn } from '@/lib/utils';
 
 export type ProductReview = {
@@ -81,8 +83,35 @@ function RatingSummary({
     );
 }
 
+function formatReviewDate(iso?: string): string | null {
+    if (!iso) {
+        return null;
+    }
+
+    try {
+        return new Date(iso).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return null;
+    }
+}
+
 export function ProductReviewsSection({ ratingAvg, reviewCount, reviews }: Props) {
-    const buyerPhotos = reviews.flatMap((r) => r.imagesUrl ?? []);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const buyerPhotos = useMemo(
+        () => [...new Set(reviews.flatMap((r) => r.imagesUrl ?? []))],
+        [reviews],
+    );
+
+    const openLightbox = (index: number) => {
+        setActiveIndex(index);
+        setLightboxOpen(true);
+    };
 
     return (
         <section>
@@ -99,12 +128,18 @@ export function ProductReviewsSection({ ratingAvg, reviewCount, reviews }: Props
                     <p className="mb-2 text-sm font-medium">Foto Pembeli</p>
                     <div className="store-scroll-x flex gap-2 overflow-x-auto pb-1">
                         {buyerPhotos.map((url, index) => (
-                            <img
+                            <button
                                 key={`${url}-${index}`}
-                                src={url}
-                                alt=""
-                                className="size-20 shrink-0 rounded-lg border object-cover"
-                            />
+                                type="button"
+                                onClick={() => openLightbox(index)}
+                                className="shrink-0 overflow-hidden rounded-lg border transition-opacity hover:opacity-90"
+                            >
+                                <img
+                                    src={url}
+                                    alt=""
+                                    className="size-20 object-cover"
+                                />
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -112,34 +147,30 @@ export function ProductReviewsSection({ ratingAvg, reviewCount, reviews }: Props
 
             {reviews.length > 0 ? (
                 <div className="space-y-3">
-                    {reviews.map((review) => (
-                        <div key={review.id} className="rounded-xl border bg-card p-4">
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium">{review.customerName}</span>
-                                <div className="flex items-center gap-0.5">
-                                    {Array.from({ length: review.rating }).map((_, i) => (
-                                        <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
-                                    ))}
+                    {reviews.map((review) => {
+                        const dateLabel = formatReviewDate(review.createdAt);
+
+                        return (
+                            <div key={review.id} className="rounded-xl border bg-card p-4">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-medium">{review.customerName}</span>
+                                    <div className="flex items-center gap-0.5">
+                                        {Array.from({ length: review.rating }).map((_, i) => (
+                                            <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
+                                        ))}
+                                    </div>
                                 </div>
+                                {dateLabel && (
+                                    <p className="mt-0.5 text-xs text-muted-foreground">{dateLabel}</p>
+                                )}
+                                {review.comment && (
+                                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                                        {review.comment}
+                                    </p>
+                                )}
                             </div>
-                            {review.createdAt && (
-                                <p className="mt-0.5 text-xs text-muted-foreground">{review.createdAt}</p>
-                            )}
-                            <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
-                            {review.imagesUrl && review.imagesUrl.length > 0 && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {review.imagesUrl.map((url, index) => (
-                                        <img
-                                            key={`${url}-${index}`}
-                                            src={url}
-                                            alt=""
-                                            className="size-16 rounded-md border object-cover"
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="rounded-xl border border-dashed bg-muted/10 px-4 py-10 text-center">
@@ -149,6 +180,15 @@ export function ProductReviewsSection({ ratingAvg, reviewCount, reviews }: Props
                     </p>
                 </div>
             )}
+
+            <ReviewImageModal
+                open={lightboxOpen}
+                onOpenChange={setLightboxOpen}
+                images={buyerPhotos}
+                activeIndex={activeIndex}
+                onIndexChange={setActiveIndex}
+                title="Foto Pembeli"
+            />
         </section>
     );
 }

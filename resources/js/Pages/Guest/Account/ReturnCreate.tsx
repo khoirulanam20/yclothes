@@ -2,6 +2,8 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, ImagePlus, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AccountLayout from '@/Layouts/AccountLayout';
+import GuestLayout from '@/Layouts/GuestLayout';
+import { PageContainer } from '@/components/storefront/PageContainer';
 import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Button } from '@/components/ui/button';
@@ -14,6 +16,9 @@ type Props = {
     returnableItems: ReturnableItem[];
     returnReasons: string[];
     policyText?: string | null;
+    isGuestView?: boolean;
+    submitUrl?: string;
+    cancelUrl?: string;
 };
 
 type FormItem = { order_item_id: number; qty: number; reason: string; description: string };
@@ -73,7 +78,15 @@ function ReturnItemFormFields({ item, formItem, returnReasons, onUpdate }: ItemF
     );
 }
 
-export default function ReturnCreate({ order, returnableItems, returnReasons, policyText }: Props) {
+export default function ReturnCreate({
+    order,
+    returnableItems,
+    returnReasons,
+    policyText,
+    isGuestView = false,
+    submitUrl,
+    cancelUrl,
+}: Props) {
     const multiItem = returnableItems.length > 1;
     const [selectedIds, setSelectedIds] = useState<number[]>(
         multiItem ? [] : returnableItems.map((item) => item.id),
@@ -113,23 +126,24 @@ export default function ReturnCreate({ order, returnableItems, returnReasons, po
             return;
         }
 
-        router.post(`/account/orders/${order.id}/returns`, {
+        router.post(submitUrl ?? `/account/orders/${order.id}/returns`, {
             items: selectedItems,
             media: data.media,
         }, { forceFormData: true });
     };
 
     const canSubmit = !processing && returnableItems.length > 0 && selectedIds.length > 0;
+    const backUrl = cancelUrl ?? `/account/orders/${order.id}`;
 
-    return (
-        <AccountLayout>
+    const content = (
+        <>
             <Head title="Ajukan Retur" />
 
             <AccountPageHeader
                 title="Ajukan Retur"
                 action={
                     <Button variant="outline" size="sm" asChild>
-                        <Link href={`/account/orders/${order.id}`}>
+                        <Link href={backUrl}>
                             <ArrowLeft className="mr-1.5 size-4" />
                             Kembali ke Pesanan
                         </Link>
@@ -239,7 +253,7 @@ export default function ReturnCreate({ order, returnableItems, returnReasons, po
 
                     <div className="mt-6 flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
                         <Button variant="outline" className="w-full sm:w-auto" asChild>
-                            <Link href={`/account/orders/${order.id}`}>Batal</Link>
+                            <Link href={backUrl}>Batal</Link>
                         </Button>
                         <Button type="submit" className="w-full sm:w-auto" disabled={!canSubmit}>
                             Kirim Pengajuan
@@ -247,6 +261,16 @@ export default function ReturnCreate({ order, returnableItems, returnReasons, po
                     </div>
                 </AccountPageShell>
             </form>
-        </AccountLayout>
+        </>
     );
+
+    if (isGuestView) {
+        return (
+            <GuestLayout>
+                <PageContainer>{content}</PageContainer>
+            </GuestLayout>
+        );
+    }
+
+    return <AccountLayout>{content}</AccountLayout>;
 }

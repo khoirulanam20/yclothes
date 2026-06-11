@@ -3,12 +3,15 @@
 namespace App\Services;
 
 use App\Models\BlogPost;
+use App\Models\CartRule;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Slider;
 use App\Support\ModelSerializer;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class HomepageLayoutService
 {
@@ -503,5 +506,68 @@ class HomepageLayoutService
             ['value' => 'blog_posts', 'label' => 'Blog Terbaru'],
             ['value' => 'spacer', 'label' => 'Spacer'],
         ];
+    }
+
+    /** @return list<string> IDs section yang diperbarui */
+    public function syncPromotionBannerFromCartRule(CartRule $cartRule): array
+    {
+        $layout = $this->getLayout();
+        $updatedIds = [];
+        $hasBannerSection = false;
+
+        foreach ($layout as &$section) {
+            if (($section['type'] ?? '') !== 'promotion_banner') {
+                continue;
+            }
+
+            $hasBannerSection = true;
+
+            $imagePath = '';
+            $imageUrl = '';
+            if (! empty($cartRule->banner_image)) {
+                $imagePath = $this->copyBannerToHomepage($cartRule->banner_image);
+                $imageUrl = storage_url($imagePath);
+            }
+
+            $section['props'] = array_merge($section['props'] ?? [], [
+                'title' => $cartRule->name,
+                'subtitle' => $cartRule->description ?? '',
+                'ctaLabel' => 'Lihat Promo',
+                'ctaHref' => $cartRule->slug ? '/promo/'.$cartRule->slug : '',
+                'imagePath' => $imagePath,
+                'imageUrl' => $imageUrl,
+                'imageAlt' => $cartRule->name,
+                'metaTitle' => $cartRule->meta_title ?? '',
+                'metaDescription' => $cartRule->meta_description ?? '',
+            ]);
+
+            $updatedIds[] = $section['id'];
+        }
+        unset($section);
+
+        if (! $hasBannerSection) {
+            throw new RuntimeException(
+                'Tidak ada section Banner Promosi di Homepage Builder. Tambahkan section tersebut terlebih dahulu di Konfigurasi Konten → Halaman Utama.',
+            );
+        }
+
+        $this->saveLayout($layout);
+
+        return $updatedIds;
+    }
+
+    private function copyBannerToHomepage(string $sourcePath): string
+    {
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($sourcePath)) {
+            throw new RuntimeException('File banner promosi tidak ditemukan di storage.');
+        }
+
+        $extension = pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'jpg';
+        $destPath = 'homepage-banners/'.Str::uuid().'.'.$extension;
+        $disk->copy($sourcePath, $destPath);
+
+        return $destPath;
     }
 }

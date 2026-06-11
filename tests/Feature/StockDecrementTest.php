@@ -94,7 +94,7 @@ class StockDecrementTest extends TestCase
         $this->assertEquals('delivered', $order->fresh()->order_status);
     }
 
-    public function test_customer_with_account_must_login_to_confirm_received(): void
+    public function test_guest_with_order_access_can_confirm_received_for_customer_order(): void
     {
         $customer = Customer::factory()->create();
         $order = $this->createOrderWithProduct(Product::first());
@@ -106,8 +106,42 @@ class StockDecrementTest extends TestCase
         ]);
         grant_order_access($order);
 
+        $this->get(order_public_url('order.show', $order))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('canConfirmReceived', true));
+
+        $this->post(route('order.confirm-received', $order))
+            ->assertRedirect();
+
+        $this->assertEquals('completed', $order->fresh()->order_status);
+    }
+
+    public function test_guest_without_order_access_cannot_confirm_received_for_customer_order(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = $this->createOrderWithProduct(Product::first());
+        $order->updateTrusted([
+            'customer_id' => $customer->id,
+            'customer_email' => $customer->email,
+            'order_status' => 'shipped',
+            'payment_status' => 'paid',
+        ]);
+        session()->forget('order_access.'.$order->order_number);
+
         $this->post(route('order.confirm-received', $order))
             ->assertForbidden();
+    }
+
+    public function test_logged_in_customer_can_confirm_received_via_account_route(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = $this->createOrderWithProduct(Product::first());
+        $order->updateTrusted([
+            'customer_id' => $customer->id,
+            'customer_email' => $customer->email,
+            'order_status' => 'shipped',
+            'payment_status' => 'paid',
+        ]);
 
         $this->actingAs($customer, 'customer')
             ->post(route('customer.orders.confirm-received', $order))
