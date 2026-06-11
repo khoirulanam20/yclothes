@@ -131,7 +131,7 @@ class OrderController extends Controller
                 )
                 : [],
             'canReturn' => ! $order->is_replacement
-                && in_array($order->order_status, ['completed', 'return'], true)
+                && in_array($order->order_status, ['delivered', 'completed', 'return'], true)
                 && ($isAccountView || Auth::guard('customer')->check()),
             'returnableItems' => $order->items->filter(fn ($item) => $returnService->canReturnItem($order, $item))
                 ->map(fn ($item) => [

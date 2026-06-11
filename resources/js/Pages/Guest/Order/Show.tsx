@@ -119,7 +119,8 @@ export default function Show({
     const showKlikQrisInstructions = order.paymentMethod === 'klikqris' && order.paymentStatus !== 'paid';
     const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
-    const needsAction = canConfirmPayment || canConfirmReceived;
+    const canSubmitReturn = !!(canReturn && returnableItems.length > 0);
+    const needsAction = canConfirmPayment || canConfirmReceived || canSubmitReturn;
     const orderReceived = order.orderStatus === 'completed' && !!order.completedAt;
 
     const orderContent = (
@@ -177,7 +178,7 @@ export default function Show({
                                     />
                                 </>
                             )}
-                            {canReturn && returnableItems.length > 0 && (
+                            {canSubmitReturn && (
                                 <Button size="sm" variant="outline" asChild>
                                     <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
                                 </Button>
