@@ -168,6 +168,28 @@ export function ProductReviewsSection({ ratingAvg, reviewCount, reviews }: Props
                                         {review.comment}
                                     </p>
                                 )}
+                                {review.imagesUrl && review.imagesUrl.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {review.imagesUrl.map((url, index) => {
+                                            const globalIndex = buyerPhotos.indexOf(url);
+
+                                            return (
+                                                <button
+                                                    key={`${url}-${index}`}
+                                                    type="button"
+                                                    onClick={() => openLightbox(globalIndex >= 0 ? globalIndex : index)}
+                                                    className="overflow-hidden rounded-md border transition-opacity hover:opacity-90"
+                                                >
+                                                    <img
+                                                        src={url}
+                                                        alt=""
+                                                        className="size-16 object-cover"
+                                                    />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
