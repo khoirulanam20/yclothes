@@ -143,6 +143,7 @@ return [
         'fields' => [
             ['name' => 'meta_pixel_id', 'title' => 'Meta Pixel ID', 'type' => 'text', 'validation' => 'nullable|string|max:50|regex:/^[0-9]*$/'],
             ['name' => 'google_tag_manager_id', 'title' => 'Google Tag Manager ID', 'type' => 'text', 'validation' => 'nullable|string|max:50|regex:/^[A-Za-z0-9-]*$/'],
+            ['name' => 'chatbot_bot_id', 'title' => 'Chatbot Bot ID', 'type' => 'text', 'validation' => 'nullable|string|max:100', 'placeholder' => 'Kosongkan jika sudah ada di Script Body'],
             ['name' => 'custom_head_scripts', 'title' => 'Script Head', 'type' => 'textarea', 'validation' => 'nullable|string|max:10000'],
             ['name' => 'custom_body_scripts', 'title' => 'Script Body', 'type' => 'textarea', 'validation' => 'nullable|string|max:10000'],
         ],

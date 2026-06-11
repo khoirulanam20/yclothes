@@ -53,4 +53,8 @@ return [
         'merchant_id' => env('KLIKQRIS_MERCHANT_ID'),
     ],
 
+    'chatbot' => [
+        'base_url' => env('CHATBOT_BASE_URL', 'https://chatbot.firstudio.id'),
+    ],
+
 ];

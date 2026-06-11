@@ -195,12 +195,52 @@ if (! function_exists('storage_url')) {
     }
 }
 
+if (! function_exists('chatbot_bot_id')) {
+    function chatbot_bot_id(): ?string
+    {
+        $id = trim((string) (setting('chatbot_bot_id') ?? ''));
+        if ($id !== '') {
+            return $id;
+        }
+
+        $scripts = (string) (setting('custom_body_scripts') ?? '');
+        if (preg_match('/\bdata-bot-id=["\']([^"\']+)["\']/', $scripts, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+}
+
+if (! function_exists('sanitized_custom_body_scripts')) {
+    function sanitized_custom_body_scripts(): ?string
+    {
+        $scripts = trim((string) (setting('custom_body_scripts') ?? ''));
+        if ($scripts === '') {
+            return null;
+        }
+
+        $patterns = [
+            '/<script\b[^>]*\bsrc=["\'][^"\']*chatbot\.firstudio\.id\/chatbot\.js[^"\']*["\'][^>]*>\s*<\/script>/is',
+            '/<script\b[^>]*\bsrc=["\'][^"\']*\/chatbot\.js[^"\']*["\'][^>]*\bdata-bot-id\b[^>]*>\s*<\/script>/is',
+        ];
+
+        foreach ($patterns as $pattern) {
+            $scripts = preg_replace($pattern, '', $scripts) ?? $scripts;
+        }
+
+        $scripts = trim($scripts);
+
+        return $scripts !== '' ? $scripts : null;
+    }
+}
+
 if (! function_exists('site_integrations')) {
     function site_integrations(): array
     {
         $keys = [
             'brand_name', 'site_title', 'site_description', 'site_keywords', 'og_image', 'favicon',
-            'meta_pixel_id', 'google_tag_manager_id',
+            'meta_pixel_id', 'google_tag_manager_id', 'chatbot_bot_id',
             'custom_head_scripts', 'custom_body_scripts',
         ];
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -215,8 +255,9 @@ if (! function_exists('site_integrations')) {
             'faviconUrl' => storage_url($settings['favicon'] ?? null),
             'metaPixelId' => $settings['meta_pixel_id'] ?? null,
             'googleTagManagerId' => $settings['google_tag_manager_id'] ?? null,
+            'chatbotBotId' => chatbot_bot_id(),
             'customHeadScripts' => $settings['custom_head_scripts'] ?? null,
-            'customBodyScripts' => $settings['custom_body_scripts'] ?? null,
+            'customBodyScripts' => sanitized_custom_body_scripts(),
         ];
     }
 }

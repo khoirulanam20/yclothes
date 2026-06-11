@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\TaxZoneController as AdminTaxZoneController;
 use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\ChatbotProxyController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Customer\AddressController as CustomerAddressController;
 use App\Http\Controllers\Customer\Auth\ForgotPasswordController as CustomerForgotPasswordController;
@@ -60,6 +61,9 @@ use App\Http\Controllers\PromotionLandingController;
 use App\Http\Controllers\WilayahController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/embed/chatbot/widget.ver', [ChatbotProxyController::class, 'widgetVersion'])
+    ->name('embed.chatbot.version');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::redirect('/produk', '/products', 301);
