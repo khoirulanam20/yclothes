@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { Package, Star, Truck } from 'lucide-react';
+import { AlertCircle, Clock, CreditCard, Package, RotateCcw, Star, Truck } from 'lucide-react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import AccountLayout from '@/Layouts/AccountLayout';
 import { CopyAmount } from '@/components/storefront/CopyAmount';
@@ -120,7 +120,6 @@ export default function Show({
     const showCodInstructions = order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' && !!codInstructions;
     const isQris = order.paymentMethod === 'qris';
     const canSubmitReturn = !!(canReturn && returnableItems.length > 0);
-    const needsAction = canConfirmPayment || canConfirmReceived || canSubmitReturn;
     const orderReceived = order.orderStatus === 'completed' && !!order.completedAt;
 
     const orderContent = (
@@ -154,47 +153,84 @@ export default function Show({
                 isReplacement={order.isReplacement}
             />
 
-                {needsAction && (
-                    <AccountPageShell title="Perlu Tindakan" className="mb-6 border-primary/20 bg-primary/5">
-                        <div className="flex flex-wrap gap-2">
-                            {canConfirmReceived && (
-                                <Button size="sm" onClick={confirmReceived}>
-                                    Pesanan Diterima
-                                </Button>
-                            )}
-                            {canConfirmPayment && (
-                                <>
-                                    <Button size="sm" onClick={() => setPaymentModalOpen(true)}>
-                                        Konfirmasi Pembayaran
-                                    </Button>
-                                    <PaymentConfirmationDialog
-                                        open={paymentModalOpen}
-                                        onOpenChange={setPaymentModalOpen}
-                                        order={order}
-                                        banks={banks}
-                                        submitUrl={paymentSubmitUrl}
-                                        isQris={isQris}
-                                        qris={qris}
-                                    />
-                                </>
-                            )}
-                            {canSubmitReturn && (
-                                <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
-                                </Button>
-                            )}
+                {canConfirmReceived && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                <Truck className="size-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-medium">Konfirmasi penerimaan</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
+                                    Barang sudah sampai? Konfirmasi agar pesanan ditandai selesai.
+                                </p>
+                            </div>
                         </div>
-                        {order.paymentConfirmationStatus === 'pending' && (
-                            <p className="mt-3 text-sm text-muted-foreground">
-                                Konfirmasi pembayaran sedang menunggu verifikasi penjual.
-                            </p>
-                        )}
-                        {order.paymentConfirmationStatus === 'rejected' && (
-                            <p className="mt-3 text-sm text-destructive">
-                                Konfirmasi pembayaran sebelumnya ditolak. Silakan ajukan ulang.
-                            </p>
-                        )}
-                    </AccountPageShell>
+                        <Button size="sm" className="w-full shrink-0 sm:w-auto" onClick={confirmReceived}>
+                            Pesanan Diterima
+                        </Button>
+                    </div>
+                )}
+
+                {canConfirmPayment && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                <CreditCard className="size-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-medium">Konfirmasi pembayaran</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
+                                    Upload bukti transfer agar pembayaran segera diverifikasi.
+                                </p>
+                                {order.paymentConfirmationStatus === 'pending' && (
+                                    <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
+                                        <Clock className="mt-0.5 size-4 shrink-0" />
+                                        Bukti sedang menunggu verifikasi penjual.
+                                    </p>
+                                )}
+                                {order.paymentConfirmationStatus === 'rejected' && (
+                                    <p className="mt-2 flex items-start gap-1.5 text-sm text-destructive">
+                                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                                        Bukti sebelumnya ditolak. Silakan ajukan ulang.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <Button size="sm" className="w-full shrink-0 sm:w-auto" onClick={() => setPaymentModalOpen(true)}>
+                            Konfirmasi Pembayaran
+                        </Button>
+                        <PaymentConfirmationDialog
+                            open={paymentModalOpen}
+                            onOpenChange={setPaymentModalOpen}
+                            order={order}
+                            banks={banks}
+                            submitUrl={paymentSubmitUrl}
+                            isQris={isQris}
+                            qris={qris}
+                        />
+                    </div>
+                )}
+
+                {canSubmitReturn && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-700">
+                                <RotateCcw className="size-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-medium">Ajukan retur</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
+                                    {returnableItems.length === 1
+                                        ? '1 item masih bisa diretur dalam periode yang berlaku.'
+                                        : `${returnableItems.length} item masih bisa diretur dalam periode yang berlaku.`}
+                                </p>
+                            </div>
+                        </div>
+                        <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto" asChild>
+                            <Link href={`/account/orders/${order.id}/returns/create`}>Ajukan Retur</Link>
+                        </Button>
+                    </div>
                 )}
 
                 <div className="grid gap-6 lg:grid-cols-3">
