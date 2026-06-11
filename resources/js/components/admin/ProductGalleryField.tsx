@@ -1,5 +1,5 @@
 import { ImagePlus, X } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/admin/FieldError';
@@ -18,7 +18,7 @@ type Props = {
     onMainImageChange: (file: File | null) => void;
     onRemoveMainImage: (remove: boolean) => void;
     gallery: GalleryItem[];
-    onAddGallery: (files: FileList | null) => void;
+    onAddGallery: (files: File[]) => void;
     onRemoveGallery: (path: string) => void;
     errors?: Record<string, string>;
     compact?: boolean;
@@ -28,9 +28,19 @@ type Props = {
 
 const SLOT_LABELS = ['Depan', 'Selanjutnya', 'Selanjutnya', 'Perbesar', 'Detail', 'Ukuran'];
 
+const blobUrlCache = new WeakMap<File, string>();
+
 function previewUrl(item: GalleryItem | { url: string; file?: File | null }) {
     if ('file' in item && item.file) {
-        return URL.createObjectURL(item.file);
+        const cached = blobUrlCache.get(item.file);
+        if (cached) {
+            return cached;
+        }
+
+        const url = URL.createObjectURL(item.file);
+        blobUrlCache.set(item.file, url);
+
+        return url;
     }
 
     return item.url;
@@ -50,12 +60,41 @@ export function ProductGalleryField({
     variantMode = false,
 }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
-
+    const hasMainPreview = mainImageFile ? true : removeMainImage ? false : !!mainImageUrl;
     const mainPreview = mainImageFile
         ? URL.createObjectURL(mainImageFile)
         : removeMainImage
           ? null
           : mainImageUrl;
+
+    const handleFilesSelected = useCallback(
+        (fileList: FileList | null) => {
+            if (!fileList?.length) {
+                return;
+            }
+
+            const fileArray = Array.from(fileList);
+            // #region agent log
+            fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',runId:'post-fix',hypothesisId:'H2-H3',location:'ProductGalleryField.tsx:handleFilesSelected',message:'files snapshotted',data:{variantMode,snapshotCount:fileArray.length,galleryCount:gallery.length},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+
+            if (variantMode) {
+                onAddGallery(fileArray);
+                return;
+            }
+
+            if (!hasMainPreview) {
+                onMainImageChange(fileArray[0]);
+                if (fileArray.length > 1) {
+                    onAddGallery(fileArray.slice(1));
+                }
+                return;
+            }
+
+            onAddGallery(fileArray);
+        },
+        [gallery.length, hasMainPreview, onAddGallery, onMainImageChange, variantMode],
+    );
 
     const slotSize = compact ? 'h-20 w-20' : 'h-28 w-28';
     const allItems = variantMode
@@ -141,27 +180,9 @@ export function ProductGalleryField({
                     multiple
                     className="hidden"
                     onChange={(e) => {
-                        const files = e.target.files;
-                        if (!files?.length) {
-                            return;
-                        }
-
-                        if (variantMode) {
-                            onAddGallery(files);
-                        } else if (!mainPreview) {
-                            onMainImageChange(files[0]);
-                            if (files.length > 1) {
-                                const rest = new DataTransfer();
-                                Array.from(files)
-                                    .slice(1)
-                                    .forEach((file) => rest.items.add(file));
-                                onAddGallery(rest.files);
-                            }
-                        } else {
-                            onAddGallery(files);
-                        }
-
-                        e.target.value = '';
+                        const input = e.target;
+                        handleFilesSelected(input.files);
+                        input.value = '';
                     }}
                 />
             </div>

@@ -244,9 +244,9 @@ export default function Edit({
         setData('attributes', { ...data.attributes, [code]: value as ProductFormData['attributes'][string] });
     };
 
-    const addGallery = (files: FileList | null) => {
-        if (!files) return;
-        const added = Array.from(files).map((file) => ({
+    const addGallery = (files: File[]) => {
+        if (files.length === 0) return;
+        const added = files.map((file) => ({
             path: `new-${crypto.randomUUID()}`,
             url: '',
             file,

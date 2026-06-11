@@ -22,6 +22,11 @@
     @endif
     @inertia
     @if(!empty($integrations['customBodyScripts']))
+        <script>
+        // #region agent log
+        (function(){var s=@json($integrations['customBodyScripts']??'');fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',hypothesisId:'H1-H2',location:'app.blade.php:customBodyScripts',message:'custom body scripts loaded',data:{hasChatbot:s.includes('chatbot'),hasChatbotVer:s.includes('chatbot-widget.ver'),scriptLength:s.length},timestamp:Date.now()})}).catch(function(){});})();
+        // #endregion
+        </script>
         {!! $integrations['customBodyScripts'] !!}
     @endif
 </body>

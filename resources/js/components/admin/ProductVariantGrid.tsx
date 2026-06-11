@@ -150,11 +150,22 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
         [variants],
     );
 
+    const variantImageSignature = useMemo(
+        () =>
+            variants
+                .map((variant) => `${variant.id}:${(variant.imagesPaths ?? []).join('|')}`)
+                .join(';'),
+        [variants],
+    );
+
     const [galleries, setGalleries] = useState<Record<number, VariantGalleryState>>(initialGalleries);
 
     useEffect(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',runId:'post-fix',hypothesisId:'H1',location:'ProductVariantGrid.tsx:useEffect',message:'galleries reset from server paths',data:{variantImageSignature,initialItemCounts:Object.fromEntries(Object.entries(initialGalleries).map(([id,g])=>[id,g.items.length]))},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         setGalleries(initialGalleries);
-    }, [initialGalleries]);
+    }, [variantImageSignature, initialGalleries]);
 
     const { data, setData, errors } = useForm({
         variants: variants.map((v) => ({
@@ -168,10 +179,17 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
     });
 
     const updateGallery = (variantId: number, updater: (current: VariantGalleryState) => VariantGalleryState) => {
-        setGalleries((current) => ({
-            ...current,
-            [variantId]: updater(current[variantId] ?? { items: [], removed: [] }),
-        }));
+        setGalleries((current) => {
+            const before = current[variantId] ?? { items: [], removed: [] };
+            const after = updater(before);
+            // #region agent log
+            fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',hypothesisId:'H1-H3',location:'ProductVariantGrid.tsx:updateGallery',message:'gallery updated',data:{variantId,beforeCount:before.items.length,afterCount:after.items.length,newFileCount:after.items.filter((i)=>!!i.file).length},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            return {
+                ...current,
+                [variantId]: after,
+            };
+        });
     };
 
     const save = async () => {
@@ -191,6 +209,9 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
         );
 
         const url = `/admin/products/${productId}/variants`;
+        // #region agent log
+        fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',hypothesisId:'H4',location:'ProductVariantGrid.tsx:save',message:'variant save started',data:{needsFormData,hasFiles,variantPayloads:variantsPayload.map((v)=>({id:v.id,existingCount:v.existing_images.length,newCount:v.new_images.length,removeCount:v.remove_images.length}))},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         setSubmitting(true);
         setSaveErrors({});
 
@@ -407,6 +428,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                                         <tr className="border-t bg-muted/20">
                                             <td colSpan={7} className="px-3 py-3">
                                                 <ProductGalleryField
+                                                    key={`variant-gallery-${variant.id}`}
                                                     compact
                                                     variantMode
                                                     mainImageFile={null}
@@ -414,8 +436,8 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                                                     onMainImageChange={() => undefined}
                                                     onRemoveMainImage={() => undefined}
                                                     gallery={gallery.items}
-                                                    onAddGallery={(files) => {
-                                                        if (!files) {
+                                                    onAddGallery={(fileArray) => {
+                                                        if (fileArray.length === 0) {
                                                             return;
                                                         }
 
@@ -423,7 +445,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                                                             ...current,
                                                             items: [
                                                                 ...current.items,
-                                                                ...Array.from(files).map((file) =>
+                                                                ...fileArray.map((file) =>
                                                                     newGalleryItemFromFile(file),
                                                                 ),
                                                             ],

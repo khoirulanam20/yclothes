@@ -376,7 +376,36 @@ class HomepageLayoutService
      */
     private function resolvePromotionBanner(array $section, array $props): ?array
     {
+        // #region agent log
+        $debugLogPath = base_path('.cursor/debug-227592.log');
+        @file_put_contents($debugLogPath, json_encode([
+            'sessionId' => '227592',
+            'hypothesisId' => 'H1-H3',
+            'location' => 'HomepageLayoutService.php:resolvePromotionBanner',
+            'message' => 'resolve promotion_banner',
+            'data' => [
+                'sectionId' => $section['id'] ?? null,
+                'enabled' => $section['enabled'] ?? true,
+                'title' => $props['title'] ?? null,
+                'imagePath' => $props['imagePath'] ?? null,
+                'imageUrlProp' => $props['imageUrl'] ?? null,
+            ],
+            'timestamp' => (int) (microtime(true) * 1000),
+        ])."\n", FILE_APPEND);
+        // #endregion
+
         if (empty($props['title']) && empty($props['imagePath'])) {
+            // #region agent log
+            @file_put_contents($debugLogPath, json_encode([
+                'sessionId' => '227592',
+                'hypothesisId' => 'H2',
+                'location' => 'HomepageLayoutService.php:resolvePromotionBanner',
+                'message' => 'promotion_banner skipped (empty title and imagePath)',
+                'data' => ['sectionId' => $section['id'] ?? null],
+                'timestamp' => (int) (microtime(true) * 1000),
+            ])."\n", FILE_APPEND);
+            // #endregion
+
             return null;
         }
 
@@ -552,6 +581,22 @@ class HomepageLayoutService
         }
 
         $this->saveLayout($layout);
+
+        // #region agent log
+        $debugLogPath = base_path('.cursor/debug-227592.log');
+        @file_put_contents($debugLogPath, json_encode([
+            'sessionId' => '227592',
+            'hypothesisId' => 'H3-H4',
+            'location' => 'HomepageLayoutService.php:syncPromotionBannerFromCartRule',
+            'message' => 'banner sync completed',
+            'data' => [
+                'cartRuleId' => $cartRule->id,
+                'updatedSectionIds' => $updatedIds,
+                'bannerImage' => $cartRule->banner_image,
+            ],
+            'timestamp' => (int) (microtime(true) * 1000),
+        ])."\n", FILE_APPEND);
+        // #endregion
 
         return $updatedIds;
     }
