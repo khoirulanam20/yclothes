@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PromotionPopup extends Model
 {
     protected $fillable = [
-        'title', 'image', 'button_label', 'button_url',
+        'cart_rule_id', 'title', 'image', 'button_label', 'button_url',
         'display_duration_seconds', 'start_date', 'end_date',
         'show_on_pages', 'is_active', 'priority',
     ];
@@ -22,6 +23,11 @@ class PromotionPopup extends Model
             'display_duration_seconds' => 'integer',
             'priority' => 'integer',
         ];
+    }
+
+    public function cartRule(): BelongsTo
+    {
+        return $this->belongsTo(CartRule::class);
     }
 
     public function isActiveNow(): bool

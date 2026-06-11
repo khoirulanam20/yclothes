@@ -34,6 +34,11 @@ class CartRule extends Model
         return $this->hasMany(CartRuleUsage::class);
     }
 
+    public function promotionPopup()
+    {
+        return $this->hasOne(PromotionPopup::class);
+    }
+
     public function isActiveNow(): bool
     {
         if (! $this->is_active) {

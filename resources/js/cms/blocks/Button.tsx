@@ -1,3 +1,5 @@
+import { cmsLinkUrlField } from '@/cms/fields/cmsLinkUrlField';
+
 export type ButtonProps = {
     label: string;
     href: string;
@@ -23,7 +25,7 @@ export function ButtonBlock({ label, href, variant }: ButtonProps) {
 
 export const buttonFields = {
     label: { type: 'text' as const, label: 'Label' },
-    href: { type: 'text' as const, label: 'URL' },
+    href: cmsLinkUrlField('URL'),
     variant: {
         type: 'select' as const,
         label: 'Variant',

@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminCheckboxRow, AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
+import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,9 +81,13 @@ export default function Form({ slider }: Props) {
                                 <Input id="subtitle" value={data.subtitle} onChange={(e) => setData('subtitle', e.target.value)} />
                                 <FieldError message={errors.subtitle} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="link_url">Link URL</Label>
-                                <Input id="link_url" value={data.link_url} onChange={(e) => setData('link_url', e.target.value)} />
+                            <div className="space-y-2 md:col-span-2">
+                                <LinkUrlField
+                                    id="link_url"
+                                    label="Link URL"
+                                    value={data.link_url}
+                                    onChange={(value) => setData('link_url', value)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cta_label">Label Tombol CTA</Label>

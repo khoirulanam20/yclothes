@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BadgePreset;
 use App\Models\Attribute;
 use App\Enums\ProductType;
 use App\Models\Category;
@@ -81,6 +82,24 @@ class ProductController extends Controller
             $query->whereIn('id', $flashIds !== [] ? $flashIds : [0]);
         }
 
+        if (request()->boolean('featured')) {
+            $query->where('is_featured', true);
+        }
+
+        if (request()->boolean('on_sale')) {
+            $query->whereNotNull('sale_price');
+        }
+
+        $badgeLabelFilter = $this->normalizeBadgeLabelFilter(request('badge_label'));
+        $badgeFilter = request('badge');
+
+        if ($badgeLabelFilter) {
+            $query->where('badge_preset', BadgePreset::Custom)
+                ->where('badge', $badgeLabelFilter);
+        } elseif ($badgeFilter && ($badgePreset = BadgePreset::tryFrom($badgeFilter))) {
+            $query->where('badge_preset', $badgePreset);
+        }
+
         if ($sort = request('sort')) {
             $query = match ($sort) {
                 'price_asc' => $query->orderBy('price'),
@@ -126,9 +145,53 @@ class ProductController extends Controller
                 'min_price' => request('min_price'),
                 'max_price' => request('max_price'),
                 'flash_sale' => $flashSaleFilter ? '1' : null,
+                'featured' => request()->boolean('featured') ? '1' : null,
+                'on_sale' => request()->boolean('on_sale') ? '1' : null,
+                'badge' => $badgeFilter && BadgePreset::tryFrom($badgeFilter) ? $badgeFilter : null,
+                'badge_label' => $badgeLabelFilter ?: null,
             ],
-            'pageTitle' => $flashSaleFilter ? 'Flash Sale' : null,
+            'pageTitle' => $this->resolveProductsPageTitle($flashSaleFilter, $badgeFilter, $badgeLabelFilter),
         ]);
+    }
+
+    private function normalizeBadgeLabelFilter(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $label = trim($value);
+        if ($label === '' || strlen($label) > 50) {
+            return null;
+        }
+
+        return $label;
+    }
+
+    private function resolveProductsPageTitle(bool $flashSaleFilter, ?string $badgeFilter, ?string $badgeLabelFilter): ?string
+    {
+        if ($flashSaleFilter) {
+            return 'Flash Sale';
+        }
+
+        if (request()->boolean('featured')) {
+            return 'Produk Unggulan';
+        }
+
+        if (request()->boolean('on_sale')) {
+            return 'Produk Sale';
+        }
+
+        if ($badgeLabelFilter) {
+            return 'Produk Badge '.$badgeLabelFilter;
+        }
+
+        $badgePreset = $badgeFilter ? BadgePreset::tryFrom($badgeFilter) : null;
+        if ($badgePreset) {
+            return 'Produk Badge '.$badgePreset->label();
+        }
+
+        return null;
     }
 
     public function show($slug)

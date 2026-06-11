@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CartRule;
+use App\Models\PromotionPopup;
 use App\Services\CategoryTreeService;
 use App\Services\HomepageLayoutService;
+use App\Services\PromotionPopupService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -15,6 +17,7 @@ class CartRuleController extends Controller
     public function __construct(
         private CategoryTreeService $categoryTree,
         private HomepageLayoutService $homepageLayout,
+        private PromotionPopupService $promotionPopupService,
     ) {}
 
     public function index()
@@ -42,9 +45,15 @@ class CartRuleController extends Controller
 
     public function edit(CartRule $cartRule)
     {
+        $linkedPopup = PromotionPopup::where('cart_rule_id', $cartRule->id)->first();
+
         return Inertia::render('Admin/CartRules/Form', [
             'rule' => $this->cartRule($cartRule),
             'categoryOptions' => $this->categoryTree->formOptions(),
+            'linkedPopup' => $linkedPopup ? [
+                'id' => $linkedPopup->id,
+                'title' => $linkedPopup->title,
+            ] : null,
         ]);
     }
 
@@ -76,6 +85,22 @@ class CartRuleController extends Controller
                 'success',
                 "Banner promosi disinkronkan ke {$count} section Banner Promosi di halaman utama.",
             );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function syncPopup(CartRule $cartRule)
+    {
+        try {
+            $popup = $this->promotionPopupService->syncFromCartRule($cartRule);
+
+            return redirect()
+                ->route('admin.cart-rules.edit', $cartRule)
+                ->with(
+                    'success',
+                    "Pop up promosi \"{$popup->title}\" berhasil disinkronkan.",
+                );
         } catch (\RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }

@@ -3,6 +3,7 @@ import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminCheckboxRow, AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,9 +88,13 @@ export default function Form({ popup, pageOptions }: Props) {
                                 <Label htmlFor="button_label">Label Tombol</Label>
                                 <Input id="button_label" value={data.button_label} onChange={(e) => setData('button_label', e.target.value)} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="button_url">Link Tombol</Label>
-                                <Input id="button_url" value={data.button_url} onChange={(e) => setData('button_url', e.target.value)} />
+                            <div className="space-y-2 md:col-span-2">
+                                <LinkUrlField
+                                    id="button_url"
+                                    label="Link Tombol"
+                                    value={data.button_url}
+                                    onChange={(value) => setData('button_url', value)}
+                                />
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">
                                 <Label htmlFor="display_duration_seconds">Durasi Tampil (detik, 0 = manual close)</Label>

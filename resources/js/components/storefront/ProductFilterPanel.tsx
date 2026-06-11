@@ -18,6 +18,11 @@ export type ProductFilters = {
     sort?: string;
     min_price?: string;
     max_price?: string;
+    flash_sale?: string | null;
+    featured?: string | null;
+    on_sale?: string | null;
+    badge?: string | null;
+    badge_label?: string | null;
 };
 
 type Props = {
@@ -103,12 +108,37 @@ export function buildFilterUrl(filters: ProductFilters, overrides: Partial<Produ
     if (next.max_price) {
         params.max_price = next.max_price;
     }
+    if (next.flash_sale === '1') {
+        params.flash_sale = '1';
+    }
+    if (next.featured === '1') {
+        params.featured = '1';
+    }
+    if (next.on_sale === '1') {
+        params.on_sale = '1';
+    }
+    if (next.badge) {
+        params.badge = next.badge;
+    }
+    if (next.badge_label) {
+        params.badge_label = next.badge_label;
+    }
 
     return `/products?${new URLSearchParams(params).toString()}`;
 }
 
 export function hasActiveProductFilters(filters: ProductFilters): boolean {
-    return Boolean(filters.search || filters.category || filters.min_price || filters.max_price);
+    return Boolean(
+        filters.search
+        || filters.category
+        || filters.min_price
+        || filters.max_price
+        || filters.flash_sale === '1'
+        || filters.featured === '1'
+        || filters.on_sale === '1'
+        || filters.badge
+        || filters.badge_label,
+    );
 }
 
 function CategoryFilterLink({

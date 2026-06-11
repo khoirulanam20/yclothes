@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
+import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { SortableSectionList, type LayoutSection } from '@/components/admin/homepage/SortableSectionList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,7 +104,7 @@ function SliderForm({ sliders }: { sliders: Slider[] }) {
                     <p className="text-sm font-medium">Edit Slide #{editingId}</p>
                     <div><Label>Judul</Label><Input value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} /></div>
                     <div><Label>Gambar Baru</Label><Input type="file" accept="image/*" onChange={(e) => editForm.setData('image', e.target.files?.[0] ?? null)} /></div>
-                    <div><Label>Link</Label><Input value={editForm.data.link_url} onChange={(e) => editForm.setData('link_url', e.target.value)} /></div>
+                    <LinkUrlField label="Link" value={editForm.data.link_url} onChange={(value) => editForm.setData('link_url', value)} />
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editForm.data.is_active} onChange={(e) => editForm.setData('is_active', e.target.checked)} /> Aktif</label>
                     <div className="flex gap-2">
                         <Button type="button" disabled={editForm.processing} onClick={() => { editForm.transform((d) => ({ ...d, _method: 'put' })); editForm.post(`/admin/homepage/sliders/${editingId}`, { forceFormData: true, preserveScroll: true, onSuccess: () => setEditingId(null) }); }}>Simpan</Button>
@@ -115,7 +116,7 @@ function SliderForm({ sliders }: { sliders: Slider[] }) {
                     <p className="text-sm font-medium">Tambah Slide</p>
                     <div><Label>Judul</Label><Input value={createForm.data.title} onChange={(e) => createForm.setData('title', e.target.value)} /></div>
                     <div><Label>Gambar</Label><Input type="file" accept="image/*" required onChange={(e) => createForm.setData('image', e.target.files?.[0] ?? null)} /><FieldError message={createForm.errors.image} /></div>
-                    <div><Label>Link</Label><Input value={createForm.data.link_url} onChange={(e) => createForm.setData('link_url', e.target.value)} /></div>
+                    <LinkUrlField label="Link" value={createForm.data.link_url} onChange={(value) => createForm.setData('link_url', value)} />
                     <Button type="button" disabled={createForm.processing} onClick={() => createForm.post('/admin/homepage/sliders', { forceFormData: true, preserveScroll: true, onSuccess: () => createForm.reset() })}><Plus className="h-4 w-4 mr-1" /> Tambah Slide</Button>
                 </div>
             )}
@@ -267,6 +268,15 @@ function SectionEditor({
         return <SliderForm sliders={sliders} />;
     }
 
+    const linkField = (key: string, label: string, readOnly = false) => (
+        <LinkUrlField
+            label={label}
+            value={String(props[key] ?? '')}
+            onChange={(value) => onChange({ ...props, [key]: value })}
+            readOnly={readOnly}
+        />
+    );
+
     const field = (key: string, label: string, type: 'text' | 'number' | 'checkbox' | 'textarea' | 'select' | 'datetime-local' = 'text', options?: { value: string; label: string }[]) => {
         if (type === 'checkbox') {
             return (
@@ -294,7 +304,7 @@ function SectionEditor({
         return (
             <div>
                 <Label>{label}</Label>
-                <Input type={type === 'number' ? 'number' : type === 'datetime-local' ? 'datetime-local' : 'text'} value={(props[key] as string | number) ?? ''} onChange={(e) => onChange({ ...props, [key]: type === 'number' ? Number(e.target.value) : e.target.value })} readOnly={key === 'actionHref' && section.type === 'flash_sale'} />
+                <Input type={type === 'number' ? 'number' : type === 'datetime-local' ? 'datetime-local' : 'text'} value={(props[key] as string | number) ?? ''} onChange={(e) => onChange({ ...props, [key]: type === 'number' ? Number(e.target.value) : e.target.value })} />
             </div>
         );
     };
@@ -328,7 +338,7 @@ function SectionEditor({
                     {field('showCountdown', 'Tampilkan Countdown', 'checkbox')}
                     {field('endsAt', 'Berakhir', 'datetime-local')}
                     {field('actionLabel', 'Label Tombol')}
-                    {field('actionHref', 'Link Tombol')}
+                    {linkField('actionHref', 'Link Tombol', true)}
                     {field('metaTitle', 'Meta Title (SEO)')}
                     {field('metaDescription', 'Meta Description (SEO)', 'textarea')}
                 </>
@@ -358,7 +368,7 @@ function SectionEditor({
                     {field('limit', 'Limit', 'number')}
                     {field('layout', 'Layout', 'select', [{ value: 'grid', label: 'Grid' }, { value: 'scroll', label: 'Scroll Horizontal' }])}
                     {field('actionLabel', 'Label Tombol')}
-                    {field('actionHref', 'Link Tombol')}
+                    {linkField('actionHref', 'Link Tombol')}
                     {props.source === 'manual' && (
                         <div>
                             <Label>Produk (centang)</Label>
@@ -386,12 +396,12 @@ function SectionEditor({
                             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
-                    {field('limit', 'Limit', 'number')}{field('actionLabel', 'Label Tombol')}{field('actionHref', 'Link Tombol')}
+                    {field('limit', 'Limit', 'number')}{field('actionLabel', 'Label Tombol')}{linkField('actionHref', 'Link Tombol')}
                 </>
             )}
             {section.type === 'promotion_banner' && (
                 <>
-                    {field('subtitle', 'Subtitle')}{field('ctaLabel', 'Label CTA')}{field('ctaHref', 'Link CTA')}
+                    {field('subtitle', 'Subtitle')}{field('ctaLabel', 'Label CTA')}{linkField('ctaHref', 'Link CTA')}
                     <div>
                         <Label>Gambar Banner</Label>
                         <Input type="file" accept="image/*" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadBanner(f); }} />
@@ -401,7 +411,7 @@ function SectionEditor({
                 </>
             )}
             {section.type === 'blog_posts' && (
-                <>{field('limit', 'Limit', 'number')}{field('actionLabel', 'Label Tombol')}{field('actionHref', 'Link Tombol')}</>
+                <>{field('limit', 'Limit', 'number')}{field('actionLabel', 'Label Tombol')}{linkField('actionHref', 'Link Tombol')}</>
             )}
             {section.type === 'spacer' && (
                 <div>

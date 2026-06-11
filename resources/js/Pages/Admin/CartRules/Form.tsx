@@ -17,7 +17,8 @@ type CartRule = {
     priority?: number; usesPerCoupon?: number; usesPerCustomer?: number; categoryIds?: number[];
     slug?: string | null; metaTitle?: string | null; metaDescription?: string | null; bannerImageUrl?: string | null;
 };
-type Props = { rule?: CartRule; categoryOptions: CategoryOption[] };
+type LinkedPopup = { id: number; title: string };
+type Props = { rule?: CartRule; categoryOptions: CategoryOption[]; linkedPopup?: LinkedPopup | null };
 
 type NumberField = number | '';
 
@@ -43,9 +44,10 @@ function normalizeNumbers<T extends Record<string, unknown>>(data: T): T {
     } as T;
 }
 
-export default function Form({ rule, categoryOptions }: Props) {
+export default function Form({ rule, categoryOptions, linkedPopup = null }: Props) {
     const isEdit = !!rule?.id;
     const [syncing, setSyncing] = useState(false);
+    const [syncingPopup, setSyncingPopup] = useState(false);
 
     const { data, setData, post, transform, processing, errors } = useForm({
         name: rule?.name ?? '',
@@ -99,7 +101,20 @@ export default function Form({ rule, categoryOptions }: Props) {
         });
     };
 
+    const syncPopup = () => {
+        if (!rule?.id) {
+            return;
+        }
+
+        setSyncingPopup(true);
+        router.post(`/admin/cart-rules/${rule.id}/sync-popup`, {}, {
+            preserveScroll: true,
+            onFinish: () => setSyncingPopup(false),
+        });
+    };
+
     const canSyncHomepage = isEdit && !!rule?.bannerImageUrl && !data.remove_banner_image;
+    const canSyncPopup = canSyncHomepage;
 
     return (
         <AdminLayout
@@ -214,22 +229,50 @@ export default function Form({ rule, categoryOptions }: Props) {
                                 </div>
                             )}
                             {isEdit && (
-                                <div className="mt-3 flex flex-wrap items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        disabled={!canSyncHomepage || syncing}
-                                        onClick={syncHomepage}
-                                    >
-                                        {syncing ? 'Menyinkronkan...' : 'Sinkron ke Halaman Utama'}
-                                    </Button>
-                                    <Button type="button" variant="outline" size="sm" asChild>
-                                        <Link href="/admin/homepage">Buka Homepage Builder</Link>
-                                    </Button>
-                                    {!canSyncHomepage && (
+                                <div className="mt-3 space-y-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            disabled={!canSyncHomepage || syncing}
+                                            onClick={syncHomepage}
+                                        >
+                                            {syncing ? 'Menyinkronkan...' : 'Sinkron ke Halaman Utama'}
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" asChild>
+                                            <Link href="/admin/homepage">Buka Homepage Builder</Link>
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            disabled={!canSyncPopup || syncingPopup}
+                                            onClick={syncPopup}
+                                        >
+                                            {syncingPopup ? 'Menyinkronkan...' : 'Sinkron ke Pop up Promosi'}
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" asChild>
+                                            <Link href="/admin/promotion-popups">Buka Pop up Promosi</Link>
+                                        </Button>
+                                        {linkedPopup && (
+                                            <Button type="button" variant="outline" size="sm" asChild>
+                                                <Link href={`/admin/promotion-popups/${linkedPopup.id}/edit`}>
+                                                    Pop up terhubung: {linkedPopup.title}
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </div>
+                                    {canSyncPopup && (
                                         <p className="text-xs text-muted-foreground">
-                                            Upload banner terlebih dahulu untuk menyinkronkan ke section Banner Promosi.
+                                            Sinkron ulang akan menimpa judul, gambar, periode, dan pengaturan default pop up yang terhubung.
+                                        </p>
+                                    )}
+                                    {!canSyncPopup && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Upload banner terlebih dahulu. Pop up akan tampil di halaman yang dikonfigurasi (default: semua halaman).
                                         </p>
                                     )}
                                 </div>

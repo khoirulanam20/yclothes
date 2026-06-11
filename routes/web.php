@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\FaqCategoryController as AdminFaqCategoryControll
 use App\Http\Controllers\Admin\FaqItemController as AdminFaqItemController;
 use App\Http\Controllers\Admin\HomepageController as AdminHomepageController;
 use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Admin\LinkTemplateController as AdminLinkTemplateController;
 use App\Http\Controllers\Admin\NavigationController as AdminNavigationController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentBankController;
@@ -188,6 +189,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth', 'admin', 'admin.activity'])->group(function () {
+        Route::get('/link-templates', [AdminLinkTemplateController::class, 'index'])->name('link-templates.index');
+
         Route::get('/', DashboardController::class)->name('dashboard');
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
@@ -277,6 +280,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::middleware('permission:promotions.manage')->group(function () {
             Route::post('cart-rules/{cart_rule}/sync-homepage', [AdminCartRuleController::class, 'syncHomepage'])->name('cart-rules.sync-homepage');
+            Route::post('cart-rules/{cart_rule}/sync-popup', [AdminCartRuleController::class, 'syncPopup'])->name('cart-rules.sync-popup');
             Route::resource('cart-rules', AdminCartRuleController::class);
             Route::resource('catalog-rules', AdminCatalogRuleController::class);
             Route::resource('promotion-popups', AdminPromotionPopupController::class)->except(['show']);

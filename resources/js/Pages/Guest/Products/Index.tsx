@@ -28,6 +28,10 @@ type Props = {
         min_price?: string;
         max_price?: string;
         flash_sale?: string | null;
+        featured?: string | null;
+        on_sale?: string | null;
+        badge?: string | null;
+        badge_label?: string | null;
     };
     activeCategory?: ActiveCategory | null;
     pageTitle?: string | null;
@@ -39,7 +43,7 @@ const sortOptions = [
     { value: 'price_desc', label: 'Harga Tertinggi' },
 ];
 
-export default function Index({ products, categories, filters, activeCategory }: Props) {
+export default function Index({ products, categories, filters, activeCategory, pageTitle }: Props) {
     const [filterOpen, setFilterOpen] = useState(false);
     const isFlashSale = filters.flash_sale === '1';
     const hasActiveFilters = hasActiveProductFilters(filters);
@@ -57,7 +61,7 @@ export default function Index({ products, categories, filters, activeCategory }:
 
     return (
         <GuestLayout>
-            <Head title={isFlashSale ? 'Flash Sale' : activeCategory ? `${activeCategory.name} — Produk` : 'Produk'} />
+            <Head title={pageTitle ?? (isFlashSale ? 'Flash Sale' : activeCategory ? `${activeCategory.name} — Produk` : 'Produk')} />
             <PageContainer>
                 <Breadcrumb items={breadcrumbItems} />
 
@@ -70,7 +74,7 @@ export default function Index({ products, categories, filters, activeCategory }:
                                 <p className="text-sm text-muted-foreground">
                                     Menampilkan{' '}
                                     <span className="font-medium text-foreground">{products.meta.total}</span> produk
-                                    {isFlashSale ? ' di Flash Sale' : activeCategory ? ` di ${activeCategory.name}` : ''}
+                                    {pageTitle ? ` di ${pageTitle}` : isFlashSale ? ' di Flash Sale' : activeCategory ? ` di ${activeCategory.name}` : ''}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <Button

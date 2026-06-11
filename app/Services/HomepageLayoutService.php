@@ -15,6 +15,8 @@ use RuntimeException;
 
 class HomepageLayoutService
 {
+    public function __construct(private StorageCopyService $storageCopy) {}
+
     public const SETTING_KEY = 'homepage_layout';
 
     /** @var list<string> */
@@ -554,7 +556,7 @@ class HomepageLayoutService
             $imagePath = '';
             $imageUrl = '';
             if (! empty($cartRule->banner_image)) {
-                $imagePath = $this->copyBannerToHomepage($cartRule->banner_image);
+                $imagePath = $this->storageCopy->copyPublicFile($cartRule->banner_image, 'homepage-banners');
                 $imageUrl = storage_url($imagePath);
             }
 
@@ -582,37 +584,6 @@ class HomepageLayoutService
 
         $this->saveLayout($layout);
 
-        // #region agent log
-        $debugLogPath = base_path('.cursor/debug-227592.log');
-        @file_put_contents($debugLogPath, json_encode([
-            'sessionId' => '227592',
-            'hypothesisId' => 'H3-H4',
-            'location' => 'HomepageLayoutService.php:syncPromotionBannerFromCartRule',
-            'message' => 'banner sync completed',
-            'data' => [
-                'cartRuleId' => $cartRule->id,
-                'updatedSectionIds' => $updatedIds,
-                'bannerImage' => $cartRule->banner_image,
-            ],
-            'timestamp' => (int) (microtime(true) * 1000),
-        ])."\n", FILE_APPEND);
-        // #endregion
-
         return $updatedIds;
-    }
-
-    private function copyBannerToHomepage(string $sourcePath): string
-    {
-        $disk = Storage::disk('public');
-
-        if (! $disk->exists($sourcePath)) {
-            throw new RuntimeException('File banner promosi tidak ditemukan di storage.');
-        }
-
-        $extension = pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'jpg';
-        $destPath = 'homepage-banners/'.Str::uuid().'.'.$extension;
-        $disk->copy($sourcePath, $destPath);
-
-        return $destPath;
     }
 }

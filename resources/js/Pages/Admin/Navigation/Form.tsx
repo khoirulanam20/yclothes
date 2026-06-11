@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminCheckboxRow, AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
+import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,9 +81,15 @@ export default function Form({ item, parents = [] }: Props) {
                                 <Input id="label" value={data.label} onChange={(e) => setData('label', e.target.value)} required />
                                 <FieldError message={errors.label} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="url">URL</Label>
-                                <Input id="url" value={data.url} onChange={(e) => setData('url', e.target.value)} required />
+                            <div className="space-y-2 md:col-span-2">
+                                <LinkUrlField
+                                    id="url"
+                                    label="URL"
+                                    value={data.url}
+                                    onChange={(value) => setData('url', value)}
+                                    placeholder="/page/tentang-kami"
+                                    required
+                                />
                                 <FieldError message={errors.url} />
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">

@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\CartRule;
 use App\Models\PromotionPopup;
+use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class PromotionPopupService
 {
+    public function __construct(private StorageCopyService $storageCopy) {}
     /** @var list<string> */
     public const PAGE_OPTIONS = [
         'all' => 'Semua Halaman',
@@ -55,6 +59,37 @@ class PromotionPopupService
         $pages = $popup->show_on_pages ?? [];
 
         return in_array('all', $pages, true) || in_array($pageKey, $pages, true);
+    }
+
+    public function syncFromCartRule(CartRule $cartRule): PromotionPopup
+    {
+        if (empty($cartRule->banner_image)) {
+            throw new RuntimeException('Upload banner landing terlebih dahulu sebelum sinkronisasi.');
+        }
+
+        $popup = PromotionPopup::firstOrNew(['cart_rule_id' => $cartRule->id]);
+        $oldImage = $popup->image;
+
+        $popup->fill([
+            'title' => $cartRule->name,
+            'image' => $this->storageCopy->copyPublicFile($cartRule->banner_image, 'promotion-popups'),
+            'button_label' => 'Lihat Promo',
+            'button_url' => $cartRule->slug ? '/promo/'.$cartRule->slug : null,
+            'display_duration_seconds' => 0,
+            'start_date' => $cartRule->start_date->copy()->startOfDay(),
+            'end_date' => $cartRule->end_date->copy()->endOfDay(),
+            'show_on_pages' => ['all'],
+            'is_active' => (bool) $cartRule->is_active,
+            'priority' => $cartRule->priority ?? 0,
+        ]);
+
+        $popup->save();
+
+        if ($oldImage && $oldImage !== $popup->image) {
+            Storage::disk('public')->delete($oldImage);
+        }
+
+        return $popup;
     }
 
     public function serialize(?PromotionPopup $popup): ?array
