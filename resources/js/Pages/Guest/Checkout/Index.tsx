@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
+import { AppliedCouponBanner } from '@/components/storefront/AppliedCouponBanner';
 import { CourierSelect, type CourierOption } from '@/components/storefront/CourierSelect';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
@@ -402,15 +403,10 @@ export default function Index({
                                     </div>
                                 ))}
                                 {pricing.couponApplied && pricing.couponCode ? (
-                                    <div className="flex items-center justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-                                        <span>
-                                            Kupon <strong>{pricing.couponCode}</strong> aktif
-                                            {pricing.freeShipping ? ' · Gratis ongkir' : ''}
-                                        </span>
-                                        <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800 hover:text-green-900" onClick={removeCoupon}>
-                                            Hapus
-                                        </Button>
-                                    </div>
+                                    <AppliedCouponBanner
+                                        couponCode={pricing.couponCode}
+                                        onRemove={removeCoupon}
+                                    />
                                 ) : (
                                     <div className="flex gap-2">
                                         <Input

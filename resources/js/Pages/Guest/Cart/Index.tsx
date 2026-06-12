@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { type ProductCardData } from '@/components/ProductCard';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
+import { AppliedCouponBanner } from '@/components/storefront/AppliedCouponBanner';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductGrid } from '@/components/storefront/ProductGrid';
 import { SectionCard } from '@/components/storefront/SectionCard';
@@ -231,15 +232,11 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
                                     </div>
                                 </div>
                                 {pricing.couponApplied && pricing.couponCode ? (
-                                    <div className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-                                        <span>
-                                            Kupon <strong>{pricing.couponCode}</strong> aktif
-                                            {pricing.freeShipping ? ' · Gratis ongkir' : ''}
-                                        </span>
-                                        <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800" onClick={removeCoupon}>
-                                            Hapus
-                                        </Button>
-                                    </div>
+                                    <AppliedCouponBanner
+                                        className="mt-4"
+                                        couponCode={pricing.couponCode}
+                                        onRemove={removeCoupon}
+                                    />
                                 ) : (
                                     <form onSubmit={applyCoupon} className="mt-4 flex gap-2">
                                         <Input
