@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Pos\CustomerController;
 use App\Http\Controllers\Api\Pos\HeldCartController;
 use App\Http\Controllers\Api\Pos\OfflineSyncController;
 use App\Http\Controllers\Api\Pos\OrderController;
+use App\Http\Controllers\Api\Pos\PaymentBankController;
 use App\Http\Controllers\Api\Pos\ProductController;
 use App\Http\Controllers\Api\Pos\ReportController;
 use App\Http\Controllers\Api\Pos\ShiftController;
@@ -44,6 +45,8 @@ Route::prefix('pos')->group(function () {
         Route::get('/customers', [CustomerController::class, 'index'])->name('api.pos.customers.index');
         Route::get('/customers/search', [CustomerController::class, 'search'])->name('api.pos.customers.search');
 
+        Route::get('/payment-banks', [PaymentBankController::class, 'index'])->name('api.pos.payment-banks.index');
+
         Route::get('/held-carts', [HeldCartController::class, 'index'])->name('api.pos.held-carts.index');
 
         Route::get('/orders', [OrderController::class, 'index'])->name('api.pos.orders.index');
@@ -71,6 +74,15 @@ Route::prefix('pos')->group(function () {
             Route::post('/orders/sync', OfflineSyncController::class)
                 ->middleware('throttle:60,1')
                 ->name('api.pos.orders.sync');
+        });
+
+        Route::middleware('permission:pos.manage')->group(function () {
+            Route::post('/payment-banks', [PaymentBankController::class, 'store'])
+                ->name('api.pos.payment-banks.store');
+            Route::patch('/payment-banks/{paymentBank}', [PaymentBankController::class, 'update'])
+                ->name('api.pos.payment-banks.update');
+            Route::delete('/payment-banks/{paymentBank}', [PaymentBankController::class, 'destroy'])
+                ->name('api.pos.payment-banks.destroy');
         });
 
         Route::post('/orders/{order}/void', [OrderController::class, 'void'])
