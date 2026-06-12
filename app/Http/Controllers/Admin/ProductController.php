@@ -173,6 +173,14 @@ class ProductController extends Controller
             $request->file('new_images') ?? [],
             'products/gallery',
         );
+
+        $currentImage = $validated['image'] ?? $product->image;
+        if (empty($currentImage)) {
+            $primary = $this->imageService->primaryPath($validated['images']);
+            if ($primary) {
+                $validated['image'] = $primary;
+            }
+        }
         $validated['weight'] = (int) ($request->weight ?? 0);
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_active'] = $request->boolean('is_active');
