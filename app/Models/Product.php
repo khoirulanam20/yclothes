@@ -231,52 +231,10 @@ class Product extends Model
 
     public function getImageUrlAttribute(): string
     {
-        // #region agent log
-        if (! empty($this->image) && ! Str::startsWith($this->image, ['http://', 'https://', '//'])
-            && ! \Illuminate\Support\Facades\Storage::disk('public')->exists($this->image)) {
-            @file_put_contents(
-                base_path('.cursor/debug-1df9a3.log'),
-                json_encode([
-                    'sessionId' => '1df9a3',
-                    'hypothesisId' => 'B',
-                    'location' => 'Product.php:getImageUrlAttribute',
-                    'message' => 'primary image file missing on disk',
-                    'data' => ['id' => $this->id, 'slug' => $this->slug, 'image' => $this->image],
-                    'timestamp' => (int) (microtime(true) * 1000),
-                ])."\n",
-                FILE_APPEND
-            );
-        }
         $path = $this->image;
         if (empty($path)) {
             $path = collect($this->images ?? [])->filter()->first() ?? '';
         }
-
-        // #region agent log
-        if (empty($this->image) && ! empty($this->images)) {
-            $resolved = empty($path)
-                ? ''
-                : (Str::startsWith($path, ['http://', 'https://', '//']) ? $path : (storage_url($path) ?? ''));
-            @file_put_contents(
-                base_path('.cursor/debug-1df9a3.log'),
-                json_encode([
-                    'sessionId' => '1df9a3',
-                    'runId' => 'post-fix',
-                    'hypothesisId' => 'A',
-                    'location' => 'Product.php:getImageUrlAttribute',
-                    'message' => 'gallery fallback applied',
-                    'data' => [
-                        'id' => $this->id,
-                        'slug' => $this->slug,
-                        'fallback_path' => $path,
-                        'resolved_image_url' => $resolved,
-                    ],
-                    'timestamp' => (int) (microtime(true) * 1000),
-                ])."\n",
-                FILE_APPEND
-            );
-        }
-        // #endregion
 
         if (empty($path)) {
             return '';
