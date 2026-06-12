@@ -73,7 +73,7 @@ export default function Dashboard({
             <AdminContent>
             <AdminPageHeader title="Dasbor" />
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="dashboard-stats">
                 <StatCard label="Total Pesanan" value={orderCount} />
                 <StatCard label="Perlu Tindakan" value={pendingCount} />
                 <StatCard label="Total Produk" value={productCount} />
@@ -158,7 +158,7 @@ export default function Dashboard({
                 </CardContent>
             </Card>
 
-            <Card className="mb-6">
+            <Card className="mb-6" data-tour="dashboard-orders">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Pesanan Terbaru</CardTitle>
                     <Button variant="outline" size="sm" asChild>
@@ -203,7 +203,7 @@ export default function Dashboard({
             </Card>
 
             {recentActivities.length > 0 && (
-                <Card>
+                <Card data-tour="dashboard-activity">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Aktivitas Terbaru</CardTitle>
                         <Button variant="outline" size="sm" asChild>

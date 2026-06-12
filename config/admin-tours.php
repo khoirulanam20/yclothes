@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'variants' => [
+        'index',
+        'create',
+        'edit',
+        'show',
+        'special',
+        'nested',
+    ],
+    'keys' => [
+        'dashboard',
+        'orders',
+        'returns',
+        'reviews',
+        'products',
+        'categories',
+        'attributes',
+        'attribute-families',
+        'cms-pages',
+        'blog-posts',
+        'navigation',
+        'faq',
+        'inventories',
+        'warehouses',
+        'stock-movements',
+        'cart-rules',
+        'catalog-rules',
+        'promotion-popups',
+        'configuration',
+        'settings',
+        'roles',
+        'staff',
+        'activity-logs',
+    ],
+];

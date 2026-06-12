@@ -260,7 +260,7 @@ export default function Show({
                     </div>
 
                     <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-                        <Card>
+                        <Card data-tour="order-status">
                             <CardHeader><CardTitle>Ringkasan</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex justify-between items-center gap-2">
@@ -327,7 +327,7 @@ export default function Show({
                         </Card>
 
                         {(interactiveActions.length > 0 || infoActions.length > 0) && (
-                            <Card>
+                            <Card data-tour="order-actions">
                                 <CardHeader><CardTitle>Langkah Selanjutnya</CardTitle></CardHeader>
                                 <CardContent className="space-y-2">
                                     {infoActions.map((action, i) => (

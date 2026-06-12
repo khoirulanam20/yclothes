@@ -167,7 +167,7 @@ export default function Builder({ page }: Props) {
         >
             <Head title={isNew ? 'Halaman Baru' : `Builder — ${page!.title}`} />
 
-            <div className="cms-builder">
+            <div className="cms-builder" data-tour="cms-builder-canvas">
                 <Puck
                     config={puckConfig}
                     data={puckData}

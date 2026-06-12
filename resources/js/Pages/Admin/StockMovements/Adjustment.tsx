@@ -37,7 +37,7 @@ export default function Adjustment({ products, warehouses }: Props) {
             <Head title="Penyesuaian Stok" />
             <AdminContent>
                 <AdminPageHeader title="Penyesuaian Stok" backHref="/admin/stock-movements" />
-                <form onSubmit={submit}>
+                <form onSubmit={submit} data-tour="stock-special-form">
                     <AdminFormCard
                         contentClassName="space-y-5"
                         footer={(

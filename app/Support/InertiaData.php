@@ -97,6 +97,7 @@ class InertiaData
                 'email' => $admin->email,
                 'isSuperAdmin' => $admin->isSuperAdmin(),
                 'permissions' => self::adminPermissions($admin),
+                'completedTourVariants' => $admin->adminTourProgress(),
             ] : null,
         ];
     }

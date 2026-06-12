@@ -115,8 +115,8 @@ export default function Show({ returnRequest }: Props) {
                     )}
                 </div>
 
-                <div className="space-y-4">
-                    <Card><CardContent className="pt-6">
+                <div className="space-y-4" data-tour="order-actions">
+                    <Card data-tour="order-status"><CardContent className="pt-6">
                         <Badge>{returnStatusLabels[returnRequest.status] ?? returnRequest.status}</Badge>
                         <p className="text-sm mt-2">Pesanan: {returnRequest.order?.orderNumber}</p>
                         {returnRequest.shipment && (

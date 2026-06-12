@@ -35,6 +35,7 @@ export default function Settings({ user }: Props) {
                         footer={<Button type="submit" disabled={processing}>Simpan Pengaturan</Button>}
                     >
                         <h2 className="text-sm font-semibold mb-4">Profil Admin</h2>
+                        <div data-tour="settings-profile">
                         <AdminFormGrid columns={2}>
                             <div className="space-y-2">
                                 <Label htmlFor="name">Nama</Label>
@@ -56,6 +57,7 @@ export default function Settings({ user }: Props) {
                                 <Input id="password_confirmation" type="password" value={data.password_confirmation} onChange={(e) => setData('password_confirmation', e.target.value)} />
                             </div>
                         </AdminFormGrid>
+                        </div>
                     </AdminFormCard>
                 </form>
             </AdminContent>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\AdminTourController;
 use App\Http\Controllers\Admin\AdminRoleController as AdminAdminRoleController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AttributeFamilyController as AdminAttributeFamilyController;
@@ -195,6 +196,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
         Route::post('/notifications/{notification}/read', [AdminNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('/tours/{tourKey}/complete', [AdminTourController::class, 'complete'])->name('tours.complete');
 
         Route::middleware('permission:settings.manage')->group(function () {
             Route::get('/configuration', [AdminConfigurationController::class, 'index'])->name('configuration.index');

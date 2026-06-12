@@ -70,7 +70,7 @@ export default function Transfer({ products, warehouses }: Props) {
             <Head title="Transfer Stok" />
             <AdminContent>
                 <AdminPageHeader title="Transfer Stok" backHref="/admin/stock-movements" />
-                <form onSubmit={submit}>
+                <form onSubmit={submit} data-tour="stock-special-form">
                     <AdminFormCard
                         contentClassName="space-y-5"
                         footer={(

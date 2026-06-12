@@ -62,7 +62,7 @@ export function CmsComponentDrawer({ blocks, children }: Props) {
     };
 
     return (
-        <div className="flex h-full flex-col bg-background">
+        <div className="flex h-full flex-col bg-background" data-tour="cms-builder-components">
             <div className="border-b p-3">
                 <p className="mb-2 text-sm font-semibold">Komponen</p>
                 <div className="relative">

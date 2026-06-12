@@ -8,7 +8,7 @@ type AdminContentProps = {
 
 export function AdminContent({ children, className }: AdminContentProps) {
     return (
-        <div className={cn('w-full min-w-0 space-y-6', className)}>
+        <div className={cn('w-full min-w-0 space-y-6', className)} data-tour="main-content">
             {children}
         </div>
     );
@@ -44,11 +44,14 @@ type AdminFormCardProps = {
 export function AdminFormCard({ children, footer, className, contentClassName }: AdminFormCardProps) {
     return (
         <Card className={cn('w-full', className)}>
-            <CardContent className={cn('p-6', contentClassName)}>
+            <CardContent className={cn('p-6', contentClassName)} data-tour="form-main">
                 {children}
             </CardContent>
             {footer && (
-                <div className="flex flex-wrap items-center justify-end gap-3 border-t bg-muted/20 px-6 py-4">
+                <div
+                    className="flex flex-wrap items-center justify-end gap-3 border-t bg-muted/20 px-6 py-4"
+                    data-tour="form-submit"
+                >
                     {footer}
                 </div>
             )}
@@ -58,7 +61,7 @@ export function AdminFormCard({ children, footer, className, contentClassName }:
 
 export function AdminTableScroll({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={cn('overflow-x-auto', className)}>
+        <div className={cn('overflow-x-auto', className)} data-tour="data-table">
             {children}
         </div>
     );

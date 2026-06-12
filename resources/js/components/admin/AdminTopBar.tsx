@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import { AdminNotificationBell } from '@/components/admin/AdminNotificationBell';
+import { AdminTourReplayButton } from '@/components/admin/AdminTourReplayButton';
 import { AdminBreadcrumb, type AdminBreadcrumbItem } from '@/components/admin/AdminBreadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -14,7 +15,10 @@ export function AdminTopBar({ breadcrumbs }: { breadcrumbs?: AdminBreadcrumbItem
                 <AdminBreadcrumb items={breadcrumbs} />
             </div>
             <div className="flex items-center gap-1 shrink-0">
-                <AdminNotificationBell />
+                <AdminTourReplayButton />
+                <div data-tour="notifications">
+                    <AdminNotificationBell />
+                </div>
                 <Link
                     href="/"
                     className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

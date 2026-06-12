@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { usePage } from '@inertiajs/react';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminTourProvider } from '@/components/admin/AdminTourProvider';
 import { AdminTopBar } from '@/components/admin/AdminTopBar';
 import type { AdminBreadcrumbItem } from '@/components/admin/AdminBreadcrumb';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -19,15 +20,17 @@ export default function CmsBuilderLayout({
     }
 
     return (
-        <SidebarProvider defaultOpen>
-            <AdminSidebar />
-            <SidebarInset className="min-h-svh">
-                <AdminTopBar breadcrumbs={breadcrumbs} />
-                <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    {title && <h1 className="sr-only">{title}</h1>}
-                    {children}
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
+        <AdminTourProvider>
+            <SidebarProvider defaultOpen>
+                <AdminSidebar />
+                <SidebarInset className="min-h-svh">
+                    <AdminTopBar breadcrumbs={breadcrumbs} />
+                    <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        {title && <h1 className="sr-only">{title}</h1>}
+                        {children}
+                    </main>
+                </SidebarInset>
+            </SidebarProvider>
+        </AdminTourProvider>
     );
 }

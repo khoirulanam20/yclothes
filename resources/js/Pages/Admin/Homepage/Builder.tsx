@@ -460,7 +460,7 @@ export default function Builder({ layout: initialLayout, sectionTypes, sliders, 
                 description="Atur urutan dan konfigurasi section beranda."
                 backHref={CONFIGURATION_HREF}
             />
-            <div className="space-y-6">
+            <div className="space-y-6" data-tour="configuration-fields">
                 <div className="grid lg:grid-cols-5 gap-6">
                     <Card className="lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -493,7 +493,7 @@ export default function Builder({ layout: initialLayout, sectionTypes, sliders, 
                         </CardContent>
                     </Card>
                 </div>
-                <Button type="button" disabled={saving} onClick={submit}>Simpan Layout</Button>
+                <Button type="button" disabled={saving} onClick={submit} data-tour="form-submit">Simpan Layout</Button>
             </div>
         </AdminLayout>
     );

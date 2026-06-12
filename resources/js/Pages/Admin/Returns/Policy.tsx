@@ -40,7 +40,7 @@ export default function Policy({ policy }: Props) {
             <Head title="Kebijakan Retur" />
             <AdminContent>
                 <AdminPageHeader title="Kebijakan Retur" backHref={CONFIGURATION_HREF} />
-                <form onSubmit={submit}>
+                <form onSubmit={submit} data-tour="returns-policy">
                     <AdminFormCard
                         footer={<Button type="submit" disabled={processing}>Simpan</Button>}
                     >

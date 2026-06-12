@@ -106,7 +106,7 @@ export default function Edit({ section, appUrl = '' }: Props) {
                     </Card>
                 )}
 
-                <form onSubmit={submit}>
+                <form onSubmit={submit} data-tour="configuration-fields">
                     <AdminFormCard
                         contentClassName="space-y-8"
                         footer={saveFooter}

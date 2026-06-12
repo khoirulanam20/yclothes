@@ -115,7 +115,7 @@ export default function Index({ categories }: Props) {
                 )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" data-tour="configuration-grid">
                 {categories.map((category) => (
                     <Card key={category.key}>
                         <CardHeader>

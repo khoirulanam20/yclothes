@@ -18,7 +18,7 @@ export function AdminBreadcrumb({ items = [] }: { items?: AdminBreadcrumbItem[] 
     const crumbs: AdminBreadcrumbItem[] = [{ label: 'Admin', href: '/admin' }, ...items];
 
     return (
-        <Breadcrumb>
+        <Breadcrumb data-tour="breadcrumb">
             <BreadcrumbList>
                 {crumbs.map((item, index) => {
                     const isLast = index === crumbs.length - 1;

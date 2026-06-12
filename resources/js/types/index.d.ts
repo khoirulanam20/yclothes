@@ -64,7 +64,14 @@ export type AdminBadges = {
 export type SharedPageProps = {
     auth: {
         customer: { id: number; name: string; email: string; emailVerified: boolean } | null;
-        admin: { id: number; name: string; email: string; isSuperAdmin: boolean; permissions: string[] } | null;
+        admin: {
+            id: number;
+            name: string;
+            email: string;
+            isSuperAdmin: boolean;
+            permissions: string[];
+            completedTourVariants: Record<string, ('index' | 'create' | 'edit' | 'show' | 'special' | 'nested')[]>;
+        } | null;
     };
     flash: { success?: string; error?: string };
     cartCount: number;

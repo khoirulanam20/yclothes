@@ -1,6 +1,7 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { ChevronsUpDown, ChevronDown, ExternalLink, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { hrefToTourKey } from '@/lib/admin-tour-keys';
 import {
     formatBadgeCount,
     groupNavItems,
@@ -86,10 +87,12 @@ function NavGroupSection({
         const ItemIcon = item.icon;
         const count = getBadgeCount(badges, item.badgeKey);
 
+        const tourKey = hrefToTourKey(item.href);
+
         return (
             <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isNavItemActive(url, item)} tooltip={item.label}>
-                    <Link href={item.href}>
+                    <Link href={item.href} {...(tourKey ? { 'data-tour': `nav-${tourKey}` } : {})}>
                         <ItemIcon />
                         <span>{item.label}</span>
                     </Link>
@@ -145,11 +148,16 @@ function NavSubItem({
     badges?: AdminBadges | null;
 }) {
     const count = getBadgeCount(badges, item.badgeKey);
+    const tourKey = hrefToTourKey(item.href);
 
     return (
         <SidebarMenuSubItem>
             <SidebarMenuSubButton asChild isActive={isNavItemActive(url, item)}>
-                <Link href={item.href} className="flex items-center justify-between gap-2">
+                <Link
+                    href={item.href}
+                    className="flex items-center justify-between gap-2"
+                    {...(tourKey ? { 'data-tour': `nav-${tourKey}` } : {})}
+                >
                     <span>{item.label}</span>
                     <NavBadge count={count} />
                 </Link>

@@ -20,7 +20,7 @@ export function AdminPageHeader({
     actions?: React.ReactNode;
 }) {
     return (
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-6" data-tour="page-header">
             <div className="flex items-start gap-3 min-w-0">
                 {backHref && (
                     <Button variant="outline" size="icon" className="shrink-0 mt-0.5" asChild>
@@ -40,7 +40,7 @@ export function AdminPageHeader({
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {actions}
                     {createHref && (
-                        <Button asChild>
+                        <Button asChild data-tour="create-button">
                             <Link href={createHref}>{createLabel}</Link>
                         </Button>
                     )}
