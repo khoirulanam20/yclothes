@@ -55,7 +55,7 @@ class InventoryService
     /**
      * @param  array<int, array{product: Product, variant: ProductVariant|null, qty: int, product_name?: string}>  $lines
      */
-    public function assertStockAvailableWithLock(array $lines): void
+    public function assertStockAvailableWithLock(array $lines, ?int $warehouseId = null): void
     {
         foreach ($lines as $line) {
             $product = $line['product'];
@@ -70,6 +70,18 @@ class InventoryService
                 continue;
             }
 
+            if ($warehouseId !== null) {
+                $this->lockInventoriesForAtWarehouse($product, $variant, $warehouseId);
+
+                if (! $this->canOrderAtWarehouse($product, $variant, $qty, $warehouseId)) {
+                    throw new InsufficientStockException(
+                        $line['product_name'] ?? $product->name,
+                    );
+                }
+
+                continue;
+            }
+
             $this->lockInventoriesFor($product, $variant);
 
             if (! $this->canOrder($product, $variant, $qty)) {
@@ -78,6 +90,80 @@ class InventoryService
                 );
             }
         }
+    }
+
+    public function canOrderAtWarehouse(
+        Product $product,
+        ?ProductVariant $variant,
+        int $qty,
+        int $warehouseId,
+    ): bool {
+        if ($variant) {
+            if (! $this->tracksStock($product, $variant)) {
+                return true;
+            }
+
+            if ($this->effectiveAllowBackorder($product, $variant)) {
+                return true;
+            }
+
+            return $this->getAvailableStockAtWarehouse($product, $variant, $warehouseId) >= $qty;
+        }
+
+        if ($product->isConfigurable()) {
+            $variants = $product->relationLoaded('activeVariants')
+                ? $product->activeVariants
+                : $product->activeVariants()->get();
+
+            foreach ($variants as $activeVariant) {
+                if ($this->canOrderAtWarehouse($product, $activeVariant, $qty, $warehouseId)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! $this->tracksStock($product, $variant)) {
+            return true;
+        }
+
+        if ($this->effectiveAllowBackorder($product, $variant)) {
+            return true;
+        }
+
+        return $this->getAvailableStockAtWarehouse($product, $variant, $warehouseId) >= $qty;
+    }
+
+    public function getAvailableStockAtWarehouse(
+        Product $product,
+        ?ProductVariant $variant,
+        int $warehouseId,
+    ): int {
+        $query = Inventory::query()->where('warehouse_id', $warehouseId);
+
+        if ($variant) {
+            $stock = (int) (clone $query)->where('product_variant_id', $variant->id)->sum('stock');
+            if ($stock > 0 || (clone $query)->where('product_variant_id', $variant->id)->exists()) {
+                return $stock;
+            }
+
+            return $variant->stock;
+        }
+
+        $stock = (int) (clone $query)
+            ->where('product_id', $product->id)
+            ->whereNull('product_variant_id')
+            ->sum('stock');
+
+        if ($stock > 0 || (clone $query)
+            ->where('product_id', $product->id)
+            ->whereNull('product_variant_id')
+            ->exists()) {
+            return $stock;
+        }
+
+        return 0;
     }
 
     public function reserveForOrder(Order $order, string $reason = 'Reservasi checkout'): void
@@ -129,6 +215,25 @@ class InventoryService
     private function lockInventoriesFor(Product $product, ?ProductVariant $variant): void
     {
         $query = Inventory::query()->lockForUpdate();
+
+        if ($variant) {
+            $query->where('product_variant_id', $variant->id);
+        } else {
+            $query->where('product_id', $product->id)
+                ->whereNull('product_variant_id');
+        }
+
+        $query->get();
+    }
+
+    private function lockInventoriesForAtWarehouse(
+        Product $product,
+        ?ProductVariant $variant,
+        int $warehouseId,
+    ): void {
+        $query = Inventory::query()
+            ->where('warehouse_id', $warehouseId)
+            ->lockForUpdate();
 
         if ($variant) {
             $query->where('product_variant_id', $variant->id);
@@ -254,6 +359,7 @@ class InventoryService
         }
 
         $order->load('items.product', 'items.variant');
+        $warehouseId = $order->warehouse_id;
 
         foreach ($order->items as $item) {
             if (! $item->product) {
@@ -268,6 +374,10 @@ class InventoryService
             $remaining = $item->qty;
             $query = Inventory::query();
 
+            if ($warehouseId) {
+                $query->where('warehouse_id', $warehouseId);
+            }
+
             if ($variant) {
                 $query->where('product_variant_id', $variant->id);
             } else {
@@ -275,11 +385,16 @@ class InventoryService
                     ->whereNull('product_variant_id');
             }
 
-            $inventories = $query->orderByDesc('stock')->get();
+            $inventories = $warehouseId
+                ? $query->get()
+                : $query->orderByDesc('stock')->get();
 
             if ($inventories->isEmpty()) {
+                $warehouse = $warehouseId
+                    ? Warehouse::query()->find($warehouseId)
+                    : null;
                 $inventories = collect([
-                    $this->getOrCreateInventory($item->product, null, $variant?->id),
+                    $this->getOrCreateInventory($item->product, $warehouse, $variant?->id),
                 ]);
             }
 
@@ -303,7 +418,7 @@ class InventoryService
                 $remaining -= $deduct;
             }
 
-            if ($variant && $remaining > 0 && $variant->stock > 0) {
+            if (! $warehouseId && $variant && $remaining > 0 && $variant->stock > 0) {
                 $deduct = min($variant->stock, $remaining);
                 $variant->decrement('stock', $deduct);
                 $defaultWarehouse = Warehouse::where('is_active', true)->orderBy('id')->first();
@@ -554,7 +669,7 @@ class InventoryService
         return $notes;
     }
 
-    private function tracksStock(Product $product, ?ProductVariant $variant): bool
+    public function tracksStock(Product $product, ?ProductVariant $variant): bool
     {
         if ($variant) {
             return $variant->track_stock;

@@ -19,6 +19,9 @@ class AdminRole extends Model
         'promotions.manage',
         'reports.view',
         'staff.manage',
+        'pos.access',
+        'pos.sell',
+        'pos.manage',
     ];
 
     protected $fillable = ['name', 'description', 'permissions'];

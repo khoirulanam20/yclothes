@@ -22,6 +22,8 @@ class Order extends Model
         'is_replacement', 'source_return_request_id',
         'courier', 'courier_service', 'courier_service_code', 'shipping_etd',
         'tracking_number', 'biteship_order_id', 'shipping_provider', 'notes',
+        'order_source', 'client_reference', 'synced_from_offline',
+        'warehouse_id', 'pos_shift_id', 'created_by_user_id',
     ];
 
     protected function casts(): array
@@ -42,6 +44,7 @@ class Order extends Model
             'inventory_decremented' => 'boolean',
             'is_replacement' => 'boolean',
             'newsletter_opt_in' => 'boolean',
+            'synced_from_offline' => 'boolean',
         ];
     }
 
@@ -78,6 +81,31 @@ class Order extends Model
     public function sourceReturnRequest()
     {
         return $this->belongsTo(ReturnRequest::class, 'source_return_request_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function posShift()
+    {
+        return $this->belongsTo(PosShift::class);
+    }
+
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function posPayments()
+    {
+        return $this->hasMany(PosOrderPayment::class);
+    }
+
+    public function isPos(): bool
+    {
+        return $this->order_source === 'pos';
     }
 
     public function fullShippingAddress(): string

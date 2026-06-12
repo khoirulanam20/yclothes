@@ -14,6 +14,7 @@ use InvalidArgumentException;
 class OrderWorkflowService
 {
     public function __construct(private EmailNotificationService $emailNotifications) {}
+
     /** @var array<string, list<string>> */
     private const TRANSITIONS = [
         OrderStatus::Pending->value => ['awaiting_verification', 'confirmed', 'cancelled'],
@@ -27,8 +28,18 @@ class OrderWorkflowService
         OrderStatus::Cancelled->value => [],
     ];
 
-    public function canTransition(string $from, string $to): bool
+    public function canTransition(string $from, string $to, ?Order $order = null): bool
     {
+        if ($order?->isPos()) {
+            if ($from === OrderStatus::Confirmed->value && $to === OrderStatus::Completed->value) {
+                return true;
+            }
+
+            if ($from === OrderStatus::Completed->value && $to === OrderStatus::Cancelled->value) {
+                return true;
+            }
+        }
+
         return in_array($to, self::TRANSITIONS[$from] ?? [], true);
     }
 
@@ -47,7 +58,7 @@ class OrderWorkflowService
             return $order;
         }
 
-        if ($fromStatus !== $toStatus && ! $this->canTransition($fromStatus, $toStatus)) {
+        if ($fromStatus !== $toStatus && ! $this->canTransition($fromStatus, $toStatus, $order)) {
             throw new InvalidArgumentException("Transisi status tidak valid: {$fromStatus} → {$toStatus}");
         }
 
