@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Warehouse;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,15 +12,15 @@ class WarehouseController extends Controller
 {
     public function index()
     {
-        $warehouses = Warehouse::latest()->get();
+        $warehouses = Warehouse::latest()->paginate(15);
 
         return Inertia::render('Admin/Warehouses/Index', [
-            'warehouses' => $warehouses->map(fn ($w) => [
+            'warehouses' => ModelSerializer::paginated($warehouses, fn ($w) => [
                 'id' => $w->id,
                 'name' => $w->name,
                 'city' => $w->city,
                 'isActive' => (bool) $w->is_active,
-            ])->values()->all(),
+            ]),
         ]);
     }
 

@@ -12,10 +12,10 @@ class PaymentBankController extends Controller
 {
     public function index()
     {
-        $banks = PaymentBank::latest()->get();
+        $banks = PaymentBank::latest()->paginate(15);
 
         return Inertia::render('Admin/PaymentBanks/Index', [
-            'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
+            'banks' => ModelSerializer::paginated($banks, [ModelSerializer::class, 'paymentBank']),
         ]);
     }
 

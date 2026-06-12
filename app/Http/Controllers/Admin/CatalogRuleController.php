@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CatalogRule;
 use App\Models\Product;
 use App\Services\CategoryTreeService;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -16,10 +17,10 @@ class CatalogRuleController extends Controller
 
     public function index()
     {
-        $rules = CatalogRule::latest()->get();
+        $rules = CatalogRule::latest()->paginate(15);
 
         return Inertia::render('Admin/CatalogRules/Index', [
-            'rules' => $rules->map(fn ($r) => $this->catalogRule($r))->values()->all(),
+            'rules' => ModelSerializer::paginated($rules, fn ($r) => $this->catalogRule($r)),
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FaqCategory;
 use App\Models\FaqItem;
 use App\Services\HtmlSanitizer;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,16 +14,16 @@ class FaqItemController extends Controller
 {
     public function index(FaqCategory $faqCategory)
     {
-        $items = $faqCategory->items()->orderBy('sort_order')->get();
+        $items = $faqCategory->items()->orderBy('sort_order')->paginate(15);
 
         return Inertia::render('Admin/Faq/Items/Index', [
             'category' => ['id' => $faqCategory->id, 'name' => $faqCategory->name],
-            'items' => $items->map(fn ($item) => [
+            'items' => ModelSerializer::paginated($items, fn ($item) => [
                 'id' => $item->id,
                 'question' => $item->question,
                 'sortOrder' => $item->sort_order,
                 'isActive' => (bool) $item->is_active,
-            ])->values()->all(),
+            ]),
         ]);
     }
 

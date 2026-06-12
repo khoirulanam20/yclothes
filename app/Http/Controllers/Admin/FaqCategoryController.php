@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FaqCategory;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,15 +12,15 @@ class FaqCategoryController extends Controller
 {
     public function index()
     {
-        $categories = FaqCategory::withCount('items')->orderBy('sort_order')->get();
+        $categories = FaqCategory::withCount('items')->orderBy('sort_order')->paginate(15);
 
         return Inertia::render('Admin/Faq/Categories/Index', [
-            'categories' => $categories->map(fn ($c) => [
+            'categories' => ModelSerializer::paginated($categories, fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
                 'sortOrder' => $c->sort_order,
                 'itemsCount' => $c->items_count,
-            ])->values()->all(),
+            ]),
         ]);
     }
 

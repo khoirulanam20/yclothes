@@ -4,6 +4,7 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,7 +14,7 @@ type CartRule = {
     isActive?: boolean; startDate?: string; endDate?: string;
     usesPerCoupon?: number; usesPerCustomer?: number;
 };
-type Props = { rules: CartRule[] };
+type Props = { rules: Paginated<CartRule> };
 
 function formatLimit(value?: number, suffix = ''): string {
     if (!value || value <= 0) return '∞';
@@ -29,7 +30,7 @@ export default function Index({ rules }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kupon</TableHead><TableHead>Tipe</TableHead><TableHead>Batas</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
-                    <TableBody>{rules.map((r) => (
+                    <TableBody>{rules.data.map((r) => (
                         <TableRow key={r.id}>
                             <TableCell>{r.name}</TableCell><TableCell>{r.couponCode ?? '—'}</TableCell>
                             <TableCell><Badge variant="outline">{r.discountType}</Badge></TableCell>
@@ -49,6 +50,7 @@ export default function Index({ rules }: Props) {
                     ))}</TableBody></Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={rules} />
             </AdminContent>
         </AdminLayout>
     );

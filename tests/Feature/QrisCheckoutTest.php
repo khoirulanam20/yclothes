@@ -36,7 +36,7 @@ class QrisCheckoutTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'qris@example.com',
             'shipping_address' => 'Jl. Test No. 1',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'qris',
         ], $this->checkoutWilayahFields()));
 

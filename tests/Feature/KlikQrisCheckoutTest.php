@@ -54,7 +54,7 @@ class KlikQrisCheckoutTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'klikqris@example.com',
             'shipping_address' => 'Jl. Test No. 1',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'klikqris',
         ], $this->checkoutWilayahFields()));
 
@@ -109,7 +109,7 @@ class KlikQrisCheckoutTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'inertia-kq@example.com',
             'shipping_address' => 'Jl. Test No. 1',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'klikqris',
         ], $this->checkoutWilayahFields()), [
             'X-Inertia' => 'true',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\PaymentConfirmation;
 use App\Services\AdminBadgeService;
+use App\Services\BiteshipService;
 use App\Services\OrderPaymentService;
 use App\Services\OrderWorkflowService;
 use App\Services\PaymentMethodService;
@@ -178,6 +179,14 @@ class OrderController extends Controller
 
     public function ship(Request $request, Order $order)
     {
+        $biteship = app(BiteshipService::class);
+        $useBiteship = $biteship->isLiveTrackingEnabled()
+            && $order->shipping_provider === 'biteship';
+
+        if ($useBiteship) {
+            return $this->shipViaBiteship($order, $biteship);
+        }
+
         $validated = $request->validate([
             'courier' => 'required|string|max:255',
             'courier_service' => 'nullable|string|max:255',
@@ -203,6 +212,77 @@ class OrderController extends Controller
         );
 
         return back()->with('success', 'Pengiriman berhasil dicatat.');
+    }
+
+    private function shipViaBiteship(Order $order, BiteshipService $biteship)
+    {
+        if ($order->payment_status !== 'paid' && ! $this->paymentMethods->isCod($order->payment_method)) {
+            return back()->with('error', 'Pesanan harus lunas sebelum dikirim.');
+        }
+
+        if ($order->order_status !== 'processed') {
+            return back()->with('error', 'Pesanan harus diproses terlebih dahulu sebelum dikirim.');
+        }
+
+        try {
+            $originPostal = trim((string) setting('biteship_origin_postal_code', ''));
+            $items = $order->items->map(fn ($item) => [
+                'name' => $item->product_name,
+                'value' => $item->subtotal,
+                'quantity' => $item->qty,
+                'weight' => 500,
+            ])->values()->all();
+
+            $result = $biteship->createOrder([
+                'shipper_contact_name' => setting('brand_name', 'Toko'),
+                'shipper_contact_phone' => setting('wa_number', '08123456789'),
+                'shipper_contact_email' => setting('mail_from_address', 'admin@example.com'),
+                'shipper_organization' => setting('brand_name', 'Toko'),
+                'origin_contact_name' => setting('brand_name', 'Toko'),
+                'origin_contact_phone' => setting('wa_number', '08123456789'),
+                'origin_address' => setting('store_location', 'Alamat toko'),
+                'origin_postal_code' => (int) preg_replace('/\D/', '', $originPostal),
+                'destination_contact_name' => $order->customer_name,
+                'destination_contact_phone' => $order->customer_phone,
+                'destination_contact_email' => $order->customer_email,
+                'destination_address' => $order->shipping_address,
+                'destination_postal_code' => (int) preg_replace('/\D/', '', (string) $order->postal_code),
+                'courier_company' => $order->courier,
+                'courier_type' => $order->courier_service_code ?? $order->courier_service,
+                'delivery_type' => 'now',
+                'order_note' => 'Order '.$order->order_number,
+                'reference_id' => $order->order_number,
+                'items' => $items,
+            ]);
+
+            $biteshipOrderId = (string) (data_get($result, 'id') ?? data_get($result, 'order_id') ?? '');
+            $trackingNumber = (string) (data_get($result, 'courier.waybill_id') ?? data_get($result, 'tracking_number') ?? '');
+
+            $order->updateTrusted([
+                'biteship_order_id' => $biteshipOrderId ?: null,
+                'tracking_number' => $trackingNumber ?: $order->tracking_number,
+            ]);
+
+            $this->orderWorkflow->transition(
+                $order->fresh(),
+                'shipped',
+                'Barang dikirim via Biteship',
+                'admin',
+                auth()->id(),
+                true,
+                [
+                    'courier' => $order->courier,
+                    'courier_service' => $order->courier_service,
+                    'tracking_number' => $trackingNumber ?: $order->tracking_number,
+                ],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Gagal membuat pengiriman Biteship: '.$e->getMessage());
+        }
+
+        return back()->with('success', 'Pengiriman Biteship berhasil dibuat.');
     }
 
     /**

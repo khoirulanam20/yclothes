@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -11,7 +12,7 @@ type Popup = {
     startDate?: string; endDate?: string; priority: number;
 };
 
-type Props = { popups: Popup[] };
+type Props = { popups: Paginated<Popup> };
 
 export default function Index({ popups }: Props) {
     return (
@@ -31,7 +32,7 @@ export default function Index({ popups }: Props) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {popups.map((p) => (
+                            {popups.data.map((p) => (
                                 <TableRow key={p.id}>
                                     <TableCell>{p.title}</TableCell>
                                     <TableCell className="text-muted-foreground">{p.startDate?.slice(0, 16)} — {p.endDate?.slice(0, 16)}</TableCell>
@@ -43,7 +44,7 @@ export default function Index({ popups }: Props) {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {popups.length === 0 && (
+                            {popups.data.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
                                         Belum ada pop up.
@@ -54,6 +55,7 @@ export default function Index({ popups }: Props) {
                     </Table>
                 </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={popups} />
             </AdminContent>
         </AdminLayout>
     );

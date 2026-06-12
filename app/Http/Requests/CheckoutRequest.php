@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\PaymentMethodService;
+use App\Services\ShippingOptionsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -24,13 +25,16 @@ class CheckoutRequest extends FormRequest
     {
         $customer = Auth::guard('customer')->user();
         $allowedPaymentMethods = $this->allowedPaymentMethods();
+        $hasPhysical = $this->hasPhysicalProducts();
 
         $addressRules = ['nullable', 'integer'];
         if ($customer) {
             $addressRules[] = Rule::exists('customer_addresses', 'id')->where('customer_id', $customer->id);
         }
 
-        return [
+        $courierCodes = collect(config('couriers.list', []))->pluck('code')->all();
+
+        $rules = [
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:20',
             'customer_email' => 'required|email|max:255',
@@ -44,15 +48,34 @@ class CheckoutRequest extends FormRequest
             'village_code' => 'nullable|string|max:20',
             'village_name' => 'nullable|string|max:100',
             'postal_code' => 'nullable|string|max:10',
-            'shipping_city' => 'required|exists:shipping_costs,id',
             'payment_method' => ['required', 'string', Rule::in($allowedPaymentMethods)],
             'address_id' => $addressRules,
             'newsletter_opt_in' => 'nullable|boolean',
         ];
+
+        if ($hasPhysical) {
+            $rules['courier_code'] = ['required', 'string', Rule::in($courierCodes)];
+
+            if (app(ShippingOptionsService::class)->shippingMode() === 'biteship') {
+                $rules['courier_service_code'] = ['required', 'string', 'max:50'];
+            } else {
+                $rules['courier_service_code'] = ['nullable', 'string', 'max:50'];
+            }
+        } else {
+            $rules['courier_code'] = ['nullable', 'string'];
+            $rules['courier_service_code'] = ['nullable', 'string', 'max:50'];
+        }
+
+        return $rules;
     }
 
     /** @return list<string> */
     private function allowedPaymentMethods(): array
+    {
+        return app(PaymentMethodService::class)->allowedCheckoutValues($this->hasPhysicalProducts());
+    }
+
+    private function hasPhysicalProducts(): bool
     {
         $cartService = app(CartService::class);
         $pricing = app(CartPricingService::class)->build(
@@ -61,10 +84,8 @@ class CheckoutRequest extends FormRequest
             $cartService->getCheckoutSelection(),
         );
 
-        $hasPhysical = collect($pricing['items'])->contains(
+        return collect($pricing['items'])->contains(
             fn (array $row) => $row['product']->type?->value !== 'digital',
         );
-
-        return app(PaymentMethodService::class)->allowedCheckoutValues($hasPhysical);
     }
 }

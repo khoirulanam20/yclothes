@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Support\WilayahCode;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class WilayahService
 {
-    private const BASE_URL = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+    private const BASE_URL = 'https://wilayah.id/api';
 
     private const CACHE_TTL = 86400;
 
@@ -26,6 +27,8 @@ class WilayahService
      */
     public function regencies(string $provinceCode): array
     {
+        $provinceCode = WilayahCode::normalize($provinceCode) ?? $provinceCode;
+
         return Cache::remember("wilayah.regencies.{$provinceCode}", self::CACHE_TTL, function () use ($provinceCode) {
             return $this->fetch(self::BASE_URL.'/regencies/'.urlencode($provinceCode).'.json');
         });
@@ -36,6 +39,8 @@ class WilayahService
      */
     public function districts(string $regencyCode): array
     {
+        $regencyCode = WilayahCode::normalize($regencyCode) ?? $regencyCode;
+
         return Cache::remember("wilayah.districts.{$regencyCode}", self::CACHE_TTL, function () use ($regencyCode) {
             return $this->fetch(self::BASE_URL.'/districts/'.urlencode($regencyCode).'.json');
         });
@@ -46,6 +51,8 @@ class WilayahService
      */
     public function villages(string $districtCode): array
     {
+        $districtCode = WilayahCode::normalize($districtCode) ?? $districtCode;
+
         return Cache::remember("wilayah.villages.{$districtCode}", self::CACHE_TTL, function () use ($districtCode) {
             return $this->fetch(self::BASE_URL.'/villages/'.urlencode($districtCode).'.json');
         });
@@ -62,15 +69,21 @@ class WilayahService
             return [];
         }
 
-        $data = $response->json();
+        $json = $response->json();
 
-        if (! is_array($data)) {
+        if (! is_array($json)) {
+            return [];
+        }
+
+        $rows = $json['data'] ?? $json;
+
+        if (! is_array($rows)) {
             return [];
         }
 
         return array_map(fn (array $row) => [
-            'id' => (string) ($row['id'] ?? ''),
+            'id' => WilayahCode::normalize((string) ($row['code'] ?? $row['id'] ?? '')) ?? '',
             'name' => (string) ($row['name'] ?? ''),
-        ], $data);
+        ], $rows);
     }
 }

@@ -4,12 +4,13 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type CatalogRule = { id: number; name: string; ruleType: string; isActive?: boolean; startDate?: string; endDate?: string };
-type Props = { rules: CatalogRule[] };
+type Props = { rules: Paginated<CatalogRule> };
 
 export default function Index({ rules }: Props) {
     return (
@@ -20,7 +21,7 @@ export default function Index({ rules }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Tipe Rule</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
-                    <TableBody>{rules.map((r) => (
+                    <TableBody>{rules.data.map((r) => (
                         <TableRow key={r.id}>
                             <TableCell>{r.name}</TableCell><TableCell><Badge variant="outline">{r.ruleType}</Badge></TableCell>
                             <TableCell>{r.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
@@ -34,6 +35,7 @@ export default function Index({ rules }: Props) {
                     ))}</TableBody></Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={rules} />
             </AdminContent>
         </AdminLayout>
     );

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CartRule;
 use App\Models\PromotionPopup;
 use App\Services\CategoryTreeService;
+use App\Support\ModelSerializer;
 use App\Services\HomepageLayoutService;
 use App\Services\PromotionPopupService;
 use Illuminate\Http\Request;
@@ -22,10 +23,10 @@ class CartRuleController extends Controller
 
     public function index()
     {
-        $rules = CartRule::latest()->get();
+        $rules = CartRule::latest()->paginate(15);
 
         return Inertia::render('Admin/CartRules/Index', [
-            'rules' => $rules->map(fn ($r) => $this->cartRule($r))->values()->all(),
+            'rules' => ModelSerializer::paginated($rules, fn ($r) => $this->cartRule($r)),
         ]);
     }
 

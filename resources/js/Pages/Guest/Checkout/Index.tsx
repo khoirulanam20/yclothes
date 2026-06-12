@@ -1,7 +1,8 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
+import { CourierSelect, type CourierOption } from '@/components/storefront/CourierSelect';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { WilayahSelect, type WilayahValue } from '@/components/storefront/WilayahSelect';
@@ -10,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldError } from '@/components/admin/FieldError';
+import { FetchError, fetchJson } from '@/lib/fetchJson';
 import { formatRupiah } from '@/lib/utils';
 
 type CartItem = { productName: string; qty: number; subtotal: number };
-type City = { id: number; cityName: string; regencyCode?: string | null; calculatedCost?: number };
 type Bank = { id: number; bankName: string; accountNumber: string; accountName: string };
 type Address = {
     id: number; label: string; recipientName: string; phone: string; streetAddress: string;
@@ -34,7 +35,9 @@ type PaymentMethodOption = {
 };
 
 type Props = {
-    items: CartItem[]; pricing: Pricing; cities: City[]; banks: Bank[];
+    items: CartItem[]; pricing: Pricing; banks: Bank[];
+    shippingMode: 'manual' | 'biteship';
+    hasPhysical: boolean;
     paymentMethods: PaymentMethodOption[];
     paymentMethodsComingSoon?: PaymentMethodOption[];
     customer?: { name: string; email: string; phone?: string | null } | null;
@@ -58,7 +61,7 @@ function resolveDefaultPaymentMethod(options: PaymentMethodOption[]): string {
 }
 
 export default function Index({
-    items, pricing, cities, paymentMethods, paymentMethodsComingSoon = [], customer, addresses,
+    items, pricing, shippingMode, hasPhysical, paymentMethods, paymentMethodsComingSoon = [], customer, addresses,
     newsletterOptInEnabled = false, newsletterOptInLabel,
 }: Props) {
     const defaultPaymentMethod = resolveDefaultPaymentMethod(paymentMethods);
@@ -84,11 +87,17 @@ export default function Index({
         village_code: '',
         village_name: '',
         postal_code: '',
-        shipping_city: cities[0]?.id ?? '',
+        courier_code: '',
+        courier_service_code: '',
+        shipping_option_key: '',
         payment_method: defaultPaymentMethod,
         address_id: '' as number | '',
         newsletter_opt_in: false,
     });
+
+    const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
+    const [courierLoading, setCourierLoading] = useState(false);
+    const [courierError, setCourierError] = useState<string | null>(null);
 
     const wilayahValue: WilayahValue = {
         provinceCode: data.province_code,
@@ -102,13 +111,66 @@ export default function Index({
         postalCode: data.postal_code,
     };
 
-    const matchedCityId = useMemo(() => {
-        if (!data.regency_code) return data.shipping_city;
-        const match = cities.find((c) => c.regencyCode === data.regency_code);
-        return match?.id ?? data.shipping_city;
-    }, [cities, data.regency_code, data.shipping_city]);
+    const fetchCouriers = useCallback(async (regencyCode: string, postalCode: string) => {
+        if (!hasPhysical || !regencyCode) {
+            setCourierOptions([]);
+            return;
+        }
 
-    const shippingCost = cities.find((c) => c.id === Number(matchedCityId))?.calculatedCost ?? 0;
+        if (shippingMode === 'biteship' && !postalCode) {
+            setCourierOptions([]);
+            setCourierError('Isi kode pos untuk melihat ongkir.');
+            return;
+        }
+
+        setCourierLoading(true);
+        setCourierError(null);
+
+        try {
+            const res = await fetchJson<{
+                options: CourierOption[];
+            }>('/checkout/shipping-options', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '',
+                },
+                body: JSON.stringify({
+                    regency_code: regencyCode,
+                    postal_code: postalCode,
+                }),
+            });
+
+            setCourierOptions(res.options);
+            if (res.options.length > 0 && !res.options.some((o) => o.optionKey === data.shipping_option_key)) {
+                const first = res.options[0];
+                setData({
+                    ...data,
+                    shipping_option_key: first.optionKey,
+                    courier_code: first.courierCode,
+                    courier_service_code: first.courierServiceCode ?? '',
+                });
+            }
+        } catch (error) {
+            setCourierOptions([]);
+            setCourierError(error instanceof FetchError ? 'Gagal memuat opsi ekspedisi.' : 'Terjadi kesalahan.');
+        } finally {
+            setCourierLoading(false);
+        }
+    }, [hasPhysical, shippingMode, data, setData]);
+
+    useEffect(() => {
+        if (data.regency_code) {
+            fetchCouriers(data.regency_code, data.postal_code);
+        }
+    }, [data.regency_code, data.postal_code, fetchCouriers]);
+
+    const shippingCost = useMemo(() => {
+        if (!hasPhysical) return 0;
+        return courierOptions.find((o) => o.optionKey === data.shipping_option_key)?.cost ?? 0;
+    }, [courierOptions, data.shipping_option_key, hasPhysical]);
+
     const grandTotal = pricing.subtotal - pricing.discountAmount + pricing.taxAmount + shippingCost;
 
     const applyAddress = (addr: Address) => {
@@ -146,7 +208,6 @@ export default function Index({
         e.preventDefault();
         transform((formData) => ({
             ...formData,
-            shipping_city: matchedCityId,
             address_id: formData.address_id === '' ? null : formData.address_id,
         }));
         post('/checkout/process');
@@ -157,6 +218,7 @@ export default function Index({
         : bankList[0]?.id ?? 0;
 
     const isBankTransferSelected = data.payment_method.startsWith('bank_');
+    const canSubmit = paymentMethods.length > 0 && (!hasPhysical || (data.shipping_option_key && courierOptions.length > 0));
 
     return (
         <GuestLayout>
@@ -227,22 +289,31 @@ export default function Index({
                                     })}
                                 />
                                 <FieldError message={errors.province_code || errors.regency_code || errors.district_code} />
-                                <div>
-                                    <Label className="text-xs">Ongkos Kirim (per kab/kota)</Label>
-                                    <select
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                        value={matchedCityId}
-                                        onChange={(e) => setData('shipping_city', Number(e.target.value))}
-                                    >
-                                        {cities.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.cityName} — {formatRupiah(c.calculatedCost ?? 0)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-muted-foreground mt-1">Integrasi kurir API — segera hadir</p>
-                                    <FieldError message={errors.shipping_city} />
-                                </div>
+
+                                {hasPhysical && (
+                                    <div>
+                                        <Label className="text-xs">
+                                            {shippingMode === 'biteship' ? 'Pilih Ekspedisi & Layanan' : 'Jasa Ekspedisi'}
+                                        </Label>
+                                        <div className="mt-2">
+                                            <CourierSelect
+                                                options={courierOptions}
+                                                value={data.shipping_option_key}
+                                                onChange={(opt) => setData({
+                                                    ...data,
+                                                    shipping_option_key: opt.optionKey,
+                                                    courier_code: opt.courierCode,
+                                                    courier_service_code: opt.courierServiceCode ?? '',
+                                                })}
+                                                loading={courierLoading}
+                                                error={courierError}
+                                                disabled={!data.regency_code}
+                                                showService={shippingMode === 'biteship'}
+                                            />
+                                        </div>
+                                        <FieldError message={errors.courier_code || errors.courier_service_code} />
+                                    </div>
+                                )}
                             </div>
                         </SectionCard>
 
@@ -365,10 +436,12 @@ export default function Index({
                                             <span className="shrink-0 tabular-nums">{formatRupiah(pricing.taxAmount)}</span>
                                         </div>
                                     )}
-                                    <div className="flex min-w-0 items-center justify-between gap-3">
-                                        <span>Ongkir</span>
-                                        <span className="shrink-0 tabular-nums">{formatRupiah(shippingCost)}</span>
-                                    </div>
+                                    {hasPhysical && (
+                                        <div className="flex min-w-0 items-center justify-between gap-3">
+                                            <span>Ongkir</span>
+                                            <span className="shrink-0 tabular-nums">{formatRupiah(shippingCost)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex min-w-0 items-center justify-between gap-3 pt-1 text-base font-bold">
                                         <span>Total</span>
                                         <span className="shrink-0 tabular-nums text-primary">{formatRupiah(grandTotal)}</span>
@@ -386,7 +459,7 @@ export default function Index({
                                     <span>{newsletterOptInLabel ?? 'Berlangganan newsletter untuk promo & update'}</span>
                                 </label>
                             )}
-                            <Button type="submit" form="checkout-form" className="mt-4 hidden w-full lg:inline-flex" size="lg" disabled={processing || paymentMethods.length === 0}>
+                            <Button type="submit" form="checkout-form" className="mt-4 hidden w-full lg:inline-flex" size="lg" disabled={processing || !canSubmit}>
                                 Bayar Sekarang
                             </Button>
                             <Button variant="outline" className="mt-2 hidden w-full lg:inline-flex" asChild>
@@ -407,7 +480,7 @@ export default function Index({
                             form="checkout-form"
                             size="lg"
                             className="h-11 shrink-0 whitespace-nowrap px-4 text-sm sm:px-6 sm:text-base"
-                            disabled={processing || paymentMethods.length === 0}
+                            disabled={processing || !canSubmit}
                         >
                             Bayar Sekarang
                         </Button>

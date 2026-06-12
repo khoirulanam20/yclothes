@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { ShippingRegencySelect } from '@/components/admin/ShippingRegencySelect';
 import { AdminCheckboxRow, AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/AdminContent';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
@@ -9,13 +10,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
-type ShippingCost = { id: number; cityName: string; cost: number; costPerKg?: number | null; isActive?: boolean };
-type Props = { cost?: ShippingCost };
+type Courier = { code: string; name: string };
+type ShippingCost = {
+    id: number;
+    courierCode?: string | null;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    regencyCode?: string | null;
+    regencyName?: string | null;
+    cost: number;
+    costPerKg?: number | null;
+    isActive?: boolean;
+};
+type Props = { cost?: ShippingCost; couriers: Courier[] };
 
-export default function Form({ cost }: Props) {
+export default function Form({ cost, couriers }: Props) {
     const isEdit = !!cost?.id;
     const { data, setData, post, transform, processing, errors } = useForm({
-        city_name: cost?.cityName ?? '',
+        courier_code: cost?.courierCode ?? '',
+        province_code: cost?.provinceCode ?? '',
+        province_name: cost?.provinceName ?? '',
+        regency_code: cost?.regencyCode ?? '',
+        regency_name: cost?.regencyName ?? '',
         cost: cost?.cost ?? 0,
         cost_per_kg: cost?.costPerKg ?? '',
         is_active: cost?.isActive ?? true,
@@ -34,7 +50,7 @@ export default function Form({ cost }: Props) {
     return (
         <AdminLayout
             title={isEdit ? 'Edit Ongkir' : 'Tambah Ongkir'}
-            breadcrumbs={configurationSectionBreadcrumbs('Ongkir', '/admin/shipping-costs', {
+            breadcrumbs={configurationSectionBreadcrumbs('Tarif Ongkir Manual', '/admin/shipping-costs', {
                 label: isEdit ? 'Edit' : 'Tambah',
             })}
         >
@@ -56,17 +72,49 @@ export default function Form({ cost }: Props) {
                             </>
                         )}
                     >
+                        <div className="space-y-2">
+                            <Label htmlFor="courier_code">Jasa Ekspedisi</Label>
+                            <select
+                                id="courier_code"
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                value={data.courier_code}
+                                onChange={(e) => setData('courier_code', e.target.value)}
+                                required
+                            >
+                                <option value="">Pilih ekspedisi</option>
+                                {couriers.map((c) => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                            <FieldError message={errors.courier_code} />
+                        </div>
+
+                        <ShippingRegencySelect
+                            value={{
+                                provinceCode: data.province_code,
+                                provinceName: data.province_name,
+                                regencyCode: data.regency_code,
+                                regencyName: data.regency_name,
+                            }}
+                            onChange={(w) => setData({
+                                ...data,
+                                province_code: w.provinceCode,
+                                province_name: w.provinceName,
+                                regency_code: w.regencyCode,
+                                regency_name: w.regencyName,
+                            })}
+                            errors={{
+                                provinceCode: errors.province_code,
+                                regencyCode: errors.regency_code,
+                            }}
+                        />
+
                         <AdminFormGrid columns={2}>
-                            <div className="space-y-2">
-                                <Label htmlFor="city_name">Nama Kota</Label>
-                                <Input id="city_name" value={data.city_name} onChange={(e) => setData('city_name', e.target.value)} required />
-                                <FieldError message={errors.city_name} />
-                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cost">Ongkir Dasar</Label>
                                 <Input id="cost" type="number" min={0} value={data.cost} onChange={(e) => setData('cost', Number(e.target.value))} required />
                             </div>
-                            <div className="space-y-2 md:col-span-2 xl:col-span-1">
+                            <div className="space-y-2">
                                 <Label htmlFor="cost_per_kg">Ongkir Per Kg (opsional)</Label>
                                 <Input id="cost_per_kg" type="number" min={0} value={data.cost_per_kg} onChange={(e) => setData('cost_per_kg', e.target.value === '' ? '' : Number(e.target.value))} />
                             </div>

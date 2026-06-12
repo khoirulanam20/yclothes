@@ -4,11 +4,12 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type Warehouse = { id: number; name: string; city?: string | null; isActive?: boolean };
-type Props = { warehouses: Warehouse[] };
+type Props = { warehouses: Paginated<Warehouse> };
 
 export default function Index({ warehouses }: Props) {
     return (
@@ -19,7 +20,7 @@ export default function Index({ warehouses }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table><TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Kota</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
-                    <TableBody>{warehouses.map((w) => (
+                    <TableBody>{warehouses.data.map((w) => (
                         <TableRow key={w.id}>
                             <TableCell>{w.name}</TableCell><TableCell>{w.city ?? '—'}</TableCell><TableCell>{w.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
                             <TableCell className="text-right">
@@ -32,6 +33,7 @@ export default function Index({ warehouses }: Props) {
                     ))}</TableBody></Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={warehouses} />
             </AdminContent>
         </AdminLayout>
     );

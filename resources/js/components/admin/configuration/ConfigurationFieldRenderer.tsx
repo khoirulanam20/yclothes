@@ -69,6 +69,43 @@ export function ConfigurationFieldRenderer({ field, data, errors, setData, compa
         );
     }
 
+    if (field.type === 'multiselect' && field.options) {
+        const selected = new Set(
+            String(data[field.name] ?? '')
+                .split(',')
+                .map((v) => v.trim())
+                .filter(Boolean),
+        );
+
+        const toggle = (value: string, checked: boolean) => {
+            const next = new Set(selected);
+            if (checked) {
+                next.add(value);
+            } else {
+                next.delete(value);
+            }
+            setData(field.name, Array.from(next).join(','));
+        };
+
+        return (
+            <div className="space-y-2">
+                <Label>{field.title}</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                    {field.options.map((opt) => (
+                        <AdminCheckboxRow
+                            key={opt.value}
+                            id={`${field.name}_${opt.value}`}
+                            label={opt.title}
+                            checked={selected.has(opt.value)}
+                            onChange={(checked) => toggle(opt.value, checked)}
+                        />
+                    ))}
+                </div>
+                <FieldError message={error} />
+            </div>
+        );
+    }
+
     if (field.type === 'select' && field.options) {
         return (
             <div className="space-y-2">

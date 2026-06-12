@@ -4,13 +4,14 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type FaqItem = { id: number; question: string; sortOrder?: number; isActive?: boolean };
 type FaqCategory = { id: number; name: string };
-type Props = { category: FaqCategory; items: FaqItem[] };
+type Props = { category: FaqCategory; items: Paginated<FaqItem> };
 
 export default function Index({ category, items }: Props) {
     return (
@@ -24,7 +25,7 @@ export default function Index({ category, items }: Props) {
                         <Table>
                     <TableHeader><TableRow><TableHead>Pertanyaan</TableHead><TableHead>Urutan</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {items.map((item) => (
+                        {items.data.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell>{item.question}</TableCell>
                                 <TableCell>{item.sortOrder ?? 0}</TableCell>
@@ -41,6 +42,7 @@ export default function Index({ category, items }: Props) {
                 </Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={items} />
             </AdminContent>
         </AdminLayout>
     );

@@ -9,7 +9,6 @@ use App\Mail\OrderCreatedMail;
 use App\Mail\OrderInvoiceMail;
 use App\Models\Order;
 use App\Models\PaymentBank;
-use App\Models\ShippingCost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +23,7 @@ class OrderCreationService
         private PromotionEngine $promotionEngine,
         private OrderWorkflowService $orderWorkflow,
         private EmailNotificationService $emailNotifications,
+        private ShippingOptionsService $shippingOptions,
     ) {}
 
     /**
@@ -35,9 +35,8 @@ class OrderCreationService
         $customer = Auth::guard('customer')->user();
         $validated = $this->applyAddressSnapshot($validated, $customer, $request);
 
-        $shipping = ShippingCost::findOrFail($validated['shipping_city']);
         $pricing = $this->cartPricing->build(
-            $shipping->city_name,
+            $validated['regency_name'] ?? null,
             null,
             $this->cartService->getCheckoutSelection(),
         );
@@ -46,9 +45,27 @@ class OrderCreationService
 
         $items = $this->buildOrderItems($pricing);
         $hasPhysical = $this->orderHasPhysicalItems($pricing);
-        $shippingCost = $hasPhysical
-            ? $this->cartPricing->calculateShipping($shipping, $pricing['total_weight'], $pricing['free_shipping'])
-            : 0;
+
+        $resolvedShipping = $hasPhysical
+            ? $this->shippingOptions->resolveForCheckout(
+                $validated['courier_code'],
+                $validated,
+                $pricing,
+                $validated['courier_service_code'] ?? null,
+            )
+            : [
+                'shipping_method' => $this->shippingOptions->shippingMode(),
+                'shipping_provider' => $this->shippingOptions->shippingMode(),
+                'courier' => null,
+                'courier_service' => null,
+                'courier_service_code' => null,
+                'shipping_cost' => 0,
+                'shipping_etd' => null,
+                'shipping_city' => $validated['regency_name'] ?? '',
+                'shipping_cost_record' => null,
+            ];
+
+        $shippingCost = $resolvedShipping['shipping_cost'];
         $grandTotal = $this->cartPricing->grandTotal($pricing, $shippingCost);
 
         $this->validateMinimumOrder($grandTotal);
@@ -59,7 +76,7 @@ class OrderCreationService
             $validated,
             $request,
             $customer?->id,
-            $shipping,
+            $resolvedShipping,
             $pricing,
             $items,
             $shippingCost,
@@ -150,16 +167,12 @@ class OrderCreationService
         $validated['customer_name'] = $address->recipient_name;
         $validated['customer_phone'] = $address->phone;
 
-        $shippingCostId = $validated['shipping_city'];
-
         $snapshot = array_filter(
             $address->toOrderSnapshot(),
             fn ($value) => $value !== null && $value !== '',
         );
-        $validated = array_merge($validated, $snapshot);
-        $validated['shipping_city'] = $shippingCostId;
 
-        return $validated;
+        return array_merge($validated, $snapshot);
     }
 
     /**
@@ -247,6 +260,7 @@ class OrderCreationService
 
     /**
      * @param  array<string, mixed>  $validated
+     * @param  array<string, mixed>  $resolvedShipping
      * @param  array<string, mixed>  $pricing
      * @param  list<array<string, mixed>>  $items
      * @return array<string, mixed>
@@ -255,7 +269,7 @@ class OrderCreationService
         array $validated,
         Request $request,
         ?int $customerId,
-        ShippingCost $shipping,
+        array $resolvedShipping,
         array $pricing,
         array $items,
         int $shippingCost,
@@ -282,9 +296,14 @@ class OrderCreationService
             'village_code' => $validated['village_code'] ?? null,
             'village_name' => $validated['village_name'] ?? null,
             'postal_code' => $validated['postal_code'] ?? null,
-            'shipping_city' => $validated['regency_name'] ?? $shipping->city_name,
-            'shipping_cost' => $shippingCost,
-            'shipping_method' => 'manual',
+            'shipping_city' => $resolvedShipping['shipping_city'],
+            'shipping_cost' => $hasPhysical ? $shippingCost : 0,
+            'shipping_method' => $hasPhysical ? $resolvedShipping['shipping_method'] : 'digital',
+            'shipping_provider' => $hasPhysical ? $resolvedShipping['shipping_provider'] : null,
+            'courier' => $hasPhysical ? $resolvedShipping['courier'] : null,
+            'courier_service' => $hasPhysical ? $resolvedShipping['courier_service'] : null,
+            'courier_service_code' => $hasPhysical ? $resolvedShipping['courier_service_code'] : null,
+            'shipping_etd' => $hasPhysical ? $resolvedShipping['shipping_etd'] : null,
             'total_price' => $totalPrice,
             'tax_amount' => $pricing['tax_amount'],
             'discount_amount' => $pricing['discount_amount'],

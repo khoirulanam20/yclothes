@@ -6,7 +6,6 @@ use App\Exceptions\CheckoutProcessException;
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Order;
 use App\Models\PaymentBank;
-use App\Models\ShippingCost;
 use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\DokuService;
@@ -15,6 +14,7 @@ use App\Services\MidtransService;
 use App\Services\OrderCreationService;
 use App\Services\OrderPaymentService;
 use App\Services\PaymentMethodService;
+use App\Services\ShippingOptionsService;
 use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +27,7 @@ class CheckoutController extends Controller
         private CartPricingService $cartPricing,
         private PaymentMethodService $paymentMethods,
         private OrderCreationService $orderCreation,
+        private ShippingOptionsService $shippingOptions,
     ) {}
 
     public function index()
@@ -47,17 +48,10 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Pilih produk yang ingin di-checkout.');
         }
 
-        $totalWeight = $pricing['total_weight'];
         $hasPhysical = collect($pricing['items'])->contains(
             fn (array $row) => $row['product']->type?->value !== 'digital',
         );
 
-        $cities = ShippingCost::where('is_active', true)->orderBy('city_name')->get()->map(function ($city) use ($totalWeight, $pricing) {
-            $city->calculated_cost = app(CartPricingService::class)
-                ->calculateShipping($city, $totalWeight, $pricing['free_shipping']);
-
-            return $city;
-        });
         $banks = PaymentBank::where('is_active', true)->get();
         $paymentMethodOptions = $this->paymentMethods->availableForCheckout($hasPhysical);
         $paymentMethodsComingSoon = $this->paymentMethods->comingSoonForCheckout($hasPhysical);
@@ -74,7 +68,8 @@ class CheckoutController extends Controller
                 'subtotal' => $row['subtotal'],
             ], $pricing['items']),
             'pricing' => ModelSerializer::cartPricing($pricing),
-            'cities' => $cities->map(fn ($city) => ModelSerializer::shippingCity($city, $city->calculated_cost))->values()->all(),
+            'shippingMode' => $this->shippingOptions->shippingMode(),
+            'hasPhysical' => $hasPhysical,
             'banks' => ModelSerializer::collection($banks, [ModelSerializer::class, 'paymentBank']),
             'paymentMethods' => $paymentMethodOptions,
             'paymentMethodsComingSoon' => $paymentMethodsComingSoon,
@@ -85,29 +80,26 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function shippingCost(Request $request)
+    public function shippingOptions(Request $request)
     {
         $validated = $request->validate([
-            'city_id' => 'required|integer|exists:shipping_costs,id',
+            'regency_code' => 'required|string|max:10',
+            'postal_code' => 'nullable|string|max:10',
         ]);
 
-        $shipping = ShippingCost::find($validated['city_id']);
-
-        if (! $shipping || ! $shipping->is_active) {
-            return response()->json(['cost' => 0, 'error' => 'Kota tidak tersedia']);
-        }
-
-        $pricing = $this->cartPricing->build($shipping->city_name, null, $this->checkoutOnlyKeys());
-        $totalWeight = $pricing['total_weight'];
-        $cost = $this->cartPricing->calculateShipping($shipping, $totalWeight, $pricing['free_shipping']);
+        $pricing = $this->cartPricing->build(null, null, $this->checkoutOnlyKeys());
+        $options = $this->shippingOptions->optionsForAddress(
+            $validated['regency_code'],
+            $validated['postal_code'] ?? null,
+            $pricing,
+        );
 
         return response()->json([
-            'cost' => $cost,
-            'tax_amount' => $pricing['tax_amount'],
-            'discount_amount' => $pricing['discount_amount'],
+            'options' => $options,
+            'freeShipping' => $pricing['free_shipping'],
+            'taxAmount' => $pricing['tax_amount'],
+            'discountAmount' => $pricing['discount_amount'],
             'subtotal' => $pricing['subtotal'],
-            'grand_total' => $this->cartPricing->grandTotal($pricing, $cost),
-            'free_shipping' => $pricing['free_shipping'],
         ]);
     }
 

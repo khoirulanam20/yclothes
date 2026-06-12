@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminRole;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,15 +12,15 @@ class AdminRoleController extends Controller
 {
     public function index()
     {
-        $roles = AdminRole::withCount('users')->latest()->get();
+        $roles = AdminRole::withCount('users')->latest()->paginate(15);
 
         return Inertia::render('Admin/Roles/Index', [
-            'roles' => $roles->map(fn ($role) => [
+            'roles' => ModelSerializer::paginated($roles, fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'description' => $role->description,
                 'permissions' => $role->permissions ?? [],
-            ])->values()->all(),
+            ]),
         ]);
     }
 

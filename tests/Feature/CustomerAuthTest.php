@@ -128,7 +128,7 @@ class CheckoutCustomerTest extends TestCase
                 'customer_phone' => $customer->phone,
                 'customer_email' => $customer->email,
                 'shipping_address' => 'Jl. Test No. 1',
-                'shipping_city' => $shipping->id,
+                'courier_code' => $shipping->courier_code ?? 'jne',
                 'payment_method' => 'bank_'.$bank->id,
             ], $this->checkoutWilayahFields()))
             ->assertRedirect();
@@ -152,7 +152,7 @@ class CheckoutCustomerTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'guest@example.com',
             'shipping_address' => 'Jl. Guest No. 1',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'bank_'.$bank->id,
         ], $this->checkoutWilayahFields()))->assertRedirect();
 

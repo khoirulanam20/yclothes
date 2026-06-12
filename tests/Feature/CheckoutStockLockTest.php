@@ -39,7 +39,7 @@ class CheckoutStockLockTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'buyer1@example.com',
             'shipping_address' => 'Jl. Test',
-            'shipping_city' => ShippingCost::first()->id,
+            'courier_code' => (ShippingCost::first()?->courier_code ?? 'jne'),
             'payment_method' => 'bank_'.PaymentBank::first()->id,
         ], $this->checkoutWilayahFields());
 

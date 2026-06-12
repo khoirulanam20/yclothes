@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TaxRate;
 use App\Models\TaxRateCategory;
 use App\Services\CategoryTreeService;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,17 +16,17 @@ class TaxRateController extends Controller
 
     public function index()
     {
-        $rates = TaxRate::withCount('categories')->latest()->get();
+        $rates = TaxRate::withCount('categories')->latest()->paginate(15);
 
         return Inertia::render('Admin/TaxRates/Index', [
-            'rates' => $rates->map(fn ($r) => [
+            'rates' => ModelSerializer::paginated($rates, fn ($r) => [
                 'id' => $r->id,
                 'name' => $r->name,
                 'rate' => (float) $r->rate,
                 'type' => $r->type,
                 'isActive' => (bool) $r->is_active,
                 'categoriesCount' => $r->categories_count,
-            ])->values()->all(),
+            ]),
         ]);
     }
 

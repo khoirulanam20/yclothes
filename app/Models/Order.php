@@ -20,7 +20,8 @@ class Order extends Model
         'payment_method', 'payment_due_at', 'delivered_at', 'completed_at',
         'bank_name', 'bank_account_number', 'bank_account_name',
         'is_replacement', 'source_return_request_id',
-        'courier', 'courier_service', 'tracking_number', 'notes',
+        'courier', 'courier_service', 'courier_service_code', 'shipping_etd',
+        'tracking_number', 'biteship_order_id', 'shipping_provider', 'notes',
     ];
 
     protected function casts(): array

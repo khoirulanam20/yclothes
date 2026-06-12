@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TaxRate;
 use App\Models\TaxZone;
+use App\Support\ModelSerializer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,15 +13,15 @@ class TaxZoneController extends Controller
 {
     public function index()
     {
-        $zones = TaxZone::with('taxRate')->latest()->get();
+        $zones = TaxZone::with('taxRate')->latest()->paginate(15);
 
         return Inertia::render('Admin/TaxZones/Index', [
-            'zones' => $zones->map(fn ($z) => [
+            'zones' => ModelSerializer::paginated($zones, fn ($z) => [
                 'id' => $z->id,
                 'province' => $z->province,
                 'city' => $z->city,
                 'taxRate' => $z->taxRate ? ['name' => $z->taxRate->name] : null,
-            ])->values()->all(),
+            ]),
         ]);
     }
 

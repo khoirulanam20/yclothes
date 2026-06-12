@@ -29,7 +29,7 @@ class CheckoutTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Guest/Checkout/Index')
             ->has('items', 1)
-            ->has('cities')
+            ->has('shippingMode')
             ->has('banks')
             ->has('paymentMethods')
         );
@@ -72,7 +72,7 @@ class CheckoutTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test No. 1',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'bank_' . $bank->id,
         ], $this->checkoutWilayahFields()));
 
@@ -81,7 +81,7 @@ class CheckoutTest extends TestCase
             'customer_name' => 'Test User',
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
-            'shipping_city' => 'Temanggung',
+            'shipping_city' => 'Kabupaten Temanggung',
             'payment_status' => 'pending',
             'order_status' => 'pending',
         ]);
@@ -99,27 +99,27 @@ class CheckoutTest extends TestCase
         $response = $this->post('/checkout/process', []);
         $response->assertSessionHasErrors([
             'customer_name', 'customer_phone', 'customer_email', 'shipping_address',
-            'province_code', 'regency_code', 'district_code', 'shipping_city', 'payment_method',
+            'province_code', 'regency_code', 'district_code', 'courier_code', 'payment_method',
         ]);
     }
 
-    public function test_shipping_cost_endpoint(): void
+    public function test_shipping_options_endpoint(): void
     {
-        $shipping = ShippingCost::first();
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
 
-        $response = $this->postJson('/checkout/shipping-cost', [
-            'city_id' => $shipping->id,
+        $response = $this->postJson('/checkout/shipping-options', [
+            'regency_code' => '33.73',
+            'postal_code' => '56211',
         ]);
 
         $response->assertStatus(200)
-            ->assertJson(['cost' => $shipping->cost]);
+            ->assertJsonStructure(['options']);
     }
 
-    public function test_shipping_cost_invalid_city(): void
+    public function test_shipping_options_requires_regency(): void
     {
-        $response = $this->postJson('/checkout/shipping-cost', [
-            'city_id' => 99999,
-        ]);
+        $response = $this->postJson('/checkout/shipping-options', []);
 
         $response->assertStatus(422);
     }
@@ -141,7 +141,7 @@ class CheckoutTest extends TestCase
                 'customer_phone' => $customer->phone,
                 'customer_email' => $customer->email,
                 'shipping_address' => 'Jl. Test No. 1',
-                'shipping_city' => $shipping->id,
+                'courier_code' => $shipping->courier_code ?? 'jne',
                 'payment_method' => 'bank_'.$bank->id,
             ], $this->checkoutWilayahFields()));
 

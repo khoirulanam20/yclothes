@@ -4,12 +4,13 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type Bank = { id: number; bankName: string; accountNumber: string; accountName: string; isActive?: boolean };
-type Props = { banks: Bank[] };
+type Props = { banks: Paginated<Bank> };
 
 export default function Index({ banks }: Props) {
     return (
@@ -20,7 +21,7 @@ export default function Index({ banks }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table><TableHeader><TableRow><TableHead>Bank</TableHead><TableHead>No. Rekening</TableHead><TableHead>Atas Nama</TableHead><TableHead>Status</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
-                    <TableBody>{banks.map((b) => (
+                    <TableBody>{banks.data.map((b) => (
                         <TableRow key={b.id}>
                             <TableCell>{b.bankName}</TableCell><TableCell>{b.accountNumber}</TableCell><TableCell>{b.accountName}</TableCell>
                             <TableCell>{b.isActive ? 'Aktif' : 'Nonaktif'}</TableCell>
@@ -34,6 +35,7 @@ export default function Index({ banks }: Props) {
                     ))}</TableBody></Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={banks} />
             </AdminContent>
         </AdminLayout>
     );

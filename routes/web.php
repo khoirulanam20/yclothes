@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\StockMovementController as AdminStockMovementCont
 use App\Http\Controllers\Admin\TaxRateController as AdminTaxRateController;
 use App\Http\Controllers\Admin\TaxZoneController as AdminTaxZoneController;
 use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
+use App\Http\Controllers\BiteshipWebhookController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatbotProxyController;
@@ -144,7 +145,7 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
     Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index')->middleware('customer.verified');
-    Route::post('/checkout/shipping-cost', [CheckoutController::class, 'shippingCost'])->name('checkout.shipping-cost');
+    Route::post('/checkout/shipping-options', [CheckoutController::class, 'shippingOptions'])->name('checkout.shipping-options');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process')->middleware('customer.verified');
 });
 
@@ -171,6 +172,10 @@ Route::middleware(['order.access'])->group(function () {
         ->name('order.doku-return');
     Route::get('/order/{order:order_number}', [OrderController::class, 'show'])->name('order.show');
 });
+
+Route::post('/webhooks/biteship', [BiteshipWebhookController::class, 'handle'])
+    ->name('webhooks.biteship')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
 Route::post('/midtrans/notification', [MidtransController::class, 'notification'])
     ->name('midtrans.notification')
@@ -216,6 +221,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::redirect('/promo-bar', '/admin/configuration/general/header_offer')->name('promo-bar.edit');
             Route::post('/promo-bar', fn () => redirect('/admin/configuration/general/header_offer'));
             Route::resource('payment-banks', PaymentBankController::class);
+            Route::post('shipping-costs/bulk', [ShippingCostController::class, 'bulk'])->name('shipping-costs.bulk');
             Route::resource('shipping-costs', ShippingCostController::class);
             Route::resource('tax-rates', AdminTaxRateController::class);
             Route::resource('tax-zones', AdminTaxZoneController::class);

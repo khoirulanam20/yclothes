@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PromotionPopup;
 use App\Services\PromotionPopupService;
+use App\Support\ModelSerializer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,10 +15,10 @@ class PromotionPopupController extends Controller
 {
     public function index()
     {
-        $popups = PromotionPopup::orderByDesc('priority')->latest()->get();
+        $popups = PromotionPopup::orderByDesc('priority')->latest()->paginate(15);
 
         return Inertia::render('Admin/PromotionPopups/Index', [
-            'popups' => $popups->map(fn (PromotionPopup $p) => $this->serialize($p))->values()->all(),
+            'popups' => ModelSerializer::paginated($popups, fn (PromotionPopup $p) => $this->serialize($p)),
         ]);
     }
 

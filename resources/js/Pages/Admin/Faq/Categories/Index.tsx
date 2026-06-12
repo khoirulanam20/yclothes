@@ -4,12 +4,13 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminItemsAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type FaqCategory = { id: number; name: string; sortOrder?: number; itemsCount?: number };
 
-type Props = { categories: FaqCategory[] };
+type Props = { categories: Paginated<FaqCategory> };
 
 export default function Index({ categories }: Props) {
     return (
@@ -22,7 +23,7 @@ export default function Index({ categories }: Props) {
                         <Table>
                     <TableHeader><TableRow><TableHead>Nama</TableHead><TableHead>Urutan</TableHead><TableHead>Items</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {categories.map((cat) => (
+                        {categories.data.map((cat) => (
                             <TableRow key={cat.id}>
                                 <TableCell className="font-medium">{cat.name}</TableCell>
                                 <TableCell>{cat.sortOrder ?? 0}</TableCell>
@@ -40,6 +41,7 @@ export default function Index({ categories }: Props) {
                 </Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={categories} />
             </AdminContent>
         </AdminLayout>
     );

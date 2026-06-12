@@ -182,6 +182,17 @@ class AdminConfigurationService
                 continue;
             }
 
+            if ($field['type'] === 'multiselect') {
+                $raw = $request->input($name);
+                $value = is_array($raw)
+                    ? implode(',', array_filter(array_map('trim', $raw)))
+                    : trim((string) $raw);
+
+                Setting::updateOrCreate(['key' => $name], ['value' => $value]);
+
+                continue;
+            }
+
             $value = $validated[$name] ?? $request->input($name);
 
             Setting::updateOrCreate(

@@ -346,6 +346,9 @@ class ModelSerializer
         return [
             'id' => $cost->id,
             'cityName' => $cost->city_name,
+            'courierCode' => $cost->courier_code,
+            'courierName' => $cost->courier_name,
+            'provinceCode' => $cost->province_code,
             'regencyCode' => $cost->regency_code,
             'regencyName' => $cost->regency_name,
             'provinceName' => $cost->province_name,

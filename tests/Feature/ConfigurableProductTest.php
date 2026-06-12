@@ -97,7 +97,7 @@ class ConfigurableProductTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'test@example.com',
             'shipping_address' => 'Jl. Test',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'bank_'.$bank->id,
         ], $this->checkoutWilayahFields()));
 

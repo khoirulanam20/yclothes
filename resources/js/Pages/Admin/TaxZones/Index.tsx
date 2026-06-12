@@ -4,12 +4,13 @@ import { AdminContent, AdminTableScroll } from '@/components/admin/AdminContent'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminEditAction, AdminTableActions } from '@/components/admin/AdminTableActions';
 import { DeleteRecordButton } from '@/components/admin/DeleteRecordButton';
+import { PaginationLinks, type Paginated } from '@/components/admin/PaginationLinks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
 type TaxZone = { id: number; province?: string | null; city?: string | null; taxRate?: { name: string } | null };
-type Props = { zones: TaxZone[] };
+type Props = { zones: Paginated<TaxZone> };
 
 export default function Index({ zones }: Props) {
     return (
@@ -20,7 +21,7 @@ export default function Index({ zones }: Props) {
             <Card><CardContent className="p-0">
                 <AdminTableScroll>
                         <Table><TableHeader><TableRow><TableHead>Provinsi</TableHead><TableHead>Kota</TableHead><TableHead>Tarif</TableHead><TableHead className="w-[1%] whitespace-nowrap text-right">Aksi</TableHead></TableRow></TableHeader>
-                    <TableBody>{zones.map((z) => (
+                    <TableBody>{zones.data.map((z) => (
                         <TableRow key={z.id}>
                             <TableCell>{z.province ?? '—'}</TableCell><TableCell>{z.city ?? '—'}</TableCell><TableCell>{z.taxRate?.name ?? '—'}</TableCell>
                             <TableCell className="text-right">
@@ -33,6 +34,7 @@ export default function Index({ zones }: Props) {
                     ))}</TableBody></Table>
                     </AdminTableScroll>
             </CardContent></Card>
+            <PaginationLinks pagination={zones} />
             </AdminContent>
         </AdminLayout>
     );

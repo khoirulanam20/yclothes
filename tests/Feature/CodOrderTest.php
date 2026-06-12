@@ -104,7 +104,7 @@ class CodOrderTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'cod-off@example.com',
             'shipping_address' => 'Jl. Test',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'cod',
         ], $this->checkoutWilayahFields()));
 
@@ -123,7 +123,7 @@ class CodOrderTest extends TestCase
             'customer_phone' => '08123456789',
             'customer_email' => 'cod@example.com',
             'shipping_address' => 'Jl. Test',
-            'shipping_city' => $shipping->id,
+            'courier_code' => $shipping->courier_code ?? 'jne',
             'payment_method' => 'cod',
         ], $this->checkoutWilayahFields()));
 
