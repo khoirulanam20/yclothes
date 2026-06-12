@@ -186,6 +186,19 @@ class CartController extends Controller
             return $this->couponActionResponse($request, 'error', $error);
         }
 
+        $pricing = $this->cartPricing->build();
+        $lineItems = $pricing['line_items'];
+        $subtotal = $pricing['subtotal'];
+
+        if ($ineligibility = $this->promotionEngine->explainCouponIneligibility(
+            $code,
+            $lineItems,
+            $subtotal,
+            auth('customer')->id(),
+        )) {
+            return $this->couponActionResponse($request, 'error', $ineligibility);
+        }
+
         session([CartService::COUPON_SESSION_KEY => $code]);
 
         $pricing = $this->cartPricing->build();
@@ -199,7 +212,11 @@ class CartController extends Controller
 
         session([CartService::COUPON_SESSION_KEY => strtoupper($rule->coupon_code)]);
 
-        return $this->couponActionResponse($request, 'success', 'Kupon berhasil diterapkan.');
+        $message = $rule->discount_type === 'free_shipping'
+            ? 'Kupon gratis ongkir berhasil diterapkan.'
+            : 'Kupon berhasil diterapkan.';
+
+        return $this->couponActionResponse($request, 'success', $message);
     }
 
     public function removeCoupon(Request $request)

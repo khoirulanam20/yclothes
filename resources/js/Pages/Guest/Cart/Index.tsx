@@ -17,7 +17,7 @@ type CartItem = {
 };
 type Pricing = {
     subtotal: number; taxAmount: number; discountAmount: number; freeShipping: boolean;
-    couponCode?: string | null; totalQty: number;
+    couponCode?: string | null; couponApplied?: boolean; totalQty: number;
 };
 
 type Props = {
@@ -230,9 +230,12 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
                                         <span className="text-primary">{formatRupiah(selectedTotal)}</span>
                                     </div>
                                 </div>
-                                {pricing.couponCode ? (
+                                {pricing.couponApplied && pricing.couponCode ? (
                                     <div className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-                                        <span>Kupon <strong>{pricing.couponCode}</strong> aktif</span>
+                                        <span>
+                                            Kupon <strong>{pricing.couponCode}</strong> aktif
+                                            {pricing.freeShipping ? ' · Gratis ongkir' : ''}
+                                        </span>
                                         <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800" onClick={removeCoupon}>
                                             Hapus
                                         </Button>

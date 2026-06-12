@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 type CartRule = {
     id: number; name: string; description?: string | null; couponCode?: string | null;
-    discountType: string; discountAmount: number; minOrderAmount?: number | null;
+    discountType: string; discountAmount: number; minOrderAmount?: number | null; minQty?: number | null;
     maxDiscount?: number | null; startDate?: string; endDate?: string; isActive?: boolean;
     priority?: number; usesPerCoupon?: number; usesPerCustomer?: number; categoryIds?: number[];
     slug?: string | null; metaTitle?: string | null; metaDescription?: string | null; bannerImageUrl?: string | null;
@@ -58,6 +58,7 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
         discount_type: rule?.discountType ?? 'percentage',
         discount_amount: numberField(rule?.discountAmount),
         min_order_amount: rule?.minOrderAmount ?? '',
+        min_qty: rule?.minQty ?? '',
         max_discount: rule?.maxDiscount ?? '',
         category_ids: rule?.categoryIds ?? [] as number[],
         start_date: rule?.startDate?.slice(0, 10) ?? '',
@@ -113,46 +114,60 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
         });
     };
 
+    const isFreeShipping = data.discount_type === 'free_shipping';
     const canSyncHomepage = isEdit && !!rule?.bannerImageUrl && !data.remove_banner_image;
     const canSyncPopup = canSyncHomepage;
 
     return (
         <AdminLayout
-            title={isEdit ? 'Edit Aturan Keranjang' : 'Tambah Aturan Keranjang'}
+            title={isEdit ? 'Edit Kupon' : 'Tambah Kupon'}
             breadcrumbs={[
-                { label: 'Aturan Keranjang', href: '/admin/cart-rules' },
+                { label: 'Kupon', href: '/admin/cart-rules' },
                 { label: isEdit ? 'Edit' : 'Tambah' },
             ]}
         >
-            <Head title={isEdit ? 'Edit Aturan Keranjang' : 'Tambah Aturan Keranjang'} />
+            <Head title={isEdit ? 'Edit Kupon' : 'Tambah Kupon'} />
             <AdminPageHeader
-                title={isEdit ? 'Edit Aturan Keranjang' : 'Tambah Aturan Keranjang'}
+                title={isEdit ? 'Edit Kupon' : 'Tambah Kupon'}
                 backHref="/admin/cart-rules"
             />
             <Card><CardContent className="p-6">
                 <form onSubmit={submit} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                         <div><Label htmlFor="name">Nama</Label><Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required /><FieldError message={errors.name} /></div>
-                        <div><Label htmlFor="coupon_code">Kode Kupon</Label><Input id="coupon_code" value={data.coupon_code} onChange={(e) => setData('coupon_code', e.target.value)} /></div>
+                        <div>
+                            <Label htmlFor="coupon_code">Kode Kupon</Label>
+                            <Input id="coupon_code" value={data.coupon_code} onChange={(e) => setData('coupon_code', e.target.value)} placeholder={isFreeShipping ? 'GRATISONGKIR' : ''} />
+                            {isFreeShipping && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Isi kode untuk kupon gratis ongkir. Kosongkan jika ingin berlaku otomatis tanpa kupon.
+                                </p>
+                            )}
+                            <FieldError message={errors.coupon_code} />
+                        </div>
                     </div>
                     <div><Label htmlFor="description">Deskripsi</Label><Textarea id="description" rows={2} value={data.description} onChange={(e) => setData('description', e.target.value)} /></div>
                     <div className="grid md:grid-cols-3 gap-4">
                         <div><Label htmlFor="discount_type">Tipe Diskon</Label>
                             <select id="discount_type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={data.discount_type} onChange={(e) => setData('discount_type', e.target.value)}>
-                                <option value="percentage">Percentage</option><option value="fixed">Fixed</option><option value="free_shipping">Free Shipping</option>
+                                <option value="percentage">Persentase (%)</option>
+                                <option value="fixed">Nominal tetap (Rp)</option>
+                                <option value="free_shipping">Gratis ongkir</option>
                             </select></div>
-                        <div>
-                            <Label htmlFor="discount_amount">Jumlah Diskon</Label>
-                            <Input
-                                id="discount_amount"
-                                type="number"
-                                min={0}
-                                value={data.discount_amount}
-                                onChange={(e) => setData('discount_amount', e.target.value === '' ? '' : Number(e.target.value))}
-                                required
-                            />
-                            <FieldError message={errors.discount_amount} />
-                        </div>
+                        {!isFreeShipping && (
+                            <div>
+                                <Label htmlFor="discount_amount">Jumlah Diskon</Label>
+                                <Input
+                                    id="discount_amount"
+                                    type="number"
+                                    min={0}
+                                    value={data.discount_amount}
+                                    onChange={(e) => setData('discount_amount', e.target.value === '' ? '' : Number(e.target.value))}
+                                    required
+                                />
+                                <FieldError message={errors.discount_amount} />
+                            </div>
+                        )}
                         <div>
                             <Label htmlFor="priority">Priority</Label>
                             <Input
@@ -169,13 +184,19 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="min_order_amount">Min. Order (opsional)</Label>
+                            <Label htmlFor="min_order_amount">Min. Belanja (Rp, opsional)</Label>
                             <Input id="min_order_amount" type="number" min={0} value={data.min_order_amount} onChange={(e) => setData('min_order_amount', e.target.value === '' ? '' : Number(e.target.value))} />
                         </div>
                         <div>
-                            <Label htmlFor="max_discount">Maks. Diskon (opsional)</Label>
-                            <Input id="max_discount" type="number" min={0} value={data.max_discount} onChange={(e) => setData('max_discount', e.target.value === '' ? '' : Number(e.target.value))} />
+                            <Label htmlFor="min_qty">Min. Jumlah Item (opsional)</Label>
+                            <Input id="min_qty" type="number" min={1} value={data.min_qty} onChange={(e) => setData('min_qty', e.target.value === '' ? '' : Number(e.target.value))} />
                         </div>
+                        {!isFreeShipping && (
+                            <div>
+                                <Label htmlFor="max_discount">Maks. Diskon (opsional)</Label>
+                                <Input id="max_discount" type="number" min={0} value={data.max_discount} onChange={(e) => setData('max_discount', e.target.value === '' ? '' : Number(e.target.value))} />
+                            </div>
+                        )}
                     </div>
                     <div className="border rounded-lg p-4 space-y-3">
                         <h3 className="font-medium text-sm">Batas Pemakaian Kupon</h3>

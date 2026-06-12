@@ -215,7 +215,7 @@ export const adminTours: Record<AdminTourKey, AdminTourDefinition> = {
             variants: ['special'],
         },
     ]),
-    'cart-rules': buildTour('cart-rules', 'Aturan Keranjang'),
+    'cart-rules': buildTour('cart-rules', 'Kupon'),
     'catalog-rules': buildTour('catalog-rules', 'Aturan Katalog'),
     'promotion-popups': buildTour('promotion-popups', 'Pop up Promosi'),
     configuration: buildTour('configuration', 'Konfigurasi', [

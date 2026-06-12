@@ -41,7 +41,7 @@ class CartRuleController extends Controller
     {
         CartRule::create($this->validateRule($request));
 
-        return redirect()->route('admin.cart-rules.index')->with('success', 'Cart rule berhasil ditambahkan');
+        return redirect()->route('admin.cart-rules.index')->with('success', 'Kupon berhasil ditambahkan');
     }
 
     public function edit(CartRule $cartRule)
@@ -62,14 +62,14 @@ class CartRuleController extends Controller
     {
         $cartRule->update($this->validateRule($request, $cartRule));
 
-        return redirect()->route('admin.cart-rules.index')->with('success', 'Cart rule berhasil diubah');
+        return redirect()->route('admin.cart-rules.index')->with('success', 'Kupon berhasil diubah');
     }
 
     public function destroy(CartRule $cartRule)
     {
         $cartRule->delete();
 
-        return redirect()->route('admin.cart-rules.index')->with('success', 'Cart rule berhasil dihapus');
+        return redirect()->route('admin.cart-rules.index')->with('success', 'Kupon berhasil dihapus');
     }
 
     public function syncHomepage(CartRule $cartRule)
@@ -119,6 +119,7 @@ class CartRuleController extends Controller
             'discountType' => $rule->discount_type,
             'discountAmount' => (float) $rule->discount_amount,
             'minOrderAmount' => $rule->min_order_amount !== null ? (float) $rule->min_order_amount : null,
+            'minQty' => $rule->min_qty,
             'maxDiscount' => $rule->max_discount !== null ? (float) $rule->max_discount : null,
             'categoryIds' => $rule->category_ids ?? [],
             'startDate' => $rule->start_date?->format('Y-m-d'),
@@ -141,8 +142,14 @@ class CartRuleController extends Controller
             'uses_per_coupon' => 'nullable|integer|min:0',
             'uses_per_customer' => 'nullable|integer|min:0',
             'discount_type' => 'required|in:percentage,fixed,free_shipping',
-            'discount_amount' => 'required|numeric|min:0',
+            'discount_amount' => [
+                Rule::requiredIf(fn () => $request->input('discount_type') !== 'free_shipping'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
             'min_order_amount' => 'nullable|numeric|min:0',
+            'min_qty' => 'nullable|integer|min:1',
             'max_discount' => 'nullable|numeric|min:0',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
@@ -161,6 +168,11 @@ class CartRuleController extends Controller
         $validated['uses_per_coupon'] = $validated['uses_per_coupon'] ?? 0;
         $validated['uses_per_customer'] = $validated['uses_per_customer'] ?? 0;
         $validated['priority'] = $validated['priority'] ?? 0;
+
+        if ($validated['discount_type'] === 'free_shipping') {
+            $validated['discount_amount'] = 0;
+            $validated['max_discount'] = null;
+        }
 
         if (! empty($validated['coupon_code'])) {
             $validated['coupon_code'] = strtoupper(trim($validated['coupon_code']));

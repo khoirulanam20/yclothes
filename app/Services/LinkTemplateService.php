@@ -98,7 +98,7 @@ class LinkTemplateService
                 $promoOptions[] = $this->option(
                     'promo_cart',
                     $rule->slug,
-                    $rule->name.' (Aturan Keranjang)',
+                    $rule->name.' (Kupon)',
                     '/promo/'.$rule->slug,
                 );
             });

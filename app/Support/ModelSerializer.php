@@ -273,6 +273,7 @@ class ModelSerializer
             'discountAmount' => $pricing['discount_amount'],
             'freeShipping' => $pricing['free_shipping'],
             'couponCode' => $pricing['coupon_code'],
+            'couponApplied' => $pricing['cart_rule'] !== null,
             'freeShippingProgress' => $pricing['free_shipping_progress'],
             'backorderNotes' => $pricing['backorder_notes'],
             'taxIncluded' => $pricing['tax_included'],

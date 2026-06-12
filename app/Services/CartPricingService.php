@@ -91,6 +91,12 @@ class CartPricingService
         }
 
         $promo = $this->promotionEngine->applyToCart($lineItems, $subtotal, $couponCode, $customerId);
+
+        if ($couponCode && ! $promo['cart_rule']) {
+            session()->forget(CartService::COUPON_SESSION_KEY);
+            $couponCode = null;
+        }
+
         $taxIncluded = filter_var(setting('tax_included', '0'), FILTER_VALIDATE_BOOLEAN);
         $ratio = $subtotal > 0
             ? max(0, $subtotal - $promo['discount_amount']) / $subtotal

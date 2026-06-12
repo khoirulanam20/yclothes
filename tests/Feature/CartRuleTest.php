@@ -221,6 +221,167 @@ class CartRuleTest extends TestCase
         $this->assertNull(app(PromotionEngine::class)->validateCoupon('EMAIL1', null, 'other@example.com'));
     }
 
+    public function test_admin_can_save_free_shipping_cart_rule_with_coupon(): void
+    {
+        $admin = User::where('email', 'admin@yclothes.test')->first();
+
+        $this->actingAs($admin)->post(route('admin.cart-rules.store'), [
+            'name' => 'Gratis Ongkir Natal',
+            'coupon_code' => 'ONGKIR0',
+            'discount_type' => 'free_shipping',
+            'uses_per_coupon' => 100,
+            'uses_per_customer' => 1,
+            'start_date' => now()->subDay()->format('Y-m-d'),
+            'end_date' => now()->addMonth()->format('Y-m-d'),
+            'is_active' => true,
+        ])->assertRedirect(route('admin.cart-rules.index'));
+
+        $rule = CartRule::where('coupon_code', 'ONGKIR0')->first();
+        $this->assertNotNull($rule);
+        $this->assertSame('free_shipping', $rule->discount_type);
+        $this->assertSame(0, (int) $rule->discount_amount);
+    }
+
+    public function test_free_shipping_coupon_zeroes_shipping_cost(): void
+    {
+        CartRule::create([
+            'name' => 'Kupon Gratis Ongkir',
+            'coupon_code' => 'FREESHIP',
+            'discount_type' => 'free_shipping',
+            'discount_amount' => 0,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+            'is_active' => true,
+        ]);
+
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
+        session([CartService::COUPON_SESSION_KEY => 'FREESHIP']);
+
+        $pricing = app(\App\Services\CartPricingService::class)->build();
+        $this->assertTrue($pricing['free_shipping']);
+        $this->assertSame(0, $pricing['discount_amount']);
+
+        $response = $this->postJson('/checkout/shipping-options', [
+            'regency_code' => '33.73',
+            'postal_code' => '56211',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('freeShipping', true)
+            ->assertJsonPath('options.0.cost', 0);
+    }
+
+    public function test_settings_free_shipping_applies_above_threshold(): void
+    {
+        \App\Models\Setting::updateOrCreate(['key' => 'free_shipping_enabled'], ['value' => '1']);
+        \App\Models\Setting::updateOrCreate(['key' => 'free_shipping_min_order'], ['value' => '500000']);
+        clear_settings_cache();
+
+        $product = Product::first();
+        $lineItems = [['product' => $product, 'qty' => 1]];
+        $subtotalBelow = $product->final_price;
+        $subtotalAbove = 600_000;
+
+        $engine = app(PromotionEngine::class);
+        $this->assertFalse($engine->applyToCart($lineItems, $subtotalBelow)['free_shipping']);
+        $this->assertTrue($engine->applyToCart($lineItems, $subtotalAbove)['free_shipping']);
+    }
+
+    public function test_settings_free_shipping_always_when_min_order_zero(): void
+    {
+        \App\Models\Setting::updateOrCreate(['key' => 'free_shipping_enabled'], ['value' => '1']);
+        \App\Models\Setting::updateOrCreate(['key' => 'free_shipping_min_order'], ['value' => '0']);
+        clear_settings_cache();
+
+        $product = Product::first();
+        $result = app(PromotionEngine::class)->applyToCart(
+            [['product' => $product, 'qty' => 1]],
+            $product->final_price,
+        );
+
+        $this->assertTrue($result['free_shipping']);
+    }
+
+    public function test_coupon_rejected_when_min_qty_not_met(): void
+    {
+        CartRule::create([
+            'name' => 'Kupon 3 Item',
+            'coupon_code' => 'QTY3',
+            'discount_type' => 'percentage',
+            'discount_amount' => 10,
+            'min_qty' => 3,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+            'is_active' => true,
+        ]);
+
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
+
+        $response = $this->post('/cart/coupon', [
+            'coupon_code' => 'QTY3',
+            'redirect' => 'cart',
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertNull(session(CartService::COUPON_SESSION_KEY));
+    }
+
+    public function test_coupon_rejected_when_min_order_amount_not_met(): void
+    {
+        CartRule::create([
+            'name' => 'Kupon Min Belanja',
+            'coupon_code' => 'BELI300',
+            'discount_type' => 'percentage',
+            'discount_amount' => 10,
+            'min_order_amount' => 300_000,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+            'is_active' => true,
+        ]);
+
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 1]);
+
+        $response = $this->post('/cart/coupon', [
+            'coupon_code' => 'BELI300',
+            'redirect' => 'cart',
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertNull(session(CartService::COUPON_SESSION_KEY));
+    }
+
+    public function test_stale_coupon_session_cleared_when_cart_no_longer_qualifies(): void
+    {
+        CartRule::create([
+            'name' => 'Kupon 3 Item',
+            'coupon_code' => 'STALE3',
+            'discount_type' => 'free_shipping',
+            'discount_amount' => 0,
+            'min_qty' => 3,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+            'is_active' => true,
+        ]);
+
+        $product = Product::first();
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'qty' => 3]);
+        session([CartService::COUPON_SESSION_KEY => 'STALE3']);
+
+        $pricing = app(\App\Services\CartPricingService::class)->build();
+        $this->assertTrue($pricing['free_shipping']);
+        $this->assertSame('STALE3', session(CartService::COUPON_SESSION_KEY));
+
+        $this->postJson('/cart/update', ['key' => array_key_first(app(\App\Services\CartService::class)->get()), 'qty' => 1]);
+
+        $pricing = app(\App\Services\CartPricingService::class)->build();
+        $this->assertNull(session(CartService::COUPON_SESSION_KEY));
+        $this->assertNull($pricing['coupon_code']);
+        $this->assertFalse($pricing['free_shipping']);
+    }
+
     public function test_checkout_blocks_guest_when_email_exceeds_per_customer_limit(): void
     {
         $rule = CartRule::create([

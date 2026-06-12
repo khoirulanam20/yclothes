@@ -25,6 +25,7 @@ type Address = {
 type Pricing = {
     subtotal: number; taxAmount: number; discountAmount: number;
     totalWeight: number; totalQty: number; couponCode?: string | null;
+    freeShipping?: boolean; couponApplied?: boolean;
 };
 type PaymentMethodOption = {
     id: string;
@@ -98,6 +99,7 @@ export default function Index({
     const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
     const [courierLoading, setCourierLoading] = useState(false);
     const [courierError, setCourierError] = useState<string | null>(null);
+    const [apiFreeShipping, setApiFreeShipping] = useState(pricing.freeShipping ?? false);
 
     const wilayahValue: WilayahValue = {
         provinceCode: data.province_code,
@@ -129,6 +131,7 @@ export default function Index({
         try {
             const res = await fetchJson<{
                 options: CourierOption[];
+                freeShipping?: boolean;
             }>('/checkout/shipping-options', {
                 method: 'POST',
                 headers: {
@@ -143,6 +146,7 @@ export default function Index({
             });
 
             setCourierOptions(res.options);
+            setApiFreeShipping(!!res.freeShipping);
             if (res.options.length > 0 && !res.options.some((o) => o.optionKey === data.shipping_option_key)) {
                 const first = res.options[0];
                 setData({
@@ -167,9 +171,13 @@ export default function Index({
     }, [data.regency_code, data.postal_code, fetchCouriers]);
 
     const shippingCost = useMemo(() => {
-        if (!hasPhysical) return 0;
+        if (!hasPhysical || pricing.freeShipping || apiFreeShipping) {
+            return 0;
+        }
         return courierOptions.find((o) => o.optionKey === data.shipping_option_key)?.cost ?? 0;
-    }, [courierOptions, data.shipping_option_key, hasPhysical]);
+    }, [apiFreeShipping, courierOptions, data.shipping_option_key, hasPhysical, pricing.freeShipping]);
+
+    const shippingIsFree = hasPhysical && (pricing.freeShipping || apiFreeShipping);
 
     const grandTotal = pricing.subtotal - pricing.discountAmount + pricing.taxAmount + shippingCost;
 
@@ -393,9 +401,12 @@ export default function Index({
                                         <span className="shrink-0 tabular-nums">{formatRupiah(item.subtotal)}</span>
                                     </div>
                                 ))}
-                                {pricing.couponCode ? (
+                                {pricing.couponApplied && pricing.couponCode ? (
                                     <div className="flex items-center justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-                                        <span>Kupon <strong>{pricing.couponCode}</strong> aktif</span>
+                                        <span>
+                                            Kupon <strong>{pricing.couponCode}</strong> aktif
+                                            {pricing.freeShipping ? ' · Gratis ongkir' : ''}
+                                        </span>
                                         <Button type="button" variant="ghost" size="sm" className="h-7 text-green-800 hover:text-green-900" onClick={removeCoupon}>
                                             Hapus
                                         </Button>
@@ -439,7 +450,11 @@ export default function Index({
                                     {hasPhysical && (
                                         <div className="flex min-w-0 items-center justify-between gap-3">
                                             <span>Ongkir</span>
-                                            <span className="shrink-0 tabular-nums">{formatRupiah(shippingCost)}</span>
+                                            {shippingIsFree ? (
+                                                <span className="shrink-0 text-green-600 font-medium">Gratis ongkir</span>
+                                            ) : (
+                                                <span className="shrink-0 tabular-nums">{formatRupiah(shippingCost)}</span>
+                                            )}
                                         </div>
                                     )}
                                     <div className="flex min-w-0 items-center justify-between gap-3 pt-1 text-base font-bold">

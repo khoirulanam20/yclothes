@@ -96,12 +96,6 @@ export function ShippingRegencySelect({ value, onChange, errors, optional = fals
                 </select>
                 {errors?.regencyCode && <p className="text-xs text-destructive mt-1">{errors.regencyCode}</p>}
             </div>
-            {value.regencyCode && (
-                <div className="md:col-span-2">
-                    <Label>Kode Wilayah (Kemendagri)</Label>
-                    <input className={selectClass + ' bg-muted'} value={value.regencyCode} readOnly />
-                </div>
-            )}
         </div>
     );
 }

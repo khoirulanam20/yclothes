@@ -282,6 +282,20 @@ return [
                 ],
                 'depends' => 'shipping_mode:biteship',
             ],
+            [
+                'name' => 'free_shipping_enabled',
+                'title' => 'Gratis Ongkir',
+                'type' => 'boolean',
+                'default' => '0',
+            ],
+            [
+                'name' => 'free_shipping_min_order',
+                'title' => 'Min. Belanja Gratis Ongkir (Rp)',
+                'type' => 'number',
+                'default' => '0',
+                'validation' => 'nullable|integer|min:0',
+                'depends' => 'free_shipping_enabled:1',
+            ],
         ],
     ],
     [

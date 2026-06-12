@@ -137,7 +137,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: Ticket,
         collapsible: true,
         items: [
-            { label: 'Aturan Keranjang', href: '/admin/cart-rules', icon: Ticket, permission: 'promotions.manage' },
+            { label: 'Kupon', href: '/admin/cart-rules', icon: Ticket, permission: 'promotions.manage' },
             { label: 'Aturan Katalog', href: '/admin/catalog-rules', icon: Percent, permission: 'promotions.manage' },
             { label: 'Pop up Promosi', href: '/admin/promotion-popups', icon: Megaphone, permission: 'promotions.manage' },
         ],

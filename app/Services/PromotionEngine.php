@@ -46,8 +46,7 @@ class PromotionEngine
         $result['buy_x_get_y_savings'] = $buyXGetY;
         $result['discount_amount'] += $buyXGetY;
 
-        $freeShippingThreshold = $this->getActiveFreeShippingThreshold();
-        if ($freeShippingThreshold && $subtotal >= $freeShippingThreshold) {
+        if ($this->qualifiesForGlobalFreeShipping($subtotal)) {
             $result['free_shipping'] = true;
         }
 
@@ -136,6 +135,56 @@ class PromotionEngine
 
     public function getActiveFreeShippingThreshold(): ?int
     {
+        return $this->resolveFreeShippingThreshold();
+    }
+
+    public function freeShippingProgress(int $subtotal): array
+    {
+        $threshold = $this->resolveFreeShippingThreshold();
+
+        if ($threshold === null) {
+            return ['threshold' => null, 'remaining' => 0, 'percent' => 100, 'qualified' => false];
+        }
+
+        if ($threshold <= 0) {
+            return ['threshold' => 0, 'remaining' => 0, 'percent' => 100, 'qualified' => true];
+        }
+
+        $remaining = max(0, $threshold - $subtotal);
+        $percent = min(100, (int) round(($subtotal / $threshold) * 100));
+
+        return [
+            'threshold' => $threshold,
+            'remaining' => $remaining,
+            'percent' => $percent,
+            'qualified' => $subtotal >= $threshold,
+        ];
+    }
+
+    private function qualifiesForGlobalFreeShipping(int $subtotal): bool
+    {
+        if ($this->qualifiesForSettingsFreeShipping($subtotal)) {
+            return true;
+        }
+
+        $catalogThreshold = $this->getCatalogFreeShippingThreshold();
+
+        return $catalogThreshold !== null && $subtotal >= $catalogThreshold;
+    }
+
+    private function qualifiesForSettingsFreeShipping(int $subtotal): bool
+    {
+        if (! setting_bool('free_shipping_enabled', false)) {
+            return false;
+        }
+
+        $minOrder = (int) setting('free_shipping_min_order', '0');
+
+        return $minOrder <= 0 || $subtotal >= $minOrder;
+    }
+
+    private function getCatalogFreeShippingThreshold(): ?int
+    {
         $rule = $this->activeCatalogRules()
             ->where('rule_type', 'free_shipping_threshold')
             ->sortByDesc('priority')
@@ -148,23 +197,24 @@ class PromotionEngine
         return (int) $rule->min_order_amount;
     }
 
-    public function freeShippingProgress(int $subtotal): array
+    private function resolveFreeShippingThreshold(): ?int
     {
-        $threshold = $this->getActiveFreeShippingThreshold();
+        $thresholds = [];
 
-        if (! $threshold) {
-            return ['threshold' => null, 'remaining' => 0, 'percent' => 100, 'qualified' => false];
+        $catalogThreshold = $this->getCatalogFreeShippingThreshold();
+        if ($catalogThreshold !== null) {
+            $thresholds[] = $catalogThreshold;
         }
 
-        $remaining = max(0, $threshold - $subtotal);
-        $percent = min(100, (int) round(($subtotal / $threshold) * 100));
+        if (setting_bool('free_shipping_enabled', false)) {
+            $thresholds[] = max(0, (int) setting('free_shipping_min_order', '0'));
+        }
 
-        return [
-            'threshold' => $threshold,
-            'remaining' => $remaining,
-            'percent' => $percent,
-            'qualified' => $subtotal >= $threshold,
-        ];
+        if ($thresholds === []) {
+            return null;
+        }
+
+        return min($thresholds);
     }
 
     public function validateCoupon(string $code, ?int $customerId = null, ?string $customerEmail = null): ?string
@@ -190,6 +240,27 @@ class PromotionEngine
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<int, array{product: Product, qty: int}>  $lineItems
+     */
+    public function explainCouponIneligibility(
+        string $code,
+        array $lineItems,
+        int $subtotal,
+        ?int $customerId = null,
+    ): ?string {
+        if ($error = $this->validateCoupon($code, $customerId)) {
+            return $error;
+        }
+
+        $rule = $this->findCartRuleByCouponCode($code);
+        if (! $rule) {
+            return 'Kupon tidak valid atau sudah kedaluwarsa.';
+        }
+
+        return $this->explainRuleIneligibility($rule, $lineItems, $subtotal);
     }
 
     public function recordCouponUsage(?CartRule $rule, ?int $customerId, ?string $customerEmail = null): void
@@ -279,11 +350,7 @@ class PromotionEngine
                 continue;
             }
 
-            if ($rule->min_order_amount && $subtotal < (int) $rule->min_order_amount) {
-                continue;
-            }
-
-            if ($rule->category_ids && ! $this->cartMatchesCategories($lineItems, $rule->category_ids)) {
+            if ($this->explainRuleIneligibility($rule, $lineItems, $subtotal) !== null) {
                 continue;
             }
 
@@ -291,6 +358,34 @@ class PromotionEngine
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<int, array{product: Product, qty: int}>  $lineItems
+     */
+    private function explainRuleIneligibility(CartRule $rule, array $lineItems, int $subtotal): ?string
+    {
+        if ($rule->min_qty && $this->totalQty($lineItems) < (int) $rule->min_qty) {
+            return 'Minimal '.$rule->min_qty.' item di keranjang untuk menggunakan kupon ini.';
+        }
+
+        if ($rule->min_order_amount && $subtotal < (int) $rule->min_order_amount) {
+            return 'Minimal belanja Rp '.number_format((int) $rule->min_order_amount, 0, ',', '.').' untuk menggunakan kupon ini.';
+        }
+
+        if ($rule->category_ids && ! $this->cartMatchesCategories($lineItems, $rule->category_ids)) {
+            return 'Kupon tidak berlaku untuk kategori produk di keranjang ini.';
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, array{product: Product, qty: int}>  $lineItems
+     */
+    private function totalQty(array $lineItems): int
+    {
+        return array_sum(array_column($lineItems, 'qty'));
     }
 
     /**

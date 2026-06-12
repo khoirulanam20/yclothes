@@ -8,7 +8,7 @@ class CartRule extends Model
 {
     protected $fillable = [
         'name', 'description', 'coupon_code', 'uses_per_coupon', 'uses_per_customer',
-        'discount_type', 'discount_amount', 'min_order_amount', 'max_discount',
+        'discount_type', 'discount_amount', 'min_order_amount', 'min_qty', 'max_discount',
         'category_ids', 'start_date', 'end_date', 'is_active', 'priority',
         'slug', 'meta_title', 'meta_description', 'banner_image',
     ];
@@ -18,6 +18,7 @@ class CartRule extends Model
         return [
             'discount_amount' => 'decimal:2',
             'min_order_amount' => 'decimal:2',
+            'min_qty' => 'integer',
             'max_discount' => 'decimal:2',
             'category_ids' => 'array',
             'start_date' => 'date',
