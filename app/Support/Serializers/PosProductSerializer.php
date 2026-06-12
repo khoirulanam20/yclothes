@@ -24,6 +24,7 @@ class PosProductSerializer
             'salePrice' => $product->sale_price !== null ? (int) $product->sale_price : null,
             'finalPrice' => (int) $product->final_price,
             'imageUrl' => $product->image_url,
+            'trackStock' => (bool) $product->track_stock,
             'stock' => $stock,
             'isPurchasable' => $warehouseId
                 ? $inventory->canOrderAtWarehouse($product, null, 1, $warehouseId)
