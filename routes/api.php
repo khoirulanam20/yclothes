@@ -35,6 +35,7 @@ Route::prefix('pos')->group(function () {
         Route::get('/shifts/history', [ShiftController::class, 'history'])->name('api.pos.shifts.history');
         Route::get('/shifts/{shift}/summary', [ShiftController::class, 'summary'])->name('api.pos.shifts.summary');
         Route::get('/reports/summary', [ReportController::class, 'summary'])->name('api.pos.reports.summary');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('api.pos.reports.export');
 
         Route::get('/products', [ProductController::class, 'index'])->name('api.pos.products.index');
         Route::get('/products/by-sku/{sku}', [ProductController::class, 'bySku'])->name('api.pos.products.by-sku');

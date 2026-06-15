@@ -69,6 +69,34 @@ class ReportAndShiftTest extends PosApiTestCase
             ]);
     }
 
+    public function test_reports_export_returns_summary_and_order_list(): void
+    {
+        $this->createPosOrder()->assertCreated();
+
+        $today = now()->toDateString();
+
+        $response = $this->withHeaders($this->posHeaders())
+            ->getJson('/api/pos/reports/export?from='.$today.'&to='.$today);
+
+        $response->assertOk()
+            ->assertJsonPath('data.orders', 1)
+            ->assertJsonPath('data.from', $today)
+            ->assertJsonPath('data.to', $today)
+            ->assertJsonCount(1, 'data.orderList')
+            ->assertJsonStructure([
+                'data' => [
+                    'orders',
+                    'averageOrderValue',
+                    'cashPayments',
+                    'transferPayments',
+                    'sparkline',
+                    'from',
+                    'to',
+                    'orderList' => [['orderNumber', 'grandTotal', 'createdAt']],
+                ],
+            ]);
+    }
+
     public function test_user_can_update_profile(): void
     {
         $response = $this->withHeaders($this->posHeaders())

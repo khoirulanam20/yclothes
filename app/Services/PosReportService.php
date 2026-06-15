@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\PosOrderPayment;
 use App\Models\User;
+use App\Support\Serializers\PosOrderSerializer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -64,5 +65,33 @@ class PosReportService
             'sparkline' => $sparkline,
             'period' => $period,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function exportData(User $user, string $from, string $to, string $period = 'day'): array
+    {
+        $summary = $this->summary($user, $from, $to, $period);
+
+        $fromDate = Carbon::parse($from)->startOfDay();
+        $toDate = Carbon::parse($to)->endOfDay();
+
+        $orderList = Order::query()
+            ->where('order_source', 'pos')
+            ->where('order_status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->withSum('items as total_qty', 'qty')
+            ->latest()
+            ->get()
+            ->map(fn (Order $order) => PosOrderSerializer::summary($order))
+            ->values()
+            ->all();
+
+        return array_merge($summary, [
+            'from' => $from,
+            'to' => $to,
+            'orderList' => $orderList,
+        ]);
     }
 }

@@ -18,7 +18,24 @@ class AuthTest extends PosApiTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.user.email', $this->posUser->email)
-            ->assertJsonStructure(['data' => ['token', 'user' => ['permissions']]]);
+            ->assertJsonPath('data.currentShift', null)
+            ->assertJsonStructure(['data' => ['token', 'user' => ['permissions'], 'currentShift']]]);
+    }
+
+    public function test_pos_login_returns_open_shift_from_another_session(): void
+    {
+        $this->openPosShift();
+
+        $response = $this->postJson('/api/pos/login', [
+            'email' => $this->posUser->email,
+            'password' => 'admin123',
+            'device_name' => 'terminal-2',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.currentShift.status', 'open')
+            ->assertJsonPath('data.currentShift.warehouseId', $this->warehouse->id)
+            ->assertJsonPath('data.currentShift.openingCash', 100000);
     }
 
     public function test_pos_login_rejects_invalid_credentials(): void
