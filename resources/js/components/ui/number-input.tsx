@@ -2,36 +2,41 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 interface NumberInputProps extends Omit<React.ComponentProps<'input'>, 'onChange'> {
-  value: number;
+  value: number | string;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
   step?: string;
 }
 
+function toNum(v: number | string): number {
+  if (v === '' || v === null || v === undefined) return 0;
+  const n = Number(v);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 function NumberInput({ className, value, onChange, min, max, step, ...props }: NumberInputProps) {
+  const num = toNum(value);
   const [focused, setFocused] = React.useState(false);
-  const [display, setDisplay] = React.useState(value === 0 ? '' : String(value));
+  const [display, setDisplay] = React.useState(num === 0 ? '' : String(num));
 
   React.useEffect(() => {
     if (!focused) {
-      setDisplay(value === 0 ? '' : String(value));
+      setDisplay(num === 0 ? '' : String(num));
     }
-  }, [value, focused]);
+  }, [num, focused]);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setFocused(true);
-    if (value === 0) {
-      setDisplay('');
-    }
+    setDisplay('');
     props.onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setFocused(false);
-    const num = display === '' ? 0 : Number(display);
-    onChange(num);
-    setDisplay(num === 0 ? '' : String(num));
+    const n = display === '' ? 0 : Number(display);
+    onChange(Number.isNaN(n) ? 0 : n);
+    setDisplay(n === 0 ? '' : String(n));
     props.onBlur?.(e);
   };
 
