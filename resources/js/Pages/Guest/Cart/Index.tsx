@@ -1,15 +1,13 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { type ProductCardData } from '@/components/ProductCard';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Breadcrumb } from '@/components/storefront/Breadcrumb';
-import { AppliedCouponBanner } from '@/components/storefront/AppliedCouponBanner';
 import { PageContainer } from '@/components/storefront/PageContainer';
 import { ProductGrid } from '@/components/storefront/ProductGrid';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn, formatRupiah } from '@/lib/utils';
 
 type CartItem = {
@@ -33,11 +31,6 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
     const [selectedKeys, setSelectedKeys] = useState<string[]>(
         initialSelectedKeys.length > 0 ? initialSelectedKeys.filter((key) => allKeys.includes(key)) : allKeys,
     );
-
-    const couponForm = useForm({
-        coupon_code: pricing.couponCode ?? '',
-        redirect: 'cart' as const,
-    });
 
     const selectedItems = useMemo(
         () => items.filter((item) => selectedKeys.includes(item.key)),
@@ -73,18 +66,6 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
     const removeItem = (key: string) => {
         setSelectedKeys((current) => current.filter((k) => k !== key));
         router.post('/cart/remove', { key }, { preserveScroll: true });
-    };
-
-    const applyCoupon = (e: React.FormEvent) => {
-        e.preventDefault();
-        couponForm.post('/cart/coupon', { preserveScroll: true });
-    };
-
-    const removeCoupon = () => {
-        router.delete('/cart/coupon', {
-            data: { redirect: 'cart' },
-            preserveScroll: true,
-        });
     };
 
     const checkoutSelected = () => {
@@ -231,25 +212,6 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
                                         <span className="text-primary">{formatRupiah(selectedTotal)}</span>
                                     </div>
                                 </div>
-                                {pricing.couponApplied && pricing.couponCode ? (
-                                    <AppliedCouponBanner
-                                        className="mt-4"
-                                        couponCode={pricing.couponCode}
-                                        onRemove={removeCoupon}
-                                    />
-                                ) : (
-                                    <form onSubmit={applyCoupon} className="mt-4 flex gap-2">
-                                        <Input
-                                            placeholder="Kode kupon"
-                                            value={couponForm.data.coupon_code}
-                                            onChange={(e) => couponForm.setData('coupon_code', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        <Button type="submit" variant="outline" size="sm" disabled={couponForm.processing}>
-                                            Pakai
-                                        </Button>
-                                    </form>
-                                )}
                                 <Button
                                     className="mt-4 w-full"
                                     size="lg"
