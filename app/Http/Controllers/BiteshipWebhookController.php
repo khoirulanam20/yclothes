@@ -14,6 +14,17 @@ class BiteshipWebhookController extends Controller
 
     public function handle(Request $request)
     {
+        $webhookKey = config('services.biteship.webhook_key');
+        if ($webhookKey) {
+            $signature = $request->header('X-Biteship-Signature', '');
+            $expected = hash_hmac('sha256', $request->getContent(), $webhookKey);
+            if (! hash_equals($expected, $signature)) {
+                Log::warning('Biteship webhook signature mismatch');
+
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+        }
+
         $payload = $request->all();
 
         Log::info('Biteship webhook received', ['payload' => $payload]);

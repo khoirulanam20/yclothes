@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 type Category = {
@@ -120,12 +121,11 @@ export default function Form({ category, parentOptions = [], defaultParentId = n
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="order">Urutan</Label>
-                                <Input
+                                <NumberInput
                                     id="order"
-                                    type="number"
                                     min={0}
                                     value={data.order}
-                                    onChange={(e) => setData('order', Number(e.target.value))}
+                                    onChange={(e) => setData('order', e)}
                                 />
                                 <FieldError message={errors.order} />
                             </div>

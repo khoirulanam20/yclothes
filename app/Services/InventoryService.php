@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
@@ -605,35 +606,37 @@ class InventoryService
         ?string $reason = null,
         ?int $variantId = null,
     ): void {
-        $from = Inventory::firstOrCreate(
-            ['product_id' => $product->id, 'warehouse_id' => $fromWarehouseId, 'product_variant_id' => $variantId],
-            ['stock' => 0],
-        );
-        $to = Inventory::firstOrCreate(
-            ['product_id' => $product->id, 'warehouse_id' => $toWarehouseId, 'product_variant_id' => $variantId],
-            ['stock' => 0],
-        );
+        DB::transaction(function () use ($product, $fromWarehouseId, $toWarehouseId, $quantity, $reason, $variantId) {
+            $from = Inventory::firstOrCreate(
+                ['product_id' => $product->id, 'warehouse_id' => $fromWarehouseId, 'product_variant_id' => $variantId],
+                ['stock' => 0],
+            );
+            $to = Inventory::firstOrCreate(
+                ['product_id' => $product->id, 'warehouse_id' => $toWarehouseId, 'product_variant_id' => $variantId],
+                ['stock' => 0],
+            );
 
-        $from->decrement('stock', $quantity);
-        $to->increment('stock', $quantity);
+            $from->decrement('stock', $quantity);
+            $to->increment('stock', $quantity);
 
-        StockMovement::create([
-            'product_id' => $product->id,
-            'warehouse_id' => $fromWarehouseId,
-            'product_variant_id' => $variantId,
-            'type' => 'transfer',
-            'quantity' => -$quantity,
-            'reason' => $reason ?? "Transfer ke gudang #{$toWarehouseId}",
-        ]);
+            StockMovement::create([
+                'product_id' => $product->id,
+                'warehouse_id' => $fromWarehouseId,
+                'product_variant_id' => $variantId,
+                'type' => 'transfer',
+                'quantity' => -$quantity,
+                'reason' => $reason ?? "Transfer ke gudang #{$toWarehouseId}",
+            ]);
 
-        StockMovement::create([
-            'product_id' => $product->id,
-            'warehouse_id' => $toWarehouseId,
-            'product_variant_id' => $variantId,
-            'type' => 'transfer',
-            'quantity' => $quantity,
-            'reason' => $reason ?? "Transfer dari gudang #{$fromWarehouseId}",
-        ]);
+            StockMovement::create([
+                'product_id' => $product->id,
+                'warehouse_id' => $toWarehouseId,
+                'product_variant_id' => $variantId,
+                'type' => 'transfer',
+                'quantity' => $quantity,
+                'reason' => $reason ?? "Transfer dari gudang #{$fromWarehouseId}",
+            ]);
+        });
     }
 
     /**

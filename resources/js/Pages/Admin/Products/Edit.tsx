@@ -21,6 +21,7 @@ import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { CategorySelect, type CategoryOption } from '@/components/admin/CategorySelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { productVariantHelp } from '@/lib/admin-help-content';
@@ -443,29 +444,22 @@ export default function Edit({
                         <div className={cn(tab !== 'price' && 'hidden', 'grid gap-4 md:grid-cols-3')}>
                             <div>
                                 <Label htmlFor="price">Harga</Label>
-                                <Input
+                                <NumberInput
                                     id="price"
-                                    type="number"
                                     min={0}
                                     value={data.price}
-                                    onChange={(e) => setData('price', Number(e.target.value))}
+                                    onChange={(e) => setData('price', e)}
                                     required
                                 />
                                 <FieldError message={errors.price} />
                             </div>
                             <div>
                                 <Label htmlFor="sale_price">Harga Spesial</Label>
-                                <Input
+                                <NumberInput
                                     id="sale_price"
-                                    type="number"
                                     min={0}
                                     value={data.sale_price}
-                                    onChange={(e) =>
-                                        setData(
-                                            'sale_price',
-                                            e.target.value === '' ? '' : Number(e.target.value),
-                                        )
-                                    }
+                                    onChange={(e) => setData('sale_price', e)}
                                 />
                                 <FieldError message={errors.sale_price} />
                             </div>
@@ -494,14 +488,11 @@ export default function Edit({
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <Label htmlFor="weight">Berat ({weightUnitLabel ?? 'gram'})</Label>
-                                    <Input
+                                    <NumberInput
                                         id="weight"
-                                        type="number"
                                         min={0}
                                         value={data.weight}
-                                        onChange={(e) =>
-                                            setData('weight', e.target.value === '' ? '' : Number(e.target.value))
-                                        }
+                                        onChange={(e) => setData('weight', e)}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2 pt-6">
@@ -564,32 +555,20 @@ export default function Edit({
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <Label htmlFor="return_window_days">Window Retur (hari)</Label>
-                                    <Input
+                                    <NumberInput
                                         id="return_window_days"
-                                        type="number"
                                         min={0}
                                         value={data.return_window_days}
-                                        onChange={(e) =>
-                                            setData(
-                                                'return_window_days',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
+                                        onChange={(e) => setData('return_window_days', e)}
                                     />
                                 </div>
                                 <div>
                                     <Label htmlFor="warranty_days">Garansi (hari)</Label>
-                                    <Input
+                                    <NumberInput
                                         id="warranty_days"
-                                        type="number"
                                         min={0}
                                         value={data.warranty_days}
-                                        onChange={(e) =>
-                                            setData(
-                                                'warranty_days',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
+                                        onChange={(e) => setData('warranty_days', e)}
                                     />
                                 </div>
                             </div>

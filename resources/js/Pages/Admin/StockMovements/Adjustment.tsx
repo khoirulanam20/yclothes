@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -65,7 +66,7 @@ export default function Adjustment({ products, warehouses }: Props) {
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">
                                 <Label htmlFor="new_stock">Stok Baru</Label>
-                                <Input id="new_stock" type="number" min={0} value={data.new_stock} onChange={(e) => setData('new_stock', Number(e.target.value))} required />
+                                <NumberInput id="new_stock" min={0} value={data.new_stock} onChange={(e) => setData('new_stock', e)} required />
                                 <FieldError message={errors.new_stock} />
                             </div>
                             <div className="space-y-2 md:col-span-2">

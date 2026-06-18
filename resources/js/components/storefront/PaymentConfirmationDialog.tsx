@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { formatRupiah } from '@/lib/utils';
 
@@ -118,10 +119,9 @@ export function PaymentConfirmationDialog({
                     )}
                     <div>
                         <Label>Jumlah Dibayar</Label>
-                        <Input
-                            type="number"
+                        <NumberInput
                             value={data.amount_claimed}
-                            onChange={(e) => setData('amount_claimed', Number(e.target.value))}
+                            onChange={(e) => setData('amount_claimed', e)}
                             required
                         />
                         <FieldError message={errors.amount_claimed} />

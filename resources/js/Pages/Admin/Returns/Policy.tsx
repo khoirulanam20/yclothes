@@ -4,6 +4,7 @@ import { AdminContent, AdminFormCard, AdminFormGrid } from '@/components/admin/A
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
@@ -48,20 +49,18 @@ export default function Policy({ policy }: Props) {
                         <AdminFormGrid columns={2}>
                             <div className="space-y-2">
                                 <Label htmlFor="default_return_window_days">Periode Retur (hari)</Label>
-                                <Input
+                                <NumberInput
                                     id="default_return_window_days"
-                                    type="number"
                                     value={data.default_return_window_days}
-                                    onChange={(e) => setData('default_return_window_days', Number(e.target.value))}
+                                    onChange={(e) => setData('default_return_window_days', e)}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="default_warranty_days">Garansi Default (hari)</Label>
-                                <Input
+                                <NumberInput
                                     id="default_warranty_days"
-                                    type="number"
                                     value={data.default_warranty_days}
-                                    onChange={(e) => setData('default_warranty_days', Number(e.target.value))}
+                                    onChange={(e) => setData('default_warranty_days', e)}
                                 />
                             </div>
                             <div className="space-y-2 md:col-span-2">

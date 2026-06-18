@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { CategoryCheckboxList, type CategoryOption } from '@/components/admin/CategorySelect';
 import { configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
@@ -70,7 +71,7 @@ export default function Form({ rate, categoryOptions, selectedCategories = [] }:
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="rate">Rate</Label>
-                                <Input id="rate" type="number" min={0} step="0.01" value={data.rate} onChange={(e) => setData('rate', Number(e.target.value))} required />
+                                <NumberInput id="rate" min={0} step="0.01" value={data.rate} onChange={(e) => setData('rate', e)} required />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="type">Tipe</Label>

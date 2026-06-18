@@ -9,6 +9,7 @@ import { SortableSectionList, type LayoutSection } from '@/components/admin/home
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CONFIGURATION_HREF, configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
@@ -238,7 +239,7 @@ function FlashSaleItemEditor({ items, onChange }: { items: FlashSaleItem[]; onCh
                             </select>
                         </div>
                         <div className="col-span-3">
-                            <Input type="number" min={0} value={item.discountAmount} onChange={(e) => updateItem(index, { discountAmount: Number(e.target.value) })} />
+                            <NumberInput min={0} value={item.discountAmount} onChange={(e) => updateItem(index, { discountAmount: e })} />
                         </div>
                         <div className="col-span-1">
                             <Button type="button" variant="ghost" size="icon" onClick={() => onChange(items.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button>

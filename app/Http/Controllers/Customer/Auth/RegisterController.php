@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class RegisterController extends Controller
@@ -37,7 +38,15 @@ class RegisterController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        event(new Registered($customer));
+        try {
+            event(new Registered($customer));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send verification email after registration', [
+                'customer_id' => $customer->id,
+                'email' => $customer->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Auth::guard('customer')->login($customer);
 

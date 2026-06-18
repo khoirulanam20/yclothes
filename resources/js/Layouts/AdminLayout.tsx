@@ -4,6 +4,7 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTourProvider } from '@/components/admin/AdminTourProvider';
 import { AdminTopBar } from '@/components/admin/AdminTopBar';
 import type { AdminBreadcrumbItem } from '@/components/admin/AdminBreadcrumb';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { SharedPageProps } from '@/types';
 
@@ -20,17 +21,19 @@ export default function AdminLayout({
     }
 
     return (
-        <AdminTourProvider>
-            <SidebarProvider defaultOpen>
-                <AdminSidebar />
-                <SidebarInset>
-                    <AdminTopBar breadcrumbs={breadcrumbs} />
-                    <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8">
-                        {title && <h1 className="sr-only">{title}</h1>}
-                        {children}
-                    </main>
-                </SidebarInset>
-            </SidebarProvider>
-        </AdminTourProvider>
+        <ErrorBoundary>
+            <AdminTourProvider>
+                <SidebarProvider defaultOpen>
+                    <AdminSidebar />
+                    <SidebarInset>
+                        <AdminTopBar breadcrumbs={breadcrumbs} />
+                        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8">
+                            {title && <h1 className="sr-only">{title}</h1>}
+                            {children}
+                        </main>
+                    </SidebarInset>
+                </SidebarProvider>
+            </AdminTourProvider>
+        </ErrorBoundary>
     );
 }

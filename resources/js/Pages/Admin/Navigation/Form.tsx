@@ -7,6 +7,7 @@ import { FieldError } from '@/components/admin/FieldError';
 import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 type NavItem = { id: number; menu: string; label: string; url: string; sortOrder?: number; isActive?: boolean; parentId?: number | null };
@@ -94,7 +95,7 @@ export default function Form({ item, parents = [] }: Props) {
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">
                                 <Label htmlFor="sort_order">Urutan</Label>
-                                <Input id="sort_order" type="number" min={0} value={data.sort_order} onChange={(e) => setData('sort_order', Number(e.target.value))} />
+                                <NumberInput id="sort_order" min={0} value={data.sort_order} onChange={(e) => setData('sort_order', e)} />
                             </div>
                         </AdminFormGrid>
                         <AdminCheckboxRow

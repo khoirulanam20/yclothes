@@ -8,6 +8,7 @@ import { AccountPageHeader } from '@/components/storefront/AccountPageHeader';
 import { AccountPageShell } from '@/components/storefront/AccountPageShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 type ReturnableItem = { id: number; productName: string; qty: number; maxQty: number };
@@ -39,13 +40,12 @@ function ReturnItemFormFields({ item, formItem, returnReasons, onUpdate }: ItemF
                         Jumlah
                         <span className="ml-1 font-normal text-muted-foreground">(maks. {item.maxQty})</span>
                     </Label>
-                    <Input
+                    <NumberInput
                         id={`qty-${item.id}`}
-                        type="number"
                         min={1}
                         max={item.maxQty}
                         value={formItem?.qty ?? item.maxQty}
-                        onChange={(e) => onUpdate({ qty: Number(e.target.value) })}
+                        onChange={(e) => onUpdate({ qty: e })}
                     />
                 </div>
                 <div className="space-y-2">

@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -175,12 +176,11 @@ export default function Transfer({ products, warehouses }: Props) {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="quantity">Jumlah</Label>
-                                <Input
+                                <NumberInput
                                     id="quantity"
-                                    type="number"
                                     min={1}
                                     value={data.quantity}
-                                    onChange={(e) => setData('quantity', Number(e.target.value))}
+                                    onChange={(e) => setData('quantity', e)}
                                     required
                                 />
                             </div>

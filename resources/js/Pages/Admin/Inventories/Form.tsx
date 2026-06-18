@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 type VariantOption = { id: number; sku: string; label: string | null };
@@ -179,23 +180,21 @@ export default function Form({ inventory, products, warehouses }: Props) {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="stock">Stok</Label>
-                                <Input
+                                <NumberInput
                                     id="stock"
-                                    type="number"
                                     min={0}
                                     value={data.stock}
-                                    onChange={(e) => setData('stock', Number(e.target.value))}
+                                    onChange={(e) => setData('stock', e)}
                                     required
                                 />
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">
                                 <Label htmlFor="low_stock_threshold">Batas Stok Rendah</Label>
-                                <Input
+                                <NumberInput
                                     id="low_stock_threshold"
-                                    type="number"
                                     min={0}
                                     value={data.low_stock_threshold}
-                                    onChange={(e) => setData('low_stock_threshold', Number(e.target.value))}
+                                    onChange={(e) => setData('low_stock_threshold', e)}
                                 />
                             </div>
                         </AdminFormGrid>

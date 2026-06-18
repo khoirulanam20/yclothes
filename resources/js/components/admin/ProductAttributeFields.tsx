@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldError } from '@/components/admin/FieldError';
@@ -155,11 +156,10 @@ function renderField(
 
     if (attr.type === 'decimal' || attr.type === 'price') {
         return (
-            <Input
+            <NumberInput
                 id={`attr-${attr.code}`}
-                type="number"
-                value={rawValue === null || rawValue === undefined ? '' : String(rawValue)}
-                onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                value={rawValue === null || rawValue === undefined ? 0 : Number(rawValue)}
+                onChange={(e) => onChange(e)}
             />
         );
     }

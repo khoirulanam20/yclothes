@@ -116,6 +116,9 @@ Route::prefix('account')->name('customer.')->group(function () {
         Route::post('/email/verification-notification', [CustomerVerifyEmailController::class, 'send'])
             ->middleware('throttle:6,1')
             ->name('verification.send');
+    });
+
+    Route::middleware(['auth:customer', 'customer.verified'])->group(function () {
         Route::get('/profile', [CustomerProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [CustomerProfileController::class, 'update'])->name('profile.update');
         Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');

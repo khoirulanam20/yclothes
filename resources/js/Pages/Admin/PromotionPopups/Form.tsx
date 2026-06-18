@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { LinkUrlField } from '@/components/admin/LinkUrlField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 type Popup = {
@@ -98,7 +99,7 @@ export default function Form({ popup, pageOptions }: Props) {
                             </div>
                             <div className="space-y-2 md:col-span-2 xl:col-span-1">
                                 <Label htmlFor="display_duration_seconds">Durasi Tampil (detik, 0 = manual close)</Label>
-                                <Input id="display_duration_seconds" type="number" min={0} value={data.display_duration_seconds} onChange={(e) => setData('display_duration_seconds', Number(e.target.value))} />
+                                <NumberInput id="display_duration_seconds" min={0} value={data.display_duration_seconds} onChange={(e) => setData('display_duration_seconds', e)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="start_date">Mulai</Label>
@@ -110,7 +111,7 @@ export default function Form({ popup, pageOptions }: Props) {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="priority">Priority</Label>
-                                <Input id="priority" type="number" value={data.priority} onChange={(e) => setData('priority', Number(e.target.value))} />
+                                <NumberInput id="priority" value={data.priority} onChange={(e) => setData('priority', e)} />
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <Label>Tampil di Halaman</Label>

@@ -5,6 +5,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CategoryCheckboxList, type CategoryOption } from '@/components/admin/CategorySelect';
@@ -157,12 +158,11 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
                         {!isFreeShipping && (
                             <div>
                                 <Label htmlFor="discount_amount">Jumlah Diskon</Label>
-                                <Input
+                                <NumberInput
                                     id="discount_amount"
-                                    type="number"
                                     min={0}
                                     value={data.discount_amount}
-                                    onChange={(e) => setData('discount_amount', e.target.value === '' ? '' : Number(e.target.value))}
+                                    onChange={(e) => setData('discount_amount', e)}
                                     required
                                 />
                                 <FieldError message={errors.discount_amount} />
@@ -170,11 +170,10 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
                         )}
                         <div>
                             <Label htmlFor="priority">Priority</Label>
-                            <Input
+                            <NumberInput
                                 id="priority"
-                                type="number"
                                 value={data.priority}
-                                onChange={(e) => setData('priority', e.target.value === '' ? '' : Number(e.target.value))}
+                                onChange={(e) => setData('priority', e)}
                             />
                         </div>
                     </div>
@@ -185,16 +184,16 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
                     <div className="grid md:grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="min_order_amount">Min. Belanja (Rp, opsional)</Label>
-                            <Input id="min_order_amount" type="number" min={0} value={data.min_order_amount} onChange={(e) => setData('min_order_amount', e.target.value === '' ? '' : Number(e.target.value))} />
+                            <NumberInput id="min_order_amount" min={0} value={data.min_order_amount} onChange={(e) => setData('min_order_amount', e)} />
                         </div>
                         <div>
                             <Label htmlFor="min_qty">Min. Jumlah Item (opsional)</Label>
-                            <Input id="min_qty" type="number" min={1} value={data.min_qty} onChange={(e) => setData('min_qty', e.target.value === '' ? '' : Number(e.target.value))} />
+                            <NumberInput id="min_qty" min={1} value={data.min_qty} onChange={(e) => setData('min_qty', e)} />
                         </div>
                         {!isFreeShipping && (
                             <div>
                                 <Label htmlFor="max_discount">Maks. Diskon (opsional)</Label>
-                                <Input id="max_discount" type="number" min={0} value={data.max_discount} onChange={(e) => setData('max_discount', e.target.value === '' ? '' : Number(e.target.value))} />
+                                <NumberInput id="max_discount" min={0} value={data.max_discount} onChange={(e) => setData('max_discount', e)} />
                             </div>
                         )}
                     </div>
@@ -203,23 +202,21 @@ export default function Form({ rule, categoryOptions, linkedPopup = null }: Prop
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="uses_per_coupon">Maks. pemakaian (global)</Label>
-                                <Input
+                                <NumberInput
                                     id="uses_per_coupon"
-                                    type="number"
                                     min={0}
                                     value={data.uses_per_coupon}
-                                    onChange={(e) => setData('uses_per_coupon', e.target.value === '' ? '' : Number(e.target.value))}
+                                    onChange={(e) => setData('uses_per_coupon', e)}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">Kosongkan atau 0 = tidak terbatas untuk semua pembeli</p>
                             </div>
                             <div>
                                 <Label htmlFor="uses_per_customer">Maks. per pembeli</Label>
-                                <Input
+                                <NumberInput
                                     id="uses_per_customer"
-                                    type="number"
                                     min={0}
                                     value={data.uses_per_customer}
-                                    onChange={(e) => setData('uses_per_customer', e.target.value === '' ? '' : Number(e.target.value))}
+                                    onChange={(e) => setData('uses_per_customer', e)}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">Kosongkan atau 0 = tidak terbatas. Tamu dicek via email checkout</p>
                             </div>

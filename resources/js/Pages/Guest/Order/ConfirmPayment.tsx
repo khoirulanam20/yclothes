@@ -5,6 +5,7 @@ import { PageContainer } from '@/components/storefront/PageContainer';
 import { SectionCard } from '@/components/storefront/SectionCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { FieldError } from '@/components/admin/FieldError';
 import { formatRupiah } from '@/lib/utils';
@@ -93,7 +94,7 @@ export default function ConfirmPayment({ order, banks, isQris = false, qris }: P
                             )}
                             <div>
                                 <Label>Jumlah Dibayar</Label>
-                                <Input type="number" value={data.amount_claimed} onChange={(e) => setData('amount_claimed', Number(e.target.value))} required />
+                                <NumberInput value={data.amount_claimed} onChange={(e) => setData('amount_claimed', e)} required />
                                 <FieldError message={errors.amount_claimed} />
                             </div>
                             <div>

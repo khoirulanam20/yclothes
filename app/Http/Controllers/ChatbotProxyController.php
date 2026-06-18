@@ -19,19 +19,6 @@ class ChatbotProxyController extends Controller
             if ($response->successful()) {
                 $version = trim($response->body());
 
-                // #region agent log
-                $debugLogPath = base_path('.cursor/debug-227592.log');
-                @file_put_contents($debugLogPath, json_encode([
-                    'sessionId' => '227592',
-                    'runId' => 'post-fix-chatbot',
-                    'hypothesisId' => 'H1',
-                    'location' => 'ChatbotProxyController.php:widgetVersion',
-                    'message' => 'chatbot version proxied',
-                    'data' => ['versionLength' => strlen($version), 'status' => $response->status()],
-                    'timestamp' => (int) (microtime(true) * 1000),
-                ])."\n", FILE_APPEND);
-                // #endregion
-
                 return response($version !== '' ? $version : (string) time(), 200, [
                     'Content-Type' => 'text/plain; charset=UTF-8',
                     'Cache-Control' => 'no-store, no-cache, must-revalidate',
@@ -40,19 +27,6 @@ class ChatbotProxyController extends Controller
         } catch (\Throwable) {
             // Fall through to timestamp fallback below.
         }
-
-        // #region agent log
-        $debugLogPath = base_path('.cursor/debug-227592.log');
-        @file_put_contents($debugLogPath, json_encode([
-            'sessionId' => '227592',
-            'runId' => 'post-fix-chatbot',
-            'hypothesisId' => 'H1',
-            'location' => 'ChatbotProxyController.php:widgetVersion',
-            'message' => 'chatbot version fallback timestamp',
-            'data' => [],
-            'timestamp' => (int) (microtime(true) * 1000),
-        ])."\n", FILE_APPEND);
-        // #endregion
 
         return response((string) time(), 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',

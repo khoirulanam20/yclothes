@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 type FaqCategory = { id: number; name: string; sortOrder?: number };
@@ -61,7 +62,7 @@ export default function Form({ category }: Props) {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="sort_order">Urutan</Label>
-                                <Input id="sort_order" type="number" min={0} value={data.sort_order} onChange={(e) => setData('sort_order', Number(e.target.value))} />
+                                <NumberInput id="sort_order" min={0} value={data.sort_order} onChange={(e) => setData('sort_order', e)} />
                             </div>
                         </AdminFormGrid>
                     </AdminFormCard>

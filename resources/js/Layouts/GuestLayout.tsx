@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { PropsWithChildren, useEffect } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PromoBar } from '@/components/storefront/PromoBar';
 import { PromotionPopup } from '@/components/storefront/PromotionPopup';
 import { SiteHeader } from '@/components/storefront/SiteHeader';
@@ -27,21 +28,23 @@ export default function GuestLayout({ children }: PropsWithChildren) {
     }, [showMobileNav, hasPageBottomBar]);
 
     return (
-        <div className="min-h-screen flex flex-col bg-page-background">
-            <PromoBar />
-            <SiteHeader />
-            <main
-                className={cn(
-                    'flex-1',
-                    showMobileNav && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0',
-                )}
-            >
-                {children}
-            </main>
-            <SiteFooter />
-            <MobileBottomNav />
-            <PromotionPopup />
-            <CookieConsentBanner />
-        </div>
+        <ErrorBoundary>
+            <div className="min-h-screen flex flex-col bg-page-background">
+                <PromoBar />
+                <SiteHeader />
+                <main
+                    className={cn(
+                        'flex-1',
+                        showMobileNav && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0',
+                    )}
+                >
+                    {children}
+                </main>
+                <SiteFooter />
+                <MobileBottomNav />
+                <PromotionPopup />
+                <CookieConsentBanner />
+            </div>
+        </ErrorBoundary>
     );
 }

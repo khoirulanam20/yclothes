@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Link } from '@inertiajs/react';
 
@@ -54,12 +55,11 @@ export function ProductInventoryTable({ rows, warehouses, onChange, errors, comp
                             <tr key={row.warehouseId} className="border-t">
                                 <td className="px-3 py-2">{row.warehouseName}</td>
                                 <td className="px-3 py-2">
-                                    <Input
-                                        type="number"
+                                    <NumberInput
                                         min={0}
                                         value={row.stock}
                                         onChange={(e) =>
-                                            updateRow(index, { stock: Number(e.target.value) })
+                                            updateRow(index, { stock: e })
                                         }
                                     />
                                     {errors?.[`inventories.${index}.stock`] && (
@@ -69,13 +69,12 @@ export function ProductInventoryTable({ rows, warehouses, onChange, errors, comp
                                     )}
                                 </td>
                                 <td className="px-3 py-2">
-                                    <Input
-                                        type="number"
+                                    <NumberInput
                                         min={0}
                                         value={row.lowStockThreshold}
                                         onChange={(e) =>
                                             updateRow(index, {
-                                                lowStockThreshold: Number(e.target.value),
+                                                lowStockThreshold: e,
                                             })
                                         }
                                     />

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { FieldError } from '@/components/admin/FieldError';
 import {
     ProductGalleryField,
@@ -161,9 +162,6 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
     const [galleries, setGalleries] = useState<Record<number, VariantGalleryState>>(initialGalleries);
 
     useEffect(() => {
-        // #region agent log
-        fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',runId:'post-fix',hypothesisId:'H1',location:'ProductVariantGrid.tsx:useEffect',message:'galleries reset from server paths',data:{variantImageSignature,initialItemCounts:Object.fromEntries(Object.entries(initialGalleries).map(([id,g])=>[id,g.items.length]))},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         setGalleries(initialGalleries);
     }, [variantImageSignature, initialGalleries]);
 
@@ -182,9 +180,6 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
         setGalleries((current) => {
             const before = current[variantId] ?? { items: [], removed: [] };
             const after = updater(before);
-            // #region agent log
-            fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',hypothesisId:'H1-H3',location:'ProductVariantGrid.tsx:updateGallery',message:'gallery updated',data:{variantId,beforeCount:before.items.length,afterCount:after.items.length,newFileCount:after.items.filter((i)=>!!i.file).length},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             return {
                 ...current,
                 [variantId]: after,
@@ -209,9 +204,6 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
         );
 
         const url = `/admin/products/${productId}/variants`;
-        // #region agent log
-        fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',hypothesisId:'H4',location:'ProductVariantGrid.tsx:save',message:'variant save started',data:{needsFormData,hasFiles,variantPayloads:variantsPayload.map((v)=>({id:v.id,existingCount:v.existing_images.length,newCount:v.new_images.length,removeCount:v.remove_images.length}))},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         setSubmitting(true);
         setSaveErrors({});
 
@@ -341,8 +333,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                                             <FieldError message={fieldErrors[`variants.${index}.sku`]} />
                                         </td>
                                         <td className="px-3 py-2">
-                                            <Input
-                                                type="number"
+                                            <NumberInput
                                                 min={0}
                                                 placeholder="Harga induk"
                                                 value={row.price}
@@ -350,10 +341,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                                                     const next = [...data.variants];
                                                     next[index] = {
                                                         ...next[index],
-                                                        price:
-                                                            e.target.value === ''
-                                                                ? ''
-                                                                : Number(e.target.value),
+                                                        price: e,
                                                     };
                                                     setData('variants', next);
                                                 }}

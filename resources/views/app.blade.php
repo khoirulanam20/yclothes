@@ -23,11 +23,6 @@
     @inertia
     @include('partials.chatbot-embed')
     @if(!empty($integrations['customBodyScripts']))
-        <script>
-        // #region agent log
-        (function(){var s=@json($integrations['customBodyScripts']??'');fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',runId:'post-fix-chatbot',hypothesisId:'H1-H3',location:'app.blade.php:customBodyScripts',message:'sanitized custom body scripts',data:{hasChatbot:s.includes('chatbot'),hasChatbotJs:s.includes('chatbot.js'),scriptLength:s.length,chatbotBotId:@json($integrations['chatbotBotId']??null)},timestamp:Date.now()})}).catch(function(){});})();
-        // #endregion
-        </script>
         {!! $integrations['customBodyScripts'] !!}
     @endif
 </body>

@@ -7,6 +7,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FieldError } from '@/components/admin/FieldError';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { configurationSectionBreadcrumbs } from '@/lib/configuration-nav';
 
@@ -112,11 +113,11 @@ export default function Form({ cost, couriers }: Props) {
                         <AdminFormGrid columns={2}>
                             <div className="space-y-2">
                                 <Label htmlFor="cost">Ongkir Dasar</Label>
-                                <Input id="cost" type="number" min={0} value={data.cost} onChange={(e) => setData('cost', Number(e.target.value))} required />
+                                <NumberInput id="cost" min={0} value={data.cost} onChange={(e) => setData('cost', e)} required />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cost_per_kg">Ongkir Per Kg (opsional)</Label>
-                                <Input id="cost_per_kg" type="number" min={0} value={data.cost_per_kg} onChange={(e) => setData('cost_per_kg', e.target.value === '' ? '' : Number(e.target.value))} />
+                                <NumberInput id="cost_per_kg" min={0} value={data.cost_per_kg} onChange={(e) => setData('cost_per_kg', e)} />
                             </div>
                         </AdminFormGrid>
                         <AdminCheckboxRow

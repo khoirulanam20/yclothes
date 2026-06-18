@@ -74,9 +74,6 @@ export function ProductGalleryField({
             }
 
             const fileArray = Array.from(fileList);
-            // #region agent log
-            fetch('http://127.0.0.1:7792/ingest/c8298905-a0de-43df-a1c3-eaa382f54638',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'227592'},body:JSON.stringify({sessionId:'227592',runId:'post-fix',hypothesisId:'H2-H3',location:'ProductGalleryField.tsx:handleFilesSelected',message:'files snapshotted',data:{variantMode,snapshotCount:fileArray.length,galleryCount:gallery.length},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
 
             if (variantMode) {
                 onAddGallery(fileArray);

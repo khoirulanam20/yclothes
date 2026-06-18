@@ -19,7 +19,7 @@ class AuthTest extends PosApiTestCase
         $response->assertOk()
             ->assertJsonPath('data.user.email', $this->posUser->email)
             ->assertJsonPath('data.currentShift', null)
-            ->assertJsonStructure(['data' => ['token', 'user' => ['permissions'], 'currentShift']]]);
+            ->assertJsonStructure(['data' => ['token', 'user' => ['permissions'], 'currentShift']]);
     }
 
     public function test_pos_login_returns_open_shift_from_another_session(): void
