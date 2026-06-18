@@ -17,31 +17,17 @@ function toNum(v: number | string): number {
 
 function NumberInput({ className, value, onChange, min, max, step, ...props }: NumberInputProps) {
   const num = toNum(value);
-  const [focused, setFocused] = React.useState(false);
   const [display, setDisplay] = React.useState(num === 0 ? '' : String(num));
 
   React.useEffect(() => {
-    if (!focused) {
-      setDisplay(num === 0 ? '' : String(num));
-    }
-  }, [num, focused]);
-
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    setFocused(true);
-    setDisplay('');
-    props.onFocus?.(e);
-  };
+    setDisplay(num === 0 ? '' : String(num));
+  }, [num]);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    setFocused(false);
     const n = display === '' ? 0 : Number(display);
     onChange(Number.isNaN(n) ? 0 : n);
     setDisplay(n === 0 ? '' : String(n));
     props.onBlur?.(e);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDisplay(e.target.value);
   };
 
   return (
@@ -56,8 +42,7 @@ function NumberInput({ className, value, onChange, min, max, step, ...props }: N
         className
       )}
       value={display}
-      onChange={handleChange}
-      onFocus={handleFocus}
+      onChange={(e) => setDisplay(e.target.value)}
       onBlur={handleBlur}
       min={min}
       max={max}
