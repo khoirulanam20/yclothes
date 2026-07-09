@@ -13,6 +13,7 @@ class AttributeFamily extends Model
     public function attributes(): BelongsToMany
     {
         return $this->belongsToMany(Attribute::class, 'attribute_family_attributes')
+            ->withPivot('is_variant_axis')
             ->orderBy('sort_order');
     }
 

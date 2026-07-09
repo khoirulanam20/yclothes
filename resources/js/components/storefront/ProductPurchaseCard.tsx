@@ -6,6 +6,7 @@ import { guestToast } from '@/lib/guestToast';
 type Variant = {
     id: number;
     sku: string;
+    label?: string | null;
     size?: string | null;
     color?: string | null;
     colorHex?: string | null;
@@ -38,7 +39,7 @@ type Props = {
 };
 
 function variantLabel(variant: Variant): string {
-    return [variant.size, variant.color].filter(Boolean).join(' / ') || variant.sku;
+    return variant.label || [variant.size, variant.color].filter(Boolean).join(' / ') || variant.sku;
 }
 
 export function ProductPurchaseCard({

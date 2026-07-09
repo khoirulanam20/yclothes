@@ -20,6 +20,7 @@ export type VariantRow = {
     id: number;
     sku: string;
     name?: string;
+    label?: string | null;
     price?: number | null;
     stock?: number;
     imageUrl?: string;
@@ -275,7 +276,7 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
     if (variants.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
-                Belum ada varian. Isi atribut Ukuran/Warna di tab Atribut lalu simpan produk.
+                Belum ada varian. Isi atribut sumbu varian di tab Atribut lalu simpan produk.
             </p>
         );
     }
@@ -306,9 +307,13 @@ export function ProductVariantGrid({ productId, variants, warehouses, trackStock
                             const row = data.variants[index];
                             const gallery = galleries[variant.id] ?? { items: [], removed: [] };
                             const label =
-                                [variant.attributes?.size, variant.attributes?.color]
+                                variant.label
+                                || Object.entries(variant.attributes ?? {})
+                                    .filter(([key]) => !key.endsWith('_hex'))
+                                    .map(([, value]) => value)
                                     .filter(Boolean)
-                                    .join(' / ') || variant.name;
+                                    .join(' / ')
+                                || variant.name;
                             const totalStock = row.inventories.reduce(
                                 (sum, inventory) => sum + inventory.stock,
                                 0,

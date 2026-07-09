@@ -8,19 +8,53 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Attribute = { id: number; name: string; code: string };
+type Attribute = {
+    id: number;
+    name: string;
+    code: string;
+    type: string;
+    canBeVariantAxis?: boolean;
+};
 type Family = { id: number; name: string };
-type Props = { family?: Family; attributes: Attribute[]; selectedAttributeIds?: number[] };
+type Props = {
+    family?: Family;
+    attributes: Attribute[];
+    selectedAttributeIds?: number[];
+    variantAxisIds?: number[];
+};
 
-export default function Form({ family, attributes, selectedAttributeIds = [] }: Props) {
+export default function Form({
+    family,
+    attributes,
+    selectedAttributeIds = [],
+    variantAxisIds = [],
+}: Props) {
     const isEdit = !!family?.id;
     const { data, setData, post, transform, processing, errors } = useForm({
         name: family?.name ?? '',
         attribute_ids: selectedAttributeIds as number[],
+        variant_axis_ids: variantAxisIds as number[],
     });
 
-    const toggle = (id: number) => {
-        setData('attribute_ids', data.attribute_ids.includes(id) ? data.attribute_ids.filter((a) => a !== id) : [...data.attribute_ids, id]);
+    const toggleAttribute = (id: number) => {
+        const included = data.attribute_ids.includes(id);
+        if (included) {
+            setData({
+                attribute_ids: data.attribute_ids.filter((a) => a !== id),
+                variant_axis_ids: data.variant_axis_ids.filter((a) => a !== id),
+            });
+        } else {
+            setData('attribute_ids', [...data.attribute_ids, id]);
+        }
+    };
+
+    const toggleVariantAxis = (id: number) => {
+        setData(
+            'variant_axis_ids',
+            data.variant_axis_ids.includes(id)
+                ? data.variant_axis_ids.filter((a) => a !== id)
+                : [...data.variant_axis_ids, id],
+        );
     };
 
     const submit = (e: FormEvent) => {
@@ -67,14 +101,44 @@ export default function Form({ family, attributes, selectedAttributeIds = [] }: 
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <Label>Atribut</Label>
-                                <div className="grid max-h-60 gap-2 overflow-y-auto rounded-md border p-3">
-                                    {attributes.map((a) => (
-                                        <label key={a.id} className="flex items-center gap-2 text-sm">
-                                            <input type="checkbox" checked={data.attribute_ids.includes(a.id)} onChange={() => toggle(a.id)} />
-                                            {a.name} <code className="text-xs text-muted-foreground">({a.code})</code>
-                                        </label>
-                                    ))}
+                                <div className="grid max-h-72 gap-2 overflow-y-auto rounded-md border p-3">
+                                    {attributes.map((a) => {
+                                        const selected = data.attribute_ids.includes(a.id);
+                                        const variantAxis = data.variant_axis_ids.includes(a.id);
+
+                                        return (
+                                            <div
+                                                key={a.id}
+                                                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-transparent px-1 py-1.5 text-sm"
+                                            >
+                                                <label className="flex min-w-0 flex-1 items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selected}
+                                                        onChange={() => toggleAttribute(a.id)}
+                                                    />
+                                                    <span>
+                                                        {a.name}{' '}
+                                                        <code className="text-xs text-muted-foreground">({a.code})</code>
+                                                    </span>
+                                                </label>
+                                                {selected && a.canBeVariantAxis && (
+                                                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={variantAxis}
+                                                            onChange={() => toggleVariantAxis(a.id)}
+                                                        />
+                                                        Menghasilkan varian
+                                                    </label>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Centang &quot;Menghasilkan varian&quot; untuk atribut multiselect atau warna (color).
+                                </p>
                             </div>
                         </AdminFormGrid>
                     </AdminFormCard>

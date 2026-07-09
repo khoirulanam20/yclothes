@@ -70,6 +70,7 @@ class CartPricingService
                 'variant' => $resolved['variant'],
                 'size' => $resolved['size'],
                 'color' => $resolved['color'],
+                'variant_label' => $resolved['variant_label'],
                 'sku' => $resolved['sku'],
                 'product_name' => $resolved['product_name'],
                 'qty' => $item['qty'],

@@ -24,6 +24,7 @@ type Variant = {
     imageUrl?: string;
     imagesUrl?: string[];
     ownImagesUrl?: string[];
+    label?: string | null;
     size?: string | null;
     color?: string | null;
     colorHex?: string | null;
@@ -99,7 +100,7 @@ function variantOverlayLabel(variant: Variant | undefined): string | null {
         return null;
     }
 
-    return [variant.size, variant.color].filter(Boolean).join(' / ') || null;
+    return variant.label || variant.sku || null;
 }
 
 export default function Show({

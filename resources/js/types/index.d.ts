@@ -73,7 +73,7 @@ export type SharedPageProps = {
             completedTourVariants: Record<string, ('index' | 'create' | 'edit' | 'show' | 'special' | 'nested')[]>;
         } | null;
     };
-    flash: { success?: string; error?: string };
+    flash: { success?: string; error?: string; warning?: string };
     cartCount: number;
     theme: Theme;
     navigation: { header: NavItem[]; footer: NavItem[] };

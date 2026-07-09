@@ -43,7 +43,10 @@ class AttributeSeeder extends Seeder
             ['name' => 'Fashion Default'],
             ['name' => 'Fashion Default']
         );
-        $family->attributes()->sync([$size->id, $color->id]);
+        $family->attributes()->sync([
+            $size->id => ['is_variant_axis' => true],
+            $color->id => ['is_variant_axis' => true],
+        ]);
 
         $this->migrateExistingProducts($family, $size, $color);
     }

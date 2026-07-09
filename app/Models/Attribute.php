@@ -26,7 +26,8 @@ class Attribute extends Model
 
     public function families(): BelongsToMany
     {
-        return $this->belongsToMany(AttributeFamily::class, 'attribute_family_attributes');
+        return $this->belongsToMany(AttributeFamily::class, 'attribute_family_attributes')
+            ->withPivot('is_variant_axis');
     }
 
     public function options(): HasMany

@@ -242,14 +242,9 @@ class ProductController extends Controller
         }
 
         $variants = $product->isConfigurable()
-            ? $product->activeVariants->map(function ($variant) use ($product) {
-                return array_merge(ModelSerializer::variant($variant, $product), [
-                    'size' => $variant->attributes['size'] ?? null,
-                    'color' => $variant->attributes['color'] ?? null,
-                    'colorHex' => $variant->attributes['color_hex'] ?? null,
-                    'trackStock' => $variant->track_stock || $product->track_stock,
-                ]);
-            })->values()->all()
+            ? $product->activeVariants->map(
+                fn ($variant) => ModelSerializer::variant($variant, $product)
+            )->values()->all()
             : [];
 
         $productStock = $this->inventoryService->getAvailableStock($product);

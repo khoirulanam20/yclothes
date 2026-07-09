@@ -1,5 +1,5 @@
 type AdminAlertPayload = {
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'warning';
     title: string;
     message: string;
 };

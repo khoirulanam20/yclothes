@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\ModelSerializer;
 
 class CartItemResolver
 {
@@ -14,6 +15,7 @@ class CartItemResolver
      *   unit_price: int,
      *   size: ?string,
      *   color: ?string,
+     *   variant_label: ?string,
      *   sku: ?string,
      *   product_name: string
      * }|null
@@ -34,6 +36,7 @@ class CartItemResolver
                 'unit_price' => $variant->final_price,
                 'size' => $attrs['size'] ?? null,
                 'color' => $attrs['color'] ?? null,
+                'variant_label' => ModelSerializer::variantLabel($variant),
                 'sku' => $variant->sku,
                 'product_name' => $variant->name,
             ];
@@ -50,6 +53,7 @@ class CartItemResolver
             'unit_price' => $product->final_price,
             'size' => $item['size'] ?? null,
             'color' => $item['color'] ?? null,
+            'variant_label' => null,
             'sku' => null,
             'product_name' => $product->name,
         ];

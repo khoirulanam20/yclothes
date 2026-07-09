@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AttributeType;
 use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use App\Models\AttributeFamily;
@@ -26,15 +27,10 @@ class AttributeFamilyController extends Controller
 
     public function create()
     {
-        $attributes = Attribute::orderBy('sort_order')->get();
-
         return Inertia::render('Admin/AttributeFamilies/Form', [
-            'attributes' => $attributes->map(fn ($a) => [
-                'id' => $a->id,
-                'name' => $a->name,
-                'code' => $a->code,
-            ])->values()->all(),
+            'attributes' => $this->attributeOptions(),
             'selectedAttributeIds' => [],
+            'variantAxisIds' => [],
         ]);
     }
 
@@ -44,10 +40,12 @@ class AttributeFamilyController extends Controller
             'name' => 'required|max:100',
             'attribute_ids' => 'nullable|array',
             'attribute_ids.*' => 'exists:attributes,id',
+            'variant_axis_ids' => 'nullable|array',
+            'variant_axis_ids.*' => 'exists:attributes,id',
         ]);
 
         $family = AttributeFamily::create(['name' => $validated['name']]);
-        $family->attributes()->sync($request->input('attribute_ids', []));
+        $this->syncAttributes($family, $request->input('attribute_ids', []), $request->input('variant_axis_ids', []));
 
         return redirect()->route('admin.attribute-families.index')
             ->with('success', 'Keluarga atribut berhasil ditambahkan');
@@ -55,16 +53,16 @@ class AttributeFamilyController extends Controller
 
     public function edit(AttributeFamily $attributeFamily)
     {
-        $attributes = Attribute::orderBy('sort_order')->get();
+        $attributeFamily->load('attributes');
 
         return Inertia::render('Admin/AttributeFamilies/Form', [
             'family' => ['id' => $attributeFamily->id, 'name' => $attributeFamily->name],
-            'attributes' => $attributes->map(fn ($a) => [
-                'id' => $a->id,
-                'name' => $a->name,
-                'code' => $a->code,
-            ])->values()->all(),
-            'selectedAttributeIds' => $attributeFamily->attributes()->pluck('attributes.id')->all(),
+            'attributes' => $this->attributeOptions(),
+            'selectedAttributeIds' => $attributeFamily->attributes->pluck('id')->all(),
+            'variantAxisIds' => $attributeFamily->attributes
+                ->filter(fn ($a) => (bool) $a->pivot->is_variant_axis)
+                ->pluck('id')
+                ->all(),
         ]);
     }
 
@@ -74,10 +72,16 @@ class AttributeFamilyController extends Controller
             'name' => 'required|max:100',
             'attribute_ids' => 'nullable|array',
             'attribute_ids.*' => 'exists:attributes,id',
+            'variant_axis_ids' => 'nullable|array',
+            'variant_axis_ids.*' => 'exists:attributes,id',
         ]);
 
         $attributeFamily->update(['name' => $validated['name']]);
-        $attributeFamily->attributes()->sync($request->input('attribute_ids', []));
+        $this->syncAttributes(
+            $attributeFamily,
+            $request->input('attribute_ids', []),
+            $request->input('variant_axis_ids', []),
+        );
 
         return redirect()->route('admin.attribute-families.index')
             ->with('success', 'Keluarga atribut berhasil diubah');
@@ -94,5 +98,40 @@ class AttributeFamilyController extends Controller
 
         return redirect()->route('admin.attribute-families.index')
             ->with('success', 'Keluarga atribut berhasil dihapus');
+    }
+
+    private function attributeOptions(): array
+    {
+        return Attribute::orderBy('sort_order')->get()->map(fn ($a) => [
+            'id' => $a->id,
+            'name' => $a->name,
+            'code' => $a->code,
+            'type' => $a->type?->value ?? $a->type,
+            'canBeVariantAxis' => $this->canBeVariantAxis($a),
+        ])->values()->all();
+    }
+
+    private function canBeVariantAxis(Attribute $attribute): bool
+    {
+        return $attribute->type === AttributeType::Multiselect
+            || in_array($attribute->code, ['size', 'color'], true);
+    }
+
+    private function syncAttributes(AttributeFamily $family, array $attributeIds, array $variantAxisIds): void
+    {
+        $variantAxisIds = array_values(array_intersect($variantAxisIds, $attributeIds));
+        $allowedVariantIds = Attribute::query()
+            ->whereIn('id', $variantAxisIds)
+            ->get()
+            ->filter(fn (Attribute $a) => $this->canBeVariantAxis($a))
+            ->pluck('id')
+            ->all();
+
+        $sync = [];
+        foreach ($attributeIds as $id) {
+            $sync[$id] = ['is_variant_axis' => in_array((int) $id, $allowedVariantIds, true)];
+        }
+
+        $family->attributes()->sync($sync);
     }
 }

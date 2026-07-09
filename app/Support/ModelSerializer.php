@@ -83,6 +83,7 @@ class ModelSerializer
             'id' => $variant->id,
             'sku' => $variant->sku,
             'name' => $variant->name,
+            'label' => self::variantLabel($variant),
             'price' => $variant->price,
             'stock' => $stock,
             'finalPrice' => $variant->final_price,
@@ -92,6 +93,17 @@ class ModelSerializer
             'attributes' => $variant->attributes,
             'isActive' => $variant->is_active,
         ];
+
+        $attrs = $variant->attributes ?? [];
+        if (isset($attrs['size'])) {
+            $data['size'] = $attrs['size'];
+        }
+        if (isset($attrs['color'])) {
+            $data['color'] = $attrs['color'];
+        }
+        if (isset($attrs['color_hex'])) {
+            $data['colorHex'] = $attrs['color_hex'];
+        }
 
         if ($product) {
             $data['isPurchasable'] = $inventoryService->canOrder($product, $variant, 1);
@@ -255,6 +267,7 @@ class ModelSerializer
             'product' => self::product($row['product']),
             'size' => $row['size'],
             'color' => $row['color'],
+            'variantLabel' => $row['variant_label'] ?? null,
             'sku' => $row['sku'],
             'productName' => $row['product_name'],
             'qty' => $row['qty'],
@@ -604,16 +617,27 @@ class ModelSerializer
 
     public static function variantLabel(ProductVariant $variant): ?string
     {
-        $attributes = $variant->attributes ?? [];
-        $parts = array_filter([
-            $attributes['size'] ?? null,
-            $attributes['color'] ?? null,
-        ]);
+        return self::variantLabelFromAttributes($variant->attributes ?? [], $variant->name ?: null);
+    }
+
+    public static function variantLabelFromAttributes(?array $attributes, ?string $fallbackName = null): ?string
+    {
+        if (! is_array($attributes) || $attributes === []) {
+            return $fallbackName;
+        }
+
+        $parts = [];
+        foreach ($attributes as $key => $value) {
+            if (str_ends_with((string) $key, '_hex') || $value === null || $value === '') {
+                continue;
+            }
+            $parts[] = (string) $value;
+        }
 
         if ($parts !== []) {
             return implode(' / ', $parts);
         }
 
-        return $variant->name ?: null;
+        return $fallbackName;
     }
 }

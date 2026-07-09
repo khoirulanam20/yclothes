@@ -218,6 +218,34 @@ export default function Edit({
 
     const visibleTabs = TABS.filter((t) => t.id !== 'variants' || data.type === 'configurable');
 
+    const variantAxisCodes = useMemo(
+        () => attributeDefinitions.filter((def) => def.isVariantAxis).map((def) => def.code),
+        [attributeDefinitions],
+    );
+
+    const variantAxesDirty = useMemo(() => {
+        if (data.type !== 'configurable' || (product.variants?.length ?? 0) === 0) {
+            return false;
+        }
+
+        if (Number(data.attribute_family_id) !== Number(product.attributeFamilyId)) {
+            return true;
+        }
+
+        return variantAxisCodes.some((code) => {
+            return JSON.stringify(data.attributes?.[code] ?? null)
+                !== JSON.stringify(initialAttributes[code] ?? null);
+        });
+    }, [
+        data.type,
+        data.attribute_family_id,
+        data.attributes,
+        product.attributeFamilyId,
+        product.variants,
+        variantAxisCodes,
+        initialAttributes,
+    ]);
+
     const submit = (e: FormEvent) => {
         e.preventDefault();
         const existingImages = galleryItems.filter((g) => !g.file).map((g) => g.path);
@@ -284,6 +312,13 @@ export default function Edit({
             {configurableWarning && (
                 <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     {configurableWarning}
+                </div>
+            )}
+
+            {variantAxesDirty && (
+                <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Atribut varian berubah. Setelah disimpan, varian lama akan diganti kombinasi baru.
+                    Periksa ulang SKU, harga, stok, dan gambar di tab Varian.
                 </div>
             )}
 

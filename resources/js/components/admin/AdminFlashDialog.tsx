@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
@@ -25,7 +25,7 @@ const defaultAlert: AlertState = {
 export function AdminFlashDialog() {
     const { flash } = usePage<SharedPageProps>().props;
     const [alert, setAlert] = useState<AlertState>(defaultAlert);
-    const lastFlash = useRef<{ success?: string; error?: string }>({});
+    const lastFlash = useRef<{ success?: string; error?: string; warning?: string }>({});
 
     const showAlert = (payload: AdminAlertPayload) => {
         setAlert({ ...payload, open: true });
@@ -44,11 +44,27 @@ export function AdminFlashDialog() {
             showAlert({ type: 'error', title: 'Terjadi Kesalahan', message: flash.error });
         }
 
-        lastFlash.current = { success: flash?.success, error: flash?.error };
+        if (flash?.warning && flash.warning !== lastFlash.current.warning) {
+            showAlert({ type: 'warning', title: 'Perhatian', message: flash.warning });
+        }
+
+        lastFlash.current = {
+            success: flash?.success,
+            error: flash?.error,
+            warning: flash?.warning,
+        };
     }, [flash]);
 
-    const Icon = alert.type === 'success' ? CheckCircle2 : AlertCircle;
-    const iconClass = alert.type === 'success' ? 'text-green-600' : 'text-destructive';
+    const Icon = alert.type === 'success'
+        ? CheckCircle2
+        : alert.type === 'warning'
+            ? AlertTriangle
+            : AlertCircle;
+    const iconClass = alert.type === 'success'
+        ? 'text-green-600'
+        : alert.type === 'warning'
+            ? 'text-amber-600'
+            : 'text-destructive';
 
     return (
         <AlertDialog open={alert.open} onOpenChange={(open) => setAlert((current) => ({ ...current, open }))}>

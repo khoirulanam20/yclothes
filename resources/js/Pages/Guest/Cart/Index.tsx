@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { cn, formatRupiah } from '@/lib/utils';
 
 type CartItem = {
-    key: string; qty: number; size?: string; color?: string; unitPrice: number; subtotal: number;
+    key: string; qty: number; size?: string; color?: string; variantLabel?: string | null;
+    productName?: string; unitPrice: number; subtotal: number;
     product: { id: number; name: string; slug: string; imageUrl: string };
 };
 type Pricing = {
@@ -129,9 +130,10 @@ export default function Index({ items, pricing, crossSellProducts = [], selected
                                                 >
                                                     {item.product.name}
                                                 </Link>
-                                                {(item.size || item.color) && (
+                                                {(item.variantLabel || item.size || item.color) && (
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {[item.size, item.color].filter(Boolean).join(' · ')}
+                                                        {item.variantLabel
+                                                            || [item.size, item.color].filter(Boolean).join(' · ')}
                                                     </p>
                                                 )}
                                                 <p className="mt-1 text-sm font-bold text-foreground">

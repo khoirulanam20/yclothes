@@ -100,8 +100,8 @@ class ProductController extends Controller
             'warehouses' => $this->warehouseOptions(),
             'inventoryRows' => $this->inventoryService->inventoryRowsFor($product),
             'configurableWarning' => $product->isConfigurable()
-                && ! $this->familyHasVariantAxes($familyId)
-                ? 'Produk configurable membutuhkan atribut size dan/atau color di keluarga atribut.'
+                && ! $this->attributeService->familyHasVariantAxes($familyId)
+                ? 'Produk configurable membutuhkan minimal satu atribut sumbu varian di keluarga atribut.'
                 : null,
             'weightUnitLabel' => weight_unit_label(),
         ]);
@@ -200,10 +200,18 @@ class ProductController extends Controller
 
         unset($validated['existing_images'], $validated['new_images'], $validated['remove_images'], $validated['inventories']);
 
+        $variantAxesChanged = false;
+        if ($product->isConfigurable() || ($validated['type'] ?? null) === ProductType::Configurable) {
+            $variantAxesChanged = $this->attributeService->variantAxisValuesChanged(
+                $product,
+                $request,
+                (int) $familyId,
+            );
+        }
+
         $product->update($validated);
         $this->attributeService->syncFromRequest($product, $request);
-        $this->attributeService->syncLegacyVariantColumns($product->fresh());
-        $this->variantService->syncFromProduct($product->fresh());
+        $this->variantService->syncFromProduct($product->fresh(), $variantAxesChanged);
         $this->relationService->syncAll(
             $product,
             $request->input('related_products', []),
@@ -223,9 +231,18 @@ class ProductController extends Controller
             );
         }
 
-        return redirect()
+        $redirect = redirect()
             ->route('admin.products.edit', $product)
             ->with('success', 'Produk berhasil disimpan');
+
+        if ($variantAxesChanged) {
+            $redirect = $redirect->with(
+                'warning',
+                'Atribut varian berubah. Varian lama diganti dengan kombinasi baru — periksa ulang SKU, harga, stok, dan gambar di tab Varian.',
+            );
+        }
+
+        return $redirect;
     }
 
     public function duplicate(Product $product)
@@ -292,17 +309,6 @@ class ProductController extends Controller
                 ProductType::Configurable => 'Barang dengan Varian',
             },
         ])->values()->all();
-    }
-
-    private function familyHasVariantAxes(?int $familyId): bool
-    {
-        if (! $familyId) {
-            return false;
-        }
-
-        $codes = $this->attributeService->familyAttributes($familyId)->pluck('code');
-
-        return $codes->contains('size') || $codes->contains('color');
     }
 
     private function warehouseOptions(): array

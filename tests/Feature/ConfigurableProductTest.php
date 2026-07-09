@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\ProductType;
+use App\Models\Attribute;
 use App\Models\AttributeFamily;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAttributeValue;
 use App\Models\ProductVariant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -319,22 +321,37 @@ class ConfigurableProductTest extends TestCase
     private function createConfigurableProduct(): Product
     {
         $category = Category::first();
+        $family = AttributeFamily::where('name', 'Fashion Default')->first();
+        $sizeAttr = Attribute::where('code', 'size')->first();
+        $colorAttr = Attribute::where('code', 'color')->first();
+        $suffix = uniqid();
 
         $product = Product::create([
             'category_id' => $category->id,
+            'attribute_family_id' => $family->id,
             'type' => ProductType::Configurable,
+            'sku' => 'CFG-TEST-'.$suffix,
             'name' => 'Test Config Product',
-            'slug' => 'test-config-product',
+            'slug' => 'test-config-product-'.$suffix,
             'price' => 100000,
             'image' => 'products/test.jpg',
-            'sizes' => ['S', 'M'],
-            'colors' => [
-                ['hex' => '#000000', 'name' => 'Hitam'],
-                ['hex' => '#FFFFFF', 'name' => 'Putih'],
-            ],
         ]);
 
-        app(\App\Services\ProductVariantService::class)->syncFromProduct($product);
+        ProductAttributeValue::create([
+            'product_id' => $product->id,
+            'attribute_id' => $sizeAttr->id,
+            'value' => json_encode(['S', 'M']),
+        ]);
+        ProductAttributeValue::create([
+            'product_id' => $product->id,
+            'attribute_id' => $colorAttr->id,
+            'value' => json_encode([
+                ['hex' => '#000000', 'name' => 'Hitam'],
+                ['hex' => '#FFFFFF', 'name' => 'Putih'],
+            ]),
+        ]);
+
+        app(\App\Services\ProductVariantService::class)->syncFromProduct($product->fresh());
 
         return $product->fresh(['variants']);
     }
