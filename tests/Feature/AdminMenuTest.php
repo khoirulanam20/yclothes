@@ -49,6 +49,24 @@ class AdminMenuTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_customers_accessible_with_customers_view(): void
+    {
+        $staff = $this->createStaffWithPermissions(['customers.view']);
+
+        $this->actingAs($staff)
+            ->get('/admin/customers')
+            ->assertOk();
+    }
+
+    public function test_customers_blocked_without_permission(): void
+    {
+        $staff = $this->createStaffWithPermissions(['orders.view']);
+
+        $this->actingAs($staff)
+            ->get('/admin/customers')
+            ->assertForbidden();
+    }
+
     public function test_returns_accessible_with_orders_manage(): void
     {
         $this->actingAs($this->superAdmin)
@@ -307,6 +325,7 @@ class AdminMenuTest extends TestCase
         $routes = [
             '/admin',
             '/admin/orders',
+            '/admin/customers',
             '/admin/returns',
             '/admin/reviews',
             '/admin/products',

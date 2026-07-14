@@ -60,6 +60,12 @@ export const adminNavGroups: AdminNavGroup[] = [
                 badgeKey: 'orders',
             },
             {
+                label: 'Pelanggan',
+                href: '/admin/customers',
+                icon: Users,
+                permission: 'customers.view',
+            },
+            {
                 label: 'Retur',
                 href: '/admin/returns',
                 icon: ArrowLeftRight,

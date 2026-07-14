@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\CatalogRuleController as AdminCatalogRuleControll
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CmsPageController as AdminCmsPageController;
 use App\Http\Controllers\Admin\ConfigurationController as AdminConfigurationController;
+use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EditorUploadController as AdminEditorUploadController;
 use App\Http\Controllers\Admin\FaqCategoryController as AdminFaqCategoryController;
@@ -243,6 +244,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:orders.view,orders.manage')->group(function () {
             Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders');
             Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        });
+
+        Route::middleware('permission:customers.view')->group(function () {
+            Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
+            Route::get('/customers/{customer}', [AdminCustomerController::class, 'show'])->name('customers.show');
         });
 
         Route::middleware('permission:orders.manage')->group(function () {

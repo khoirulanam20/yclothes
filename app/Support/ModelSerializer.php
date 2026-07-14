@@ -7,6 +7,7 @@ use App\Models\Attribute;
 use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\CmsPage;
+use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Product;
@@ -382,6 +383,30 @@ class ModelSerializer
             'avatarUrl' => $customer->avatar_url ?? null,
             'emailVerified' => (bool) $customer->email_verified_at,
         ];
+    }
+
+    public static function adminCustomerSummary(Customer $customer): array
+    {
+        return [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'isActive' => (bool) $customer->is_active,
+            'ordersCount' => (int) ($customer->orders_count ?? 0),
+            'createdAt' => $customer->created_at?->toIso8601String(),
+            'lastLoginAt' => $customer->last_login_at?->toIso8601String(),
+        ];
+    }
+
+    public static function adminCustomerDetail(Customer $customer): array
+    {
+        return array_merge(self::customer($customer), [
+            'isActive' => (bool) $customer->is_active,
+            'ordersCount' => (int) ($customer->orders_count ?? 0),
+            'createdAt' => $customer->created_at?->toIso8601String(),
+            'lastLoginAt' => $customer->last_login_at?->toIso8601String(),
+        ]);
     }
 
     public static function customerAddressCheckout($address): array
